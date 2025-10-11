@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from api.middleware import AuthMiddleware
 from api.schemas.completion_chunk import ReasonChatCompletionChunk
 from api.v1.bot_config_mgr_api import bot_config_mgr_router
 from api.v1.openapi import openapi_router
@@ -14,12 +15,17 @@ from api.v1.workflow_agent import workflow_agent_router
 # Use unified common package import module
 from common_imports import initialize_services, logger, sid_generator2
 from infra.config import agent_config
+from infra.config.middleware import MiddlewareConfig
 
 # Remove handler after importing logger to avoid duplicate output
 logger.remove()
 handler_id = logger.add(sys.stderr, level="ERROR")  # Add a modifiable handler
 
 app = FastAPI()
+
+# Register authentication middleware
+middleware_config = MiddlewareConfig()
+app.add_middleware(AuthMiddleware, config=middleware_config)
 
 
 @app.exception_handler(RequestValidationError)  # type: ignore[misc]

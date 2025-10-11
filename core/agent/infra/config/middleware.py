@@ -43,6 +43,7 @@ class AppAuthConfig(BaseSettings):
     APP_AUTH_PROT: str = Field(default="")
     APP_AUTH_API_KEY: str = Field(default="")
     APP_AUTH_SECRET: str = Field(default="")
+    APP_AUTH_API_KEY_PATH: str = Field(default="/v2/app/key/api_key")
 
 
 class ElkUploadConfig(BaseSettings):
