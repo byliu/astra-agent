@@ -4,6 +4,7 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Header
 from starlette.responses import StreamingResponse
 
+from api.dependencies.auth_permission import verify_bot_permission_from_body
 from api.schemas.agent_response import cur_timestamp
 from api.schemas.completion import (
     ReasonChatCompletion,
@@ -12,11 +13,11 @@ from api.schemas.completion import (
     ReasonChoiceMessageToolCall,
     ReasonChoiceMessageToolCallFunction,
 )
-from openai.types.completion_usage import CompletionUsage
 from api.schemas.completion_chunk import ReasonChatCompletionChunk
 from api.schemas.openapi_inputs import CompletionInputs
 from api.v1.base_api import CompletionBase
 from common_imports import Span
+from openai.types.completion_usage import CompletionUsage
 from service.builder.openapi_builder import OpenAPIRunnerBuilder
 from service.runner.openapi_runner import OpenAPIRunner
 
@@ -192,6 +193,9 @@ class ChatCompletion(CompletionBase):
 async def chat_completions(
     x_consumer_username: Annotated[str, Header()], inputs: CompletionInputs
 ) -> Any:
+    # Verify permission before processing
+    await verify_bot_permission_from_body(x_consumer_username, inputs.bot_id)
+
     span = Span(app_id=x_consumer_username, uid=inputs.uid)
     with span.start("ChatCompletion") as chat_span:
         chat_completion = ChatCompletion(

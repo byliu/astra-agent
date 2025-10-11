@@ -3,9 +3,13 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Callable, Dict, Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.routing import APIRoute
 
+from api.dependencies.auth_permission import (
+    verify_bot_permission,
+    verify_bot_permission_from_body,
+)
 from api.schemas.bot_config import BotConfig
 from api.schemas.bot_config_mgr_response import GeneralResponse
 
@@ -135,6 +139,9 @@ async def handle_bot_config_operation(
 async def create_bot_config(bot_config: BotConfig) -> GeneralResponse:
     """Create new bot config"""
 
+    # Verify permission
+    await verify_bot_permission_from_body(bot_config.app_id, bot_config.bot_id)
+
     async def _create_operation(sp: Span) -> BotConfig:
         return await BotConfigClient(
             app_id=bot_config.app_id, bot_id=bot_config.bot_id, span=sp
@@ -151,10 +158,10 @@ async def create_bot_config(bot_config: BotConfig) -> GeneralResponse:
 
 @bot_config_mgr_router.delete("/bot-config")  # type: ignore[misc]
 async def delete_bot_config(
-    app_id: str = Query(min_length=1, max_length=64),
-    bot_id: str = Query(min_length=1, max_length=64),
+    verified_params: tuple[str, str] = Depends(verify_bot_permission),
 ) -> GeneralResponse:
     """Delete bot config"""
+    app_id, bot_id = verified_params
 
     async def _delete_operation(sp: Span) -> GeneralResponse:
         await BotConfigClient(app_id=app_id, bot_id=bot_id, span=sp).delete()
@@ -172,6 +179,9 @@ async def delete_bot_config(
 async def update_bot_config(bot_config: BotConfig) -> GeneralResponse:
     """Update bot config"""
 
+    # Verify permission
+    await verify_bot_permission_from_body(bot_config.app_id, bot_config.bot_id)
+
     async def _update_operation(sp: Span) -> BotConfig:
         return await BotConfigClient(
             app_id=bot_config.app_id, bot_id=bot_config.bot_id, span=sp
@@ -188,10 +198,10 @@ async def update_bot_config(bot_config: BotConfig) -> GeneralResponse:
 
 @bot_config_mgr_router.get("/bot-config")  # type: ignore[misc]
 async def get_bot_config(
-    app_id: str = Query(min_length=1, max_length=64),
-    bot_id: str = Query(min_length=1, max_length=64),
+    verified_params: tuple[str, str] = Depends(verify_bot_permission),
 ) -> GeneralResponse:
     """Query bot config"""
+    app_id, bot_id = verified_params
 
     async def _get_operation(sp: Span) -> dict[str, Any]:
         bot_config_result = await BotConfigClient(

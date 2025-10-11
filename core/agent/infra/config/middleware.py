@@ -46,6 +46,10 @@ class AppAuthConfig(BaseSettings):
     APP_AUTH_API_KEY_PATH: str = Field(default="/v2/app/key/api_key")
 
 
+class AuthPermissionConfig(BaseSettings):
+    AUTH_API_URL: str = Field(default="", description="Auth permission service URL")
+
+
 class ElkUploadConfig(BaseSettings):
     UPLOAD_NODE_TRACE: bool = Field(default=False)
     UPLOAD_METRICS: bool = Field(default=False)
@@ -59,6 +63,7 @@ class MiddlewareConfig(
     KnowledgeConfig,
     McpConfig,
     AppAuthConfig,
+    AuthPermissionConfig,
     ElkUploadConfig,
 ):
     pass
