@@ -89,9 +89,8 @@ class AuthClient(BaseModel):
                 )
 
                 async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(
+                    response = await client.get(
                         auth_url,
-                        json={},
                         params=params,
                     )
                     response.raise_for_status()
@@ -201,9 +200,8 @@ class AuthClient(BaseModel):
                 )
 
                 async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(
+                    response = await client.get(
                         auth_url,
-                        json={},
                         params=params,
                     )
                     response.raise_for_status()

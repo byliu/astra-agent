@@ -14,6 +14,7 @@ from api.v1.workflow_agent import workflow_agent_router
 
 # Use unified common package import module
 from common_imports import initialize_services, logger, sid_generator2
+from exceptions.agent_exc import AgentExc
 from infra.config import agent_config
 from infra.config.middleware import MiddlewareConfig
 
@@ -28,10 +29,35 @@ middleware_config = MiddlewareConfig()
 app.add_middleware(AuthMiddleware, config=middleware_config)
 
 
+@app.exception_handler(AgentExc)  # type: ignore[misc]
+async def agent_exception_handler(
+    _request: Request, exc: AgentExc
+) -> JSONResponse:
+    """Handle AgentExc business exceptions"""
+    request_id = (
+        sid_generator2.gen() if sid_generator2 is not None else "agent-error"
+    )
+
+    rs = JSONResponse(
+        status_code=200,  # Business errors return 200 with error code
+        content=ReasonChatCompletionChunk(
+            code=exc.c,
+            message=exc.m,
+            id=request_id,
+            choices=[],
+            created=int(time.time()),
+            model="",
+            object="chat.completion.chunk",
+        ).model_dump()
+    )
+    return rs
+
+
 @app.exception_handler(RequestValidationError)  # type: ignore[misc]
 async def validation_exception_handler(
     _request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    """Handle request validation errors"""
     try:
         # Safely get the first error message
         errors = exc.errors()
@@ -42,7 +68,9 @@ async def validation_exception_handler(
 
     # Generate ID safely - fallback if sid_generator2 not initialized
     request_id = (
-        sid_generator2.gen() if sid_generator2 is not None else "validation-error"
+        sid_generator2.gen()
+        if sid_generator2 is not None
+        else "validation-error"
     )
 
     rs = JSONResponse(
