@@ -28,7 +28,6 @@ import com.iflytek.astron.console.hub.service.wechat.BotOffiaccountService;
 import com.iflytek.astron.console.hub.service.chat.ChatBotApiService;
 import com.iflytek.astron.console.hub.service.user.UserBotService;
 import com.iflytek.astron.console.hub.util.BotPermissionUtil;
-import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;

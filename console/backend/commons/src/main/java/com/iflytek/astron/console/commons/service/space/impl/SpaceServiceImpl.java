@@ -166,7 +166,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
             }
             return null;
         }
-        String timestamp = redissonClient.getBucket(USER_LAST_VISIT_PERSONAL_SPACE_TIME + uid).get().toString();
+        Object timestampObj = redissonClient.getBucket(USER_LAST_VISIT_PERSONAL_SPACE_TIME + uid).get();
+        String timestamp = timestampObj == null ? null : timestampObj.toString();
         if (StringUtils.isBlank(timestamp)) {
             return this.baseMapper.getByUidAndId(uid, spaceVOS.get(0).getId());
         } else {

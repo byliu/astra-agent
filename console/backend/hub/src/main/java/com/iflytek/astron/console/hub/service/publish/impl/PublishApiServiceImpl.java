@@ -160,7 +160,7 @@ public class PublishApiServiceImpl implements PublishApiService {
         }
         ChatBotApi botApi = chatBotApiService.getOneByUidAndBotId(uid, botId);
         if (Objects.isNull(botApi)) {
-            throw new BusinessException(ResponseEnum.USER_API_ID_NOT_EXISTE);
+            return new BotApiInfoDTO();
         }
         AppMst appMst = appMstService.getByAppId(uid, botApi.getAppId());
         if (Objects.isNull(appMst)) {

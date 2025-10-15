@@ -34,9 +34,6 @@ Casdoor 是一个开源的身份和访问管理平台，提供OAuth 2.0、OIDC�
 # 进入 Casdoor 目录
 cd docker/casdoor
 
-# 修改环境变量配置
-vim conf/app.conf
-
 # 创建日志挂载目录
 mkdir -p logs
 
@@ -73,17 +70,17 @@ RagFlow 是一个开源的RAG（检索增强生成）引擎，使用深度文档
 cd docker/ragflow
 
 # 启动 RagFlow 服务（包含所有依赖）
-docker-compose up -d
+docker compose up -d
 
 # 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 查看服务日志
-docker-compose logs -f ragflow
+docker compose logs -f ragflow
 ```
 
 **访问地址：**
-- RagFlow Web界面：http://localhost/
+- RagFlow Web界面：http://localhost:10080
 
 **重要配置说明：**
 - 默认使用 Elasticsearch，如需使用 opensearch、infinity，请修改 .env 中的 DOC_ENGINE 配置
@@ -105,21 +102,29 @@ cp .env.example .env
 
 编辑 docker/astronAgent/.env 文件，配置 RagFlow 连接信息：
 
+```bash
+# 进入 astronAgent 目录
+cd docker/astronAgent
+
+# 编辑环境变量配置
+vim .env
+```
+
 **关键配置项：**
 
 ```env
 # RAGFlow配置
-RAGFLOW_BASE_URL=http://localhost/
+RAGFLOW_BASE_URL=http://localhost:10080
 RAGFLOW_API_TOKEN=ragflow-your-api-token-here
 RAGFLOW_TIMEOUT=60
 RAGFLOW_DEFAULT_GROUP=星辰知识库
 ```
 
 **获取 RagFlow API Token：**
-1. 访问 RagFlow Web界面：http://localhost/
-2. 登录并进入用户设置
-3. 生成 API Token
-4. 将 Token 更新到配置文件中
+1. 访问 RagFlow Web界面：http://localhost:10080
+2. 登录并点击头像进入用户设置
+3. 点击API生成 API KEY
+4. 将生成的 API KEY 更新到.env文件中的RAGFLOW_API_TOKEN
 
 #### 3.2 配置 Casdoor 认证集成
 
@@ -140,7 +145,7 @@ CONSOLE_CASDOOR_ORG=your-casdoor-org-name
 2. 默认账号: admin/123 登陆进入管理页面
 3. 进入 http://localhost:8000/organizations 页创建组织
 4. 进入http://localhost:8000/applications页 创建应用，并绑定组织
-5. 设置应用的重定向URL为：http://localhost:10080/callback (项目nginx容器端口,默认10080)
+5. 设置应用的重定向URL为：http://localhost:80/callback (项目nginx容器端口,默认80)
 6. 将Casdoor地址，应用的客户端ID，应用名称，组织名称等信息更新到配置文件中
 
 ### 第四步：启动 astronAgent 核心服务（必要部署步骤）
@@ -198,7 +203,7 @@ XINGHUO_DATASET_ID=
 
 #### 4.3 启动 astronAgent 服务
 
-启动 astronAgent 服务请运行我们的 [docker-compose.yaml](/docker/astronAgent/docker-compose.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
+启动之请配置一些必须的环境变量
 
 ```bash
 # 进入 astronAgent 目录
@@ -206,6 +211,17 @@ cd docker/astronAgent
 
 # 根据需要修改配置
 vim .env
+```
+
+```env
+CONSOLE_DOMAIN=http://localhost:80 (项目nginx容器端口,默认80)
+```
+
+启动 astronAgent 服务请运行我们的 [docker-compose.yaml](/docker/astronAgent/docker-compose.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
+
+```bash
+# 进入 astronAgent 目录
+cd docker/astronAgent
 
 # 启动所有服务
 docker-compose up -d
@@ -225,10 +241,10 @@ docker-compose logs -f
 - **Casdoor 管理界面**：http://localhost:8000
 
 ### 知识库服务
-- **RagFlow Web界面**：http://localhost/
+- **RagFlow Web界面**：http://localhost:10080
 
 ### AstronAgent 核心服务
-- **控制台前端(nginx代理)**：http://localhost:10080
+- **控制台前端(nginx代理)**：http://localhost/
 
 ## 📚 更多资源
 

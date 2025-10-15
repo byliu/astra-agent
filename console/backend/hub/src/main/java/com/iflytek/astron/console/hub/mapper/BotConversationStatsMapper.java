@@ -1,7 +1,7 @@
 package com.iflytek.astron.console.hub.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.iflytek.astron.console.hub.entity.BotDashboardCountLog;
+import com.iflytek.astron.console.hub.entity.BotConversationStats;
 import com.iflytek.astron.console.hub.dto.publish.BotSummaryStatsVO;
 import com.iflytek.astron.console.hub.dto.publish.BotTimeSeriesStatsVO;
 import org.apache.ibatis.annotations.Mapper;
@@ -11,12 +11,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Bot Dashboard Count Log Mapper
+ * Bot Conversation Statistics Mapper
  *
  * @author Omuigix
  */
 @Mapper
-public interface BotDashboardCountLogMapper extends BaseMapper<BotDashboardCountLog> {
+public interface BotConversationStatsMapper extends BaseMapper<BotConversationStats> {
 
     /**
      * Get bot summary statistics

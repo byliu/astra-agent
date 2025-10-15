@@ -67,7 +67,7 @@ mybatis-plus:
 
 # S3(MinIO) basic configuration
 s3:
-  endpoint: ${OSS_ENDPOINT:http://minio:9000}
+  endpoint: ${OSS_REMOTE_ENDPOINT:http://minio:9000}
   accessKey: ${OSS_ACCESS_KEY_ID:astron-uploader}
   secretKey: ${OSS_ACCESS_KEY_SECRET:astron-uploader-secret}
   bucket: ${OSS_BUCKET_CONSOLE:astron-agent}
@@ -85,11 +85,6 @@ spark:
   image-appId: ${SPARK_IMAGE_APP_ID:xxx}
   image-apiKey: ${SPARK_IMAGE_API_KEY:xxx}
   image-apiSecret: ${SPARK_IMAGE_API_SECRET:xxx}
-
-# DeepSeek configuration example
-deepseek:
-  url: ${DEEPSEEK_URL:https://api.deepseek.com}
-  api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}    # Write timeout
 
 # Workflow configuration
 workflow:

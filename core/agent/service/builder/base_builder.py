@@ -75,6 +75,8 @@ class BaseApiBuilder(BaseModel):
     ) -> list[Union[LinkPlugin, McpPlugin, WorkflowPlugin]]:
 
         with self.span.start("BuildPlugins") as sp:
+            # Filter out empty strings from mcp_server_urls
+            mcp_server_urls = [url for url in mcp_server_urls if url and url.strip()]
 
             plugins: list[Union[LinkPlugin, McpPlugin, WorkflowPlugin]] = []
             if tool_ids:

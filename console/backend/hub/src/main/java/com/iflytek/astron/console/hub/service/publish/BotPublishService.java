@@ -87,18 +87,17 @@ public interface BotPublishService {
             String currentUid, Long currentSpaceId);
 
     /**
-     * Record bot dashboard count log data
+     * Record bot conversation statistics data
      *
      * @param uid User ID
-     * @param spaceId Space ID (not used in bot_dashboard_count_log table)
+     * @param spaceId Space ID
      * @param botId Bot ID
      * @param chatId Chat ID
      * @param sid Session identifier
      * @param tokenConsumed Token consumption count
-     * @param messageRounds Message rounds (not used in bot_dashboard_count_log table)
      */
     void recordDashboardCountLog(String uid, Long spaceId, Integer botId, Long chatId,
-            String sid, Integer tokenConsumed, Integer messageRounds);
+            String sid, Integer tokenConsumed);
 
     // ==================== Publish Channel Management ====================
 

@@ -1127,7 +1127,6 @@ CREATE TABLE `bot_conversation_stats`
     `chat_id`           bigint                                                        NOT NULL COMMENT 'Conversation ID',
     `sid`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci          DEFAULT NULL COMMENT 'Session identifier',
     `token_consumed`    int                                                           NOT NULL DEFAULT '0' COMMENT 'Token count consumed in this conversation',
-    `message_rounds`    int                                                           NOT NULL DEFAULT '1' COMMENT 'Message rounds in this conversation',
     `conversation_date` date                                                          NOT NULL COMMENT 'Conversation date',
     `create_time`       datetime                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     `is_delete`         tinyint                                                       NOT NULL DEFAULT '0' COMMENT 'Whether deleted: 0=not deleted, 1=deleted',

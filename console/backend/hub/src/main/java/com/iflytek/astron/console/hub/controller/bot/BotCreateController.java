@@ -265,21 +265,6 @@ public class BotCreateController {
         sparkModel.setIsCustom(false);
         allModels.add(sparkModel);
 
-        // Add DeepSeek models
-        BotModelDto deepseekV3Model = new BotModelDto();
-        deepseekV3Model.setModelDomain(DefaultBotModelEnum.DEEPSEEK_V3.getDomain());
-        deepseekV3Model.setModelName(DefaultBotModelEnum.DEEPSEEK_V3.getName());
-        deepseekV3Model.setModelIcon(DefaultBotModelEnum.DEEPSEEK_V3.getIcon());
-        deepseekV3Model.setIsCustom(false);
-        allModels.add(deepseekV3Model);
-
-        BotModelDto deepseekR1Model = new BotModelDto();
-        deepseekR1Model.setModelDomain(DefaultBotModelEnum.DEEPSEEK_R1.getDomain());
-        deepseekR1Model.setModelName(DefaultBotModelEnum.DEEPSEEK_R1.getName());
-        deepseekR1Model.setModelIcon(DefaultBotModelEnum.DEEPSEEK_R1.getIcon());
-        deepseekR1Model.setIsCustom(false);
-        allModels.add(deepseekR1Model);
-
         // 2. Get custom models
         JSONObject result = JSONObject.from(llmService.getLlmAuthList(request, null, "workflow", "spark-llm"));
 

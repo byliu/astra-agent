@@ -84,7 +84,7 @@ public enum ResponseEnum {
 
     BOT_API_CREATE_ERROR(60037, "error.bot.api.create.failed"),
 
-    BOT_TYPE_NOT_SUPPORT(60038, "error.bot.type.not.support"),
+    BOT_TYPE_NOT_SUPPORT(60038, "error.bot.type.temporarily.not.support"),
     USER_APP_ID_NOT_EXISTE(60039, "error.app.not.exists"),
 
     // Space application related errors

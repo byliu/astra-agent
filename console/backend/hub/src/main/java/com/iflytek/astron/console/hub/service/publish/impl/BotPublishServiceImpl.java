@@ -24,7 +24,7 @@ import com.iflytek.astron.console.commons.enums.PublishChannelEnum;
 import com.iflytek.astron.console.commons.enums.ShelfStatusEnum;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotMarketMapper;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotApiMapper;
-import com.iflytek.astron.console.hub.mapper.BotDashboardCountLogMapper;
+import com.iflytek.astron.console.hub.mapper.BotConversationStatsMapper;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotBaseMapper;
 import com.iflytek.astron.console.hub.converter.BotPublishConverter;
 import com.iflytek.astron.console.hub.converter.WorkflowVersionConverter;
@@ -32,7 +32,7 @@ import com.iflytek.astron.console.hub.service.publish.PublishChannelService;
 import com.iflytek.astron.console.hub.service.wechat.WechatThirdpartyService;
 import com.iflytek.astron.console.commons.dto.bot.BotPublishQueryResult;
 import com.iflytek.astron.console.commons.dto.bot.ChatBotApi;
-import com.iflytek.astron.console.hub.entity.BotDashboardCountLog;
+import com.iflytek.astron.console.hub.entity.BotConversationStats;
 import com.iflytek.astron.console.hub.service.publish.BotPublishService;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
@@ -80,7 +80,7 @@ public class BotPublishServiceImpl implements BotPublishService {
     private final WorkflowVersionConverter workflowVersionConverter;
 
     // Statistics data related
-    private final BotDashboardCountLogMapper botDashboardCountLogMapper;
+    private final BotConversationStatsMapper botConversationStatsMapper;
 
     // MaaS API related
     private final ChatBotApiMapper chatBotApiMapper;
@@ -221,7 +221,7 @@ public class BotPublishServiceImpl implements BotPublishService {
         }
 
         // 2. Query summary statistics data
-        BotSummaryStatsVO summaryStats = botDashboardCountLogMapper.selectSummaryStats(botId, null, null);
+        BotSummaryStatsVO summaryStats = botConversationStatsMapper.selectSummaryStats(botId, null, null);
         if (summaryStats == null) {
             // If no statistics data, return default values (using primitive type long, will be 0 automatically)
             summaryStats = new BotSummaryStatsVO();
@@ -247,7 +247,7 @@ public class BotPublishServiceImpl implements BotPublishService {
 
         // 2. Query time series statistics data
         LocalDate startDate = LocalDate.now().minusDays(overviewDays);
-        List<BotTimeSeriesStatsVO> timeSeriesStats = botDashboardCountLogMapper.selectTimeSeriesStats(
+        List<BotTimeSeriesStatsVO> timeSeriesStats = botConversationStatsMapper.selectTimeSeriesStats(
                 botId, startDate, null, null);
 
         // 3. Build time series data response
@@ -265,31 +265,29 @@ public class BotPublishServiceImpl implements BotPublishService {
 
     @Override
     public void recordDashboardCountLog(String uid, Long spaceId, Integer botId, Long chatId,
-            String sid, Integer tokenConsumed, Integer messageRounds) {
-        log.info("Record dashboard count log: uid={}, spaceId={}, botId={}, chatId={}, tokenConsumed={}, messageRounds={}",
-                uid, spaceId, botId, chatId, tokenConsumed, messageRounds);
+            String sid, Integer tokenConsumed) {
+        log.info("Record conversation statistics: uid={}, spaceId={}, botId={}, chatId={}, tokenConsumed={}",
+                uid, spaceId, botId, chatId, tokenConsumed);
 
         try {
-            BotDashboardCountLog countLog = BotDashboardCountLog.createBuilder()
+            BotConversationStats conversationStats = BotConversationStats.createBuilder()
                     .uid(uid)
+                    .spaceId(spaceId)
                     .botId(botId)
-                    .channel(1)
                     .chatId(chatId)
-                    .chatTime(0)
-                    .token(tokenConsumed)
                     .sid(sid)
+                    .tokenConsumed(tokenConsumed)
                     .build();
-            int result = botDashboardCountLogMapper.insert(countLog);
+            int result = botConversationStatsMapper.insert(conversationStats);
 
             if (result > 0) {
-                log.info("Dashboard count log recorded successfully: chatId={}, logId={}", chatId, countLog.getId());
+                log.info("Conversation statistics recorded successfully: chatId={}, statsId={}", chatId, conversationStats.getId());
 
             } else {
-                log.warn("Dashboard count log record failed: chatId={}", chatId);
+                log.warn("Conversation statistics record failed: chatId={}", chatId);
             }
         } catch (Exception e) {
-            log.error("Record dashboard count log exception: chatId={}", chatId, e);
-            // Do not throw exception to avoid affecting main business flow
+            log.error("Record conversation statistics exception: chatId={}", chatId, e);
         }
     }
 

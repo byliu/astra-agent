@@ -575,8 +575,6 @@ services:
       BOT_API_MAAS_BASE_URL: "${BOT_API_MAAS_BASE_URL:-}"
       TENANT_CREATE_APP: "${TENANT_CREATE_APP:-}"
       TENANT_GET_APP_DETAIL: "${TENANT_GET_APP_DETAIL:-}"
-      DEEPSEEK_URL: "${DEEPSEEK_URL:-https://api.deepseek.com/chat/completions}"
-      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
       
     expose:
       - "8080"

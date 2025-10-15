@@ -186,12 +186,22 @@ public class MarketPublishStrategy implements PublishStrategy {
         // Background images
         marketRecord.setPcBackground(botBase.getPcBackground());
         marketRecord.setAppBackground(botBase.getAppBackground());
+        marketRecord.setBackgroundColor(botBase.getBackgroundColor());
 
         // Functional configuration
         marketRecord.setSupportContext(botBase.getSupportContext());
+        marketRecord.setSupportDocument(botBase.getSupportDocument());
 
-        // Market-specific fields
-        marketRecord.setShowIndex(0); // Default not recommended
+        // Model configuration
+        marketRecord.setModel(botBase.getModel());
+        marketRecord.setModelId(botBase.getModelId());
+        marketRecord.setOpenedTool(botBase.getOpenedTool());
+
+        // Market-specific fields with defaults
+        marketRecord.setShowIndex(0);
+        marketRecord.setShowOthers(0);
+        marketRecord.setHotNum(0);
+        marketRecord.setShowWeight(0);
 
         // Status and channel management
         marketRecord.setBotStatus(status);

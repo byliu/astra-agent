@@ -35,7 +35,9 @@ class McpPluginRunner(BaseModel):
             }
             sp.add_info_events(
                 attributes={
-                    "mcp-plugin-run-inputs": json.dumps(data, ensure_ascii=False)
+                    "mcp-plugin-run-inputs": json.dumps(
+                        data, ensure_ascii=False
+                    )
                 }
             )
             try:
@@ -95,20 +97,38 @@ class McpPluginFactory(BaseModel):
         servers_list = await self.query_servers(span)
         for server in servers_list:
             server_status = server.get("server_status")
+            server_id = server.get("server_id", "")
+            server_url = server.get("server_url", "")
+            server_message = server.get("server_message", "")
+
+            # Skip failed servers with warning log, don't break entire plugin building
             if server_status != 0:
-                raise GetMcpPluginExc
+                span.add_info_events(
+                    attributes={
+                        "mcp-server-error": json.dumps(
+                            {
+                                "server_id": server_id,
+                                "server_url": server_url,
+                                "status": server_status,
+                                "message": server_message,
+                            },
+                            ensure_ascii=False,
+                        )
+                    }
+                )
+                continue
 
             for tool in server.get("tools", []):
                 mcp_plugin = McpPlugin(
-                    server_id=server.get("server_id", ""),
-                    server_url=server.get("server_url", ""),
+                    server_id=server_id,
+                    server_url=server_url,
                     name=tool.get("name", ""),
                     description=tool.get("description", ""),
                     schema_template=await self.convert_tool(tool),
                     typ="mcp",
                     run=McpPluginRunner(
-                        server_id=server.get("server_id", ""),
-                        server_url=server.get("server_url", ""),
+                        server_id=server_id,
+                        server_url=server_url,
                         sid="",
                         name=tool.get("name", ""),
                     ).run,
@@ -125,7 +145,9 @@ class McpPluginFactory(BaseModel):
             }
             sp.add_info_events(
                 attributes={
-                    "mcp-query-servers-inputs": json.dumps(data, ensure_ascii=False)
+                    "mcp-query-servers-inputs": json.dumps(
+                        data, ensure_ascii=False
+                    )
                 }
             )
             try:
@@ -175,7 +197,9 @@ class McpPluginFactory(BaseModel):
         property_template = json.dumps(
             {
                 "type": "object",
-                "properties": tool.get("inputSchema", {}).get("properties", {}),
+                "properties": tool.get("inputSchema", {}).get(
+                    "properties", {}
+                ),
                 "required": tool.get("inputSchema", {}).get("required", []),
             },
             ensure_ascii=False,

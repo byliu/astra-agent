@@ -598,6 +598,91 @@ class TestBaseApiBuilder:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
+    async def test_build_plugins_with_empty_string_urls(
+        self, base_builder: BaseApiBuilder
+    ) -> None:
+        """Test building plugins filters out empty string URLs."""
+        # Arrange - empty string should not trigger MCP plugin creation
+        with patch(
+            "service.builder.base_builder.McpPluginFactory"
+        ) as mock_factory_class:
+            mock_factory = AsyncMock()
+            mock_factory.gen.return_value = []
+            mock_factory_class.return_value = mock_factory
+
+            # Act - pass empty string in URL list
+            result = await base_builder.build_plugins(
+                tool_ids=[],
+                mcp_server_ids=[],
+                mcp_server_urls=[""],  # Empty string should be filtered out
+                workflow_ids=[],
+            )
+
+            # Assert - McpPluginFactory should NOT be called
+            assert result == []
+            mock_factory_class.assert_not_called()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_build_plugins_filters_whitespace_urls(
+        self, base_builder: BaseApiBuilder
+    ) -> None:
+        """Test building plugins filters out whitespace-only URLs."""
+        # Arrange
+        with patch(
+            "service.builder.base_builder.McpPluginFactory"
+        ) as mock_factory_class:
+            mock_factory = AsyncMock()
+            mock_factory.gen.return_value = []
+            mock_factory_class.return_value = mock_factory
+
+            # Act - pass whitespace strings
+            result = await base_builder.build_plugins(
+                tool_ids=[],
+                mcp_server_ids=[],
+                mcp_server_urls=["", " ", "  "],  # All should be filtered
+                workflow_ids=[],
+            )
+
+            # Assert - McpPluginFactory should NOT be called
+            assert result == []
+            mock_factory_class.assert_not_called()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_build_plugins_filters_empty_keeps_valid_urls(
+        self, base_builder: BaseApiBuilder
+    ) -> None:
+        """Test building plugins filters empty strings but keeps valid URLs."""
+        # Arrange
+        mock_mcp_plugins = [Mock(typ="mcp", schema_template="mcp_schema")]
+
+        with patch(
+            "service.builder.base_builder.McpPluginFactory"
+        ) as mock_factory_class:
+            mock_factory = AsyncMock()
+            mock_factory.gen.return_value = mock_mcp_plugins
+            mock_factory_class.return_value = mock_factory
+
+            # Act - mix of empty and valid URLs
+            result = await base_builder.build_plugins(
+                tool_ids=[],
+                mcp_server_ids=[],
+                mcp_server_urls=["", "http://valid.com", " ", "http://another.com"],
+                workflow_ids=[],
+            )
+
+            # Assert - McpPluginFactory called with only valid URLs
+            assert len(result) == 1
+            assert result[0].typ == "mcp"
+            mock_factory_class.assert_called_once_with(
+                app_id="test_app_001",
+                mcp_server_ids=[],
+                mcp_server_urls=["http://valid.com", "http://another.com"],
+            )
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
     async def test_build_bot_config_error_handling(
         self, base_builder: BaseApiBuilder
     ) -> None:

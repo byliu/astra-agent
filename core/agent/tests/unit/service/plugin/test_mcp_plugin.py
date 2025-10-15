@@ -653,15 +653,16 @@ class TestMcpPluginFactory:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_build_tools_server_error(self, factory: McpPluginFactory) -> None:
-        """Test build_tools handles server errors correctly."""
+        """Test build_tools skips servers with errors and logs warning."""
         # Arrange
         mock_span = Mock(spec=Span)
+        mock_span.add_info_events = Mock()
         servers_data = [
             {
                 "server_id": "server1",
                 "server_url": "http://server1.com",
-                "server_status": 1,  # Error status
-                "server_message": "Server error occurred",
+                "server_status": 30703,  # MCP_SERVER_CONNECT_ERR
+                "server_message": "MCP client server connection failed",
                 "tools": [],
             }
         ]
@@ -672,9 +673,68 @@ class TestMcpPluginFactory:
         ) as mock_query:
             mock_query.return_value = servers_data
 
-            # Act & Assert
-            with pytest.raises(type(GetMcpPluginExc)):
-                await factory.build_tools(mock_span)
+            # Act
+            result = await factory.build_tools(mock_span)
+
+            # Assert - should return empty list and log error
+            assert result == []
+            mock_span.add_info_events.assert_called_once()
+            call_args = mock_span.add_info_events.call_args
+            assert "mcp-server-error" in call_args[1]["attributes"]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_build_tools_partial_server_failure(
+        self, factory: McpPluginFactory
+    ) -> None:
+        """Test build_tools with mix of successful and failed servers."""
+        # Arrange
+        mock_span = Mock(spec=Span)
+        mock_span.add_info_events = Mock()
+        servers_data = [
+            {
+                "server_id": "server1",
+                "server_url": "http://server1.com",
+                "server_status": 30705,  # MCP_SERVER_INITIAL_ERR
+                "server_message": "MCP client initialization failed",
+                "tools": [],
+            },
+            {
+                "server_id": "server2",
+                "server_url": "http://server2.com",
+                "server_status": 0,  # Success
+                "server_message": "",
+                "tools": [
+                    {
+                        "name": "working_tool",
+                        "description": "A working tool",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {"param": {"type": "string"}},
+                        },
+                    }
+                ],
+            },
+        ]
+
+        # Use patch to mock query_servers method
+        with patch(
+            "service.plugin.mcp.McpPluginFactory.query_servers",
+            new_callable=AsyncMock,
+        ) as mock_query:
+            mock_query.return_value = servers_data
+
+            # Act
+            result = await factory.build_tools(mock_span)
+
+            # Assert - should skip failed server1, succeed with server2
+            assert len(result) == 1
+            assert result[0].name == "working_tool"
+            assert result[0].server_id == "server2"
+            # Verify error was logged for failed server
+            mock_span.add_info_events.assert_called_once()
+            call_args = mock_span.add_info_events.call_args
+            assert "mcp-server-error" in call_args[1]["attributes"]
 
     @pytest.mark.unit
     @pytest.mark.asyncio
