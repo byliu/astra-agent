@@ -24,7 +24,6 @@ import java.util.Arrays;
  * Service for handling prompt-related operations, such as prompt enhancement, generating advice for
  * the next question, AI content generation, and AI code processing.
  *
- * @author YOUR_NAME
  * @date 2025/09/26
  */
 @Service

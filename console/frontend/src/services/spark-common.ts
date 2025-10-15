@@ -54,8 +54,9 @@ export interface ModelListData {
   isCustom: boolean;
   modelDomain: string;
   modelName: string;
-  modeId: string;
+  modelId: string;
   modelIcon: string;
+  model?: string;
 }
 // 获取模型列表
 export const getModelList = (): Promise<ModelListData[]> => {
@@ -295,8 +296,8 @@ export const getOrderList = (): Promise<any[]> => {
 };
 
 // api详情
-export const getApiInfo = (botId: any) => {
-  return http.post(`/bot/api/info?botId=${botId}`);
+export const getApiInfo = (botId: string) => {
+  return http.get(`/publish-api/get-bot-api-info?botId=${botId}`);
 };
 
 // 获取api 实时用量
@@ -305,7 +306,7 @@ export const getApiUsage = (botId: any) => {
 };
 
 // 创建助手api
-export const createApi = (params: any) => {
+export const createApi = (params: { botId: string; appId: string }) => {
   return http.post(`/publish-api/create-bot-api`, params);
 };
 
@@ -359,7 +360,7 @@ export const quickCreateBot = (str: string) => {
 
 // 模板创建
 export const createFromTemplate = (params: any) => {
-  return http.post(`/u/bot/mass/createFromTemplate`, params);
+  return http.post(`/workflow/bot/createFromTemplate`, params);
 };
 
 // 获取星辰模版
@@ -420,7 +421,7 @@ export const getBotTemplate = (botId?: any) => {
 
 // 生成开场白
 export const generatePrologue = (params: { name: string; botDesc: string }) => {
-  return http.post(`/bot/aiGenPrologue`, params);
+  return http.post(`/bot/ai-prologue-gen`, params);
 };
 
 // 编辑已上架bot
@@ -467,12 +468,25 @@ export const deletePrompt = (params: any) => {
 // export const getInter = (params: any): Promise<any> => {
 //   return http.post(`/llm/inter1?id=${params.id}&llmSource=${params.llmSource}`);
 // };
-//获取分析页数据
+//获取分析页数据 -- unused
 export const getAnalysisData = (params: any) => {
   return http.get(
     `/dashboard/details?botId=${params.botId}&overviewDays=${params.overviewDays}&channelDays=${params.channelDays}`
   );
 };
+
+/** 获取分析页数据01  */
+export const getAnalysisData01 = (params: any) => {
+  return http.get(
+    `/publish/bots/${params.botId}/timeseries?days=${params.overviewDays}`
+  );
+};
+
+/** 获取分析页数据02  */
+export const getAnalysisData02 = (params: any) => {
+  return http.get(`/publish/bots/${params.botId}/summary`);
+};
+
 // prompt详情
 export const promptDetail = (params: any) => {
   return http({
@@ -522,7 +536,7 @@ export const promptBack = (params: any) => {
 /** ## 工作流发布版本列表 */
 export const getVersionList = (params: any) => {
   return http.get(
-    `/workflow/version/list_botId?botId=${params.botId}&size=${params.size}&current=${params.current}`
+    `/publish/bots/${params.botId}/versions?size=${params.size}&page=${params.current}`
   );
 };
 

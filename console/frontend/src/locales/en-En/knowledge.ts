@@ -18,9 +18,8 @@ const translation = {
   knowledgeName: 'Name:',
   knowledgeDescription: 'Description:',
   knowledgeVersion: 'Version:',
-  ragflowRAG: 'Ragflow',
-  ragflowRAGDescription:
-    'It can integrate cutting-edge RAG technology and proxy capabilities to create a superior context layer for LLMs, suitable for enterprise scenarios.',
+  ragflowRAG: 'RAGFlow',
+  ragflowRAGDescription: 'Open source version RAGFlow, see ',
   xinghuoKnowledge: 'Spark Knowledge Base',
   xingpuDescription:
     'integrates multi-source heterogeneous knowledge with automated ingestion, delivers conversational Q&A retrieval, and enables answer tracing. It is tailored for robust enterprise applications.',

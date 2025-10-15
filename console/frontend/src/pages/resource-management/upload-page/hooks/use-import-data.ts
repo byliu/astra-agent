@@ -11,6 +11,7 @@ import { UploadFileStatus } from 'antd/es/upload/interface';
 import useSpaceStore from '@/store/space-store';
 import { useTranslation } from 'react-i18next';
 import { DraggerProps } from 'antd/es/upload';
+import { getFixedUrl } from '@/components/workflow/utils';
 
 export const useImportData = ({
   tag,
@@ -149,7 +150,7 @@ export const useImportData = ({
       } as UploadFile;
       return [item, ...uploadList];
     });
-    const url = 'http://172.29.201.92:8080/file/upload'; // 接收上传文件的后台地址
+    const url = getFixedUrl('/file/upload'); // 接收上传文件的后台地址
     const form = new FormData(); // FormData 对象
     form.append('file', event.file); // 文件对象
     form.append('parentId', parentId);

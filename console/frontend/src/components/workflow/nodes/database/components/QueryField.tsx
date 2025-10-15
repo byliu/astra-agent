@@ -271,6 +271,7 @@ function index({ id, data, allFields, from, children }): React.ReactElement {
             })}
           </div>
           <Select
+            value={null}
             disabled={!addDataOptions.length}
             className={cn('flow-select nodrag w-1/3')}
             dropdownAlign={{ offset: [0, 0] }}

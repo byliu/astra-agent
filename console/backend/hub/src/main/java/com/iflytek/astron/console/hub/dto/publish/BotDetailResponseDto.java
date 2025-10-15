@@ -40,6 +40,9 @@ public class BotDetailResponseDto {
     @Schema(description = "WeChat AppID", example = "wx[16 characters]")
     private String wechatAppid;
 
+    @Schema(description = "MaaS App ID", example = "app_123")
+    private String maasId;
+
     @Schema(description = "Create time", example = "2024-01-01 12:00:00")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;

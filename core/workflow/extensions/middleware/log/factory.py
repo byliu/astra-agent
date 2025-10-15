@@ -35,8 +35,10 @@ class LogServiceFactory(ServiceFactory):
 
         :return: Configured LogService instance
         """
-        current_dir = os.getenv("LOG_PATH", "../..")
-        log_dir = os.path.join(current_dir, "logs")
+        log_dir = os.path.join(
+            "./",
+            os.getenv("LOG_PATH", "logs"),
+        )
         os.makedirs(log_dir, exist_ok=True)  # Ensure log directory exists
 
         # Configure log storage path and log level

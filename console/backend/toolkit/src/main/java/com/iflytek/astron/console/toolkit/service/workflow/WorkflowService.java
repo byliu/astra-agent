@@ -20,8 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.data.UserInfoDataService;
-import com.iflytek.astron.console.commons.entity.bot.BotDetail;
-import com.iflytek.astron.console.commons.entity.bot.BotMarketForm;
+import com.iflytek.astron.console.commons.dto.bot.BotDetail;
+import com.iflytek.astron.console.commons.dto.bot.BotMarketForm;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
 import com.iflytek.astron.console.commons.entity.user.UserInfo;
@@ -158,16 +158,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
 
-    public static final String PROTOCOL_ADD_PATH = "/sparkflow/v1/protocol/add";
-    public static final String PROTOCOL_UPDATE_PATH = "/sparkflow/v1/protocol/update/";
-    public static final String PROTOCOL_DELETE_PATH = "/sparkflow/v1/protocol/delete";
-    public static final String NODE_DEBUG_PATH = "/sparkflow/v1/node/debug/";
-    public static final String PROTOCOL_BUILD_PATH = "/sparkflow/v1/protocol/build/";
+    public static final String PROTOCOL_ADD_PATH = "/workflow/v1/protocol/add";
+    public static final String PROTOCOL_UPDATE_PATH = "/workflow/v1/protocol/update/";
+    public static final String PROTOCOL_DELETE_PATH = "/workflow/v1/protocol/delete";
+    public static final String NODE_DEBUG_PATH = "/workflow/v1/node/debug/";
+    public static final String PROTOCOL_BUILD_PATH = "/workflow/v1/protocol/build/";
     public static final String CODE_RUN_PATH = "/workflow/v1/run";
     public static final String CLONED_SUFFIX_PATTERN = "[(]\\d+[)]$";
 
     private static final String JSON_KEY_BOT_ID = "botId";
-    private static final String PUBLISH_SUCCESS = "Success";
+    private static final String PUBLISH_SUCCESS = "成功";
     private static final int DEFAULT_ORDER = 0;
 
     @Value("${spring.profiles.active}")
@@ -828,10 +828,10 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         String nFlowId = addResult.data();
 
         BizWorkflowData data = handleDataClone(nFlowId, src.getData());
-        if (data != null) {
-            flowReq.setData(data);
-            saveRemote(flowReq, nFlowId); // Sync to core
-        }
+        // if (data != null) {
+        // flowReq.setData(data);
+        // saveRemote(flowReq, nFlowId); // Sync to core
+        // }
 
         final Workflow replica = new Workflow();
         org.springframework.beans.BeanUtils.copyProperties(src, replica);
@@ -1064,21 +1064,28 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         // Fill app/ak/sk
         String appId = bizNodeData.getNodeParam().getString("appId");
         AkSk aksk = appService.remoteCallAkSk(appId);
+        ConfigInfo configInfo = configInfoMapper.getByCategoryAndCode("NODE_API_K_S", "NODE");
+        List<String> configs = new ArrayList<>();
+        if (configInfo != null) {
+            configs = Arrays.asList(configInfo.getValue().split(","));
+        }
         try {
-            bizNodeData.getNodeParam().put("apiKey", aksk.getApiKey());
-            bizNodeData.getNodeParam().put("apiSecret", aksk.getApiSecret());
+            if (!configs.contains(prefix)) {
+                bizNodeData.getNodeParam().put("apiKey", aksk.getApiKey());
+                bizNodeData.getNodeParam().put("apiSecret", aksk.getApiSecret());
 
-            if (!node.getId().startsWith(WorkflowConst.NodeType.FLOW)
-                    && CommonConst.FIXED_APPID_ENV.contains(env)) {
-                buidKeyInfo(bizNodeData);
-            }
-            String source = bizNodeData.getNodeParam().getString("source");
-            if ("openai".equals(source)) {
-                Long modelId = bizNodeData.getNodeParam().getLong("modelId");
-                if (modelId != null) {
-                    Model model = modelService.getById(modelId);
-                    bizNodeData.getNodeParam().put("apiKey", model.getApiKey());
-                    bizNodeData.getNodeParam().put("apiSecret", StringUtils.EMPTY);
+                if (!node.getId().startsWith(WorkflowConst.NodeType.FLOW)
+                        && CommonConst.FIXED_APPID_ENV.contains(env)) {
+                    buidKeyInfo(bizNodeData);
+                }
+                String source = bizNodeData.getNodeParam().getString("source");
+                if ("openai".equals(source)) {
+                    Long modelId = bizNodeData.getNodeParam().getLong("modelId");
+                    if (modelId != null) {
+                        Model model = modelService.getById(modelId);
+                        bizNodeData.getNodeParam().put("apiKey", model.getApiKey());
+                        bizNodeData.getNodeParam().put("apiSecret", StringUtils.EMPTY);
+                    }
                 }
             }
             if (SpaceInfoUtil.getSpaceId() != null && "database".equals(prefix)) {
@@ -1111,7 +1118,12 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         String response = OkHttpUtil.post(url, body);
         log.info("node debug, response = {}", response);
 
-        NodeDebugResponse nodeDebugResponse = JSON.parseObject(response, NodeDebugResponse.class);
+        NodeDebugResponse nodeDebugResponse = null;
+        try {
+            nodeDebugResponse = JSON.parseObject(response, NodeDebugResponse.class);
+        } catch (Exception e) {
+            throw new BusinessException(ResponseEnum.RESPONSE_FAILED, response);
+        }
         if (nodeDebugResponse.getCode() != 0) {
             throw new BusinessException(ResponseEnum.RESPONSE_FAILED, nodeDebugResponse.getMessage());
         }
@@ -1831,55 +1843,13 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             protocol = new FlowProtocol();
             // Fill app elements
             List<BizWorkflowNode> nodes = bizWorkflowData.getNodes();
-            for (BizWorkflowNode node : nodes) {
-                boolean notFlowNode = !node.getId().startsWith(WorkflowConst.NodeType.FLOW);
-                BizNodeData bizNodeData = node.getData();
-                String type = node.getType();
-                try {
-                    if (notFlowNode && fixedAppEnv) {
-                        buidKeyInfo(bizNodeData);
-                    } else {
-                        bizNodeData.getNodeParam().put("appId", appId);
-                        bizNodeData.getNodeParam().put("apiKey", apiKey);
-                        bizNodeData.getNodeParam().put("apiSecret", apiSecret);
-                    }
-                    String source = bizNodeData.getNodeParam().getString("source");
-                    if ("openai".equals(source)) {
-                        Long modelId = bizNodeData.getNodeParam().getLong("modelId");
-                        if (modelId != null) {
-                            Model model = modelService.getById(modelId);
-                            bizNodeData.getNodeParam().put("apiKey", model.getApiKey());
-                            bizNodeData.getNodeParam().put("apiSecret", StringUtils.EMPTY);
-                        }
-                    }
-                    String prefix = node.getId().split("::")[0];
-                    // Agent node changes
-                    checkAndEditData(bizNodeData, prefix);
-                    // Knowledge base node new parameter passing logic
-                    fixOnRepoNode(type, bizNodeData, prefix);
-                    // Handle retry strategy information
-                    JSONObject retryConfig = node.getData().getRetryConfig();
-                    if (retryConfig != null) {
-                        String customOutput = retryConfig.getString("customOutput");
-                        try {
-                            JSONObject parseObject = JSON.parseObject(customOutput);
-                            retryConfig.put("customOutput", parseObject);
-                        } catch (Exception e) {
-                            log.info("Exception fallback strategy json parse error: {}", customOutput);
-                        }
-                    }
-
-                } catch (BusinessException e) {
-                    log.info("build remote param error: ", e);
-                    throw e;
-                } catch (Exception ignored) {
-
-                    // if(!node.getId().startsWith(WorkflowConst.NodeType.FLOW) && StringUtils.equalsAny(env,
-                    // CommonConst.FIXED_APPID_ENV_PRO)) {
-                    buidKeyInfo(bizNodeData);
-                    // }
-                }
+            ConfigInfo configInfo = configInfoMapper.getByCategoryAndCode("NODE_API_K_S", "NODE");
+            List<String> configs = new ArrayList<>();
+            if (configInfo != null) {
+                configs = Arrays.asList(configInfo.getValue().split(","));
             }
+            // check and fix node
+            checkAndFixNode(nodes, fixedAppEnv, configs, appId, apiKey, apiSecret);
 
             // Update core system flow
 
@@ -1896,6 +1866,63 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             protocol.setData(protocolData);
         }
         return protocol;
+    }
+
+    private void checkAndFixNode(List<BizWorkflowNode> nodes, boolean fixedAppEnv, List<String> configs, String appId, String apiKey, String apiSecret) {
+        for (BizWorkflowNode node : nodes) {
+            boolean notFlowNode = !node.getId().startsWith(WorkflowConst.NodeType.FLOW);
+            BizNodeData bizNodeData = node.getData();
+            String prefix = node.getId().split("::")[0];
+            String type = node.getType();
+            try {
+                if (notFlowNode && fixedAppEnv) {
+                    buidKeyInfo(bizNodeData);
+                } else {
+                    if (!configs.contains(prefix)) {
+                        bizNodeData.getNodeParam().put("appId", appId);
+                        bizNodeData.getNodeParam().put("apiKey", apiKey);
+                        bizNodeData.getNodeParam().put("apiSecret", apiSecret);
+                    }
+
+                }
+                String source = bizNodeData.getNodeParam().getString("source");
+                if ("openai".equals(source)) {
+                    Long modelId = bizNodeData.getNodeParam().getLong("modelId");
+                    if (modelId != null) {
+                        Model model = modelService.getById(modelId);
+                        if (!configs.contains(prefix)) {
+                            bizNodeData.getNodeParam().put("apiKey", model.getApiKey());
+                            bizNodeData.getNodeParam().put("apiSecret", StringUtils.EMPTY);
+                        }
+                    }
+                }
+                // Agent node changes
+                checkAndEditData(bizNodeData, prefix);
+                // Knowledge base node new parameter passing logic
+                fixOnRepoNode(type, bizNodeData, prefix);
+                // Handle retry strategy information
+                JSONObject retryConfig = node.getData().getRetryConfig();
+                if (retryConfig != null) {
+                    String customOutput = retryConfig.getString("customOutput");
+                    try {
+                        JSONObject parseObject = JSON.parseObject(customOutput);
+                        retryConfig.put("customOutput", parseObject);
+                    } catch (Exception e) {
+                        log.info("Exception fallback strategy json parse error: {}", customOutput);
+                    }
+                }
+
+            } catch (BusinessException e) {
+                log.info("build remote param error: ", e);
+                throw e;
+            } catch (Exception ignored) {
+
+                // if(!node.getId().startsWith(WorkflowConst.NodeType.FLOW) && StringUtils.equalsAny(env,
+                // CommonConst.FIXED_APPID_ENV_PRO)) {
+                buidKeyInfo(bizNodeData);
+                // }
+            }
+        }
     }
 
     private void buidKeyInfo(BizNodeData bizNodeData) {
@@ -1962,6 +1989,14 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         if (plugin == null) {
             log.warn("plugin config is missing");
             return;
+        }
+        JSONArray mcpServerIds = plugin.getJSONArray("mcpServerIds");
+        if(mcpServerIds != null || !mcpServerIds.isEmpty()){
+            JSONArray mcpServerUrls = plugin.getJSONArray("mcpServerUrls");
+            for (Object mcpServerId : mcpServerIds) {
+                String server = (String) mcpServerId;
+                mcpServerUrls.add(server);
+            }
         }
         JSONArray knowledgeArray = plugin.getJSONArray("knowledge");
         if (knowledgeArray == null || knowledgeArray.isEmpty()) {
@@ -3705,6 +3740,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             mcpServerTool.setTools(mcpObject.getJSONArray("tools"));
             mcpServerTool.setTags(mcpObject.getJSONArray("tags"));
             mcpServerTool.setAuthorized(mcpObject.getBoolean("authorized"));
+            mcpServerTool.setServerUrl(mcpObject.getString("server"));
         }
 
         return mcpServerTool;

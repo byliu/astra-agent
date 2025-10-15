@@ -21,7 +21,7 @@ class TestWorkflowEngineBuilder:
 
     def setup_method(self) -> None:
         """Set up test method with mock DSL and builder instance."""
-        self.mock_dsl = WorkflowDSL.parse_obj(
+        self.mock_dsl = WorkflowDSL.model_validate(
             json.loads(BASE_DSL_SCHEMA).get("data", {})
         )
         self.builder = WorkflowEngineBuilder(self.mock_dsl)
@@ -156,7 +156,7 @@ class TestWorkflowEngineBuilderAdvanced:
 
     def setup_method(self) -> None:
         """Set up test method with mock DSL and builder instance."""
-        self.mock_dsl = WorkflowDSL.parse_obj(
+        self.mock_dsl = WorkflowDSL.model_validate(
             json.loads(BASE_DSL_SCHEMA).get("data", {})
         )
         self.builder = WorkflowEngineBuilder(self.mock_dsl)

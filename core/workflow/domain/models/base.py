@@ -73,7 +73,7 @@ class SQLModelSerializable(SQLModel):
         :param content_type: Content type (unused, kept for compatibility)
         :param encoding: Text encoding (unused, kept for compatibility)
         :param allow_pickle: Whether to allow pickle (unused, kept for compatibility)
-        :param kwargs: Additional arguments passed to parse_obj()
+        :param kwargs: Additional arguments passed to model_validate()
         :return: Parsed model instance
         """
-        return cls.parse_obj(orjson.loads(b))
+        return cls.model_validate(orjson.loads(b))

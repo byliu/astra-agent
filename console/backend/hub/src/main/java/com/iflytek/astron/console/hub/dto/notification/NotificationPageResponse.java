@@ -4,9 +4,10 @@ import com.iflytek.astron.console.hub.enums.NotificationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Data
 @Schema(name = "NotificationPageResponse", description = "Notification page response object")
@@ -40,7 +41,16 @@ public class NotificationPageResponse {
         this.totalCount = totalCount;
         this.totalPages = pageSize > 0 ? (int) Math.ceil((double) totalCount / pageSize) : 0;
         this.unreadCount = unreadCount;
-        this.notificationsByType = notifications.stream()
-                .collect(Collectors.groupingBy(notification -> notification.getType() != null ? notification.getType() : NotificationType.SYSTEM));
+        // Initialize map with all notification types and empty lists
+        this.notificationsByType = new EnumMap<>(NotificationType.class);
+        for (NotificationType type : NotificationType.values()) {
+            this.notificationsByType.put(type, new ArrayList<>());
+        }
+
+        // Group notifications by type
+        for (NotificationDto notification : notifications) {
+            NotificationType type = notification.getType() != null ? notification.getType() : NotificationType.SYSTEM;
+            this.notificationsByType.get(type).add(notification);
+        }
     }
 }

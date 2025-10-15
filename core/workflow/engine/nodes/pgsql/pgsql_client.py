@@ -43,7 +43,7 @@ class PGSqlConfig:
         self.spaceId = spaceId
         self.dml = dml
         self.env = env
-        self.url = os.getenv("PGSQL_URL")
+        self.url = f"{os.getenv('PGSQL_BASE_URL')}/xingchen-db/v1/exec_dml"
 
 
 class PGSqlClient:

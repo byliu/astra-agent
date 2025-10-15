@@ -34,7 +34,10 @@ interface IndexProps {
   setZoom: (zoom: number) => void;
 }
 
-const useFlowContainerEffect = ({ lastSelection }) => {
+const useFlowContainerEffect = ({
+  lastSelection,
+  startWorkflowKeydownEvent,
+}) => {
   const undo = useFlowStore(state => state.undo);
   const paste = useFlowStore(state => state.paste);
   const takeSnapshot = useFlowStore(state => state.takeSnapshot);
@@ -43,12 +46,7 @@ const useFlowContainerEffect = ({ lastSelection }) => {
   const setEdges = useFlowStore(state => state.setEdges);
   const edges = useFlowStore(state => state.edges);
   const canPublishSetNot = useFlowsManager(state => state.canPublishSetNot);
-  const showToolModal = useFlowsManager(state => state.toolModalInfo)?.open;
-  const knowledgeModalInfoOpen = useFlowsManager(
-    state => state.knowledgeModalInfo
-  )?.open;
   const lastCopiedSelection = useFlowStore(state => state.lastCopiedSelection);
-  const showIterativeModal = useFlowsManager(state => state.showIterativeModal);
   const position = useRef({ x: 0, y: 0 });
   const handleDelete = useCallback(() => {
     takeSnapshot();
@@ -110,33 +108,24 @@ const useFlowContainerEffect = ({ lastSelection }) => {
       position.current = { x: event.clientX, y: event.clientY };
     };
 
-    !showToolModal &&
-      !showIterativeModal &&
-      !knowledgeModalInfoOpen &&
+    startWorkflowKeydownEvent &&
       window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      startWorkflowKeydownEvent &&
+        window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [
-    lastSelection,
-    lastCopiedSelection,
-    showToolModal,
-    showIterativeModal,
-    knowledgeModalInfoOpen,
-    edges,
-  ]);
+  }, [lastSelection, lastCopiedSelection, startWorkflowKeydownEvent, edges]);
 };
 
 function Index({ zoom, setZoom }: IndexProps): React.ReactElement {
   // hooks
-  const { handleAddNode } = useFlowCommon();
+  const { handleAddNode, startWorkflowKeydownEvent } = useFlowCommon();
   const dropZoneRef = useRef<HTMLDivElement | null>(null);
   const [lastSelection, setLastSelection] =
     useState<OnSelectionChangeParams | null>(null);
-
   const nodes = useFlowStore(state => state.nodes);
   const edges = useFlowStore(state => state.edges);
   const reactFlowInstance = useFlowStore(state => state.reactFlowInstance);
@@ -156,7 +145,7 @@ function Index({ zoom, setZoom }: IndexProps): React.ReactElement {
   const controlMode = useFlowsManager(state => state.controlMode);
   const willAddNode = useFlowsManager(state => state.willAddNode);
 
-  useFlowContainerEffect({ lastSelection });
+  useFlowContainerEffect({ lastSelection, startWorkflowKeydownEvent });
 
   // =========================
   // 拆分函数：初始化 ReactFlow

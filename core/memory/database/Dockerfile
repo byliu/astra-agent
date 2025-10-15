@@ -1,9 +1,9 @@
 FROM python:3.11-slim
 
-WORKDIR /opt/database
+WORKDIR /opt/core
 
-ENV PATH=$PATH:/opt/database
-ENV PYTHONPATH /opt/database
+ENV PATH=$PATH:/opt/core
+ENV PYTHONPATH /opt/core
 ENV UV_NO_CACHE=1
 
 RUN pip install uv --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple/

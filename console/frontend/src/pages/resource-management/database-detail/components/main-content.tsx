@@ -7,6 +7,7 @@ import ImportDataModal from '../../database/components/import-data-modal';
 import ActionButtons from './action-buttons';
 import { useDatabaseState, useTestTableRef } from '../context/database-context';
 import { useDatabaseActions } from '../hooks/use-database-actions';
+import styles from './main-content.module.scss';
 
 /**
  * 主内容区组件
@@ -95,11 +96,13 @@ const MainContent: React.FC = () => {
     <div className="flex-1 flex flex-col h-full bg-[#fff] rounded-2xl border-b border-[#F1F1F1] p-6 min-w-0">
       {/* 头部控制区 */}
       <div className="flex items-start justify-between">
-        <Segmented
-          value={dataType}
-          onChange={handleDataTypeChange}
-          options={tabOptions}
-        />
+        <div className={styles.segmentedWrapper}>
+          <Segmented
+            value={dataType}
+            onChange={handleDataTypeChange}
+            options={tabOptions}
+          />
+        </div>
         {currentSheet && (
           <ActionButtons
             dataType={dataType}
@@ -164,7 +167,7 @@ const MainContentBody: React.FC = () => {
     );
   }
 
-  if (!testDataSource.length) {
+  if (!testDataSource.length && !testTableLoading) {
     return (
       <div className="flex items-center justify-center flex-1 text-sm text-[#B2B2B2]">
         {t('database.noData')}

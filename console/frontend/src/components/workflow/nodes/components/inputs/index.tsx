@@ -39,10 +39,11 @@ function NameField({
   );
 }
 export function TypeSelector({ id, data, item }: unknown): React.ReactElement {
-  const { handleChangeInputParam, isIteratorNode } = useNodeCommon({
-    id,
-    data,
-  });
+  const { handleChangeInputParam, isIteratorNode, isFixedInputsNode } =
+    useNodeCommon({
+      id,
+      data,
+    });
   const { t } = useTranslation();
   if (isIteratorNode) return <>Array</>;
 
@@ -60,7 +61,9 @@ export function TypeSelector({ id, data, item }: unknown): React.ReactElement {
             data.schema.value.type = val;
             if (val === 'literal') {
               data.schema.value.content = '';
-              data.schema.type = 'string';
+              if (!isFixedInputsNode) {
+                data.schema.type = 'string';
+              }
             } else {
               data.schema.value.content = {};
             }

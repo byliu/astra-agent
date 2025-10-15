@@ -54,7 +54,7 @@ export const useDataOps = (): {
       if (!currentSheet) return;
 
       try {
-        actions.setTestData([], true);
+        actions.setTestTableLoading(true);
         const params = {
           tbId: currentSheet.id,
           execDev: type - 1,
@@ -84,7 +84,7 @@ export const useDataOps = (): {
         actions.setPagination({ pageNum: 1, pageSize: 10, total: 0 });
       }
     },
-    [actions.setTestData, actions.setPagination, t]
+    [actions.setTestData, actions.setPagination]
   );
 
   const batchDeleteRows = useCallback(
@@ -130,7 +130,6 @@ export const useDataOps = (): {
       });
     },
     [
-      t,
       testTableRef,
       getTableData,
       state.pagination.pageNum,
@@ -168,7 +167,7 @@ export const useDataOps = (): {
         actions.setExportLoading(false);
       }
     },
-    [state.testDataSource.length, actions.setExportLoading, t]
+    [state.testDataSource.length, actions.setExportLoading]
   );
 
   // 使用事件处理hook

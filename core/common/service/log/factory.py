@@ -16,8 +16,10 @@ class LogServiceFactory(ServiceFactory):
         :return:
         """
         print("------ init loguru in factory")
-        current_dir = os.getenv("LOG_PATH", "./")
-        log_dir = os.path.join(current_dir, "logs")
+        log_dir = os.path.join(
+            "./",
+            os.getenv("LOG_PATH", "logs"),
+        )
         os.makedirs(log_dir, exist_ok=True)
 
         log_path = os.path.join(log_dir, "app.log")

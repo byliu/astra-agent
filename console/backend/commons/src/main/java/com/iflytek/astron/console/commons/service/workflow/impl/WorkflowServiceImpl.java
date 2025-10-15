@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
-import com.iflytek.astron.console.commons.entity.workflow.CloneSynchronize;
+import com.iflytek.astron.console.commons.dto.workflow.CloneSynchronize;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.service.bot.ChatBotDataService;
 import com.iflytek.astron.console.commons.service.data.UserLangChainDataService;
@@ -32,7 +32,7 @@ public class WorkflowServiceImpl implements WorkflowBotService {
     private ChatBotDataService chatBotDataService;
 
     @Override
-    public Integer massCopySynchronize(CloneSynchronize synchronize) {
+    public Integer maasCopySynchronize(CloneSynchronize synchronize) {
         String uid = synchronize.getUid();
         Long originId = synchronize.getOriginId();
         Long maasId = synchronize.getCurrentId();
@@ -61,7 +61,7 @@ public class WorkflowServiceImpl implements WorkflowBotService {
                 .updateTime(LocalDateTime.now())
                 .build();
         userLangChainDataService.insertUserLangChainInfo(userLangChainInfo);
-        log.info("----- Astron workflow synchronization successful, original massId: {}, flowId: {}, new assistant: {}", originId, flowId, currentBotId);
+        log.info("----- Astron workflow synchronization successful, original maasId: {}, flowId: {}, new assistant: {}", originId, flowId, currentBotId);
         return Math.toIntExact(currentBotId);
     }
 }

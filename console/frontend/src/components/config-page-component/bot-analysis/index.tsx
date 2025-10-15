@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, Modal, Select, Space, Table } from 'antd';
+import { Button, Input, Modal, Select, Space, Table, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import ReactECharts from 'echarts-for-react';
 import {
@@ -13,7 +13,11 @@ import {
   processChannelData,
 } from './config';
 import { getErrorNodeList } from '@/services/flow';
-import { getAnalysisData } from '@/services/spark-common';
+import {
+  // getAnalysisData,
+  getAnalysisData01,
+  getAnalysisData02,
+} from '@/services/spark-common';
 import type { SortOrder } from 'antd/es/table/interface';
 
 import indicator from '@/assets/imgs/bot-center/indicator.svg';
@@ -314,123 +318,150 @@ const BotAnalysis = ({
     setMonitorType(value);
   };
 
+  // 处理图表数据更新
+  const updateChartData = (res: any) => {
+    //全部会话数
+    if (res?.chatMessages?.length > 0) {
+      setSessionOptions((pre: any) => ({
+        ...pre,
+        xAxis: {
+          ...pre.xAxis,
+          data: res?.chatMessages?.map((item: any) => item?.date),
+        },
+        series: [
+          {
+            ...pre.series,
+            data: res?.chatMessages?.map((item: any) => item?.count),
+          },
+        ],
+      }));
+    }
+
+    //活跃用户数
+    if (res?.activityUser?.length > 0) {
+      setUserOptions((pre: any) => ({
+        ...pre,
+        xAxis: {
+          ...pre.xAxis,
+          data: res?.activityUser?.map((item: any) => item?.date),
+        },
+        series: [
+          {
+            ...pre.series,
+            data: res?.activityUser?.map((item: any) => item?.count),
+          },
+        ],
+      }));
+    }
+
+    //平均会话互动数
+    if (res?.avgChatMessages?.length > 0) {
+      setInteractionOptions((pre: any) => ({
+        ...pre,
+        xAxis: {
+          ...pre.xAxis,
+          data: res?.avgChatMessages?.map((item: any) => item?.date),
+        },
+        series: [
+          {
+            ...pre.series,
+            data: res?.avgChatMessages?.map((item: any) => item?.count),
+          },
+        ],
+      }));
+    }
+
+    //Token消耗量
+    if (res?.tokenUsed?.length > 0) {
+      setTokenOptions((pre: any) => ({
+        ...pre,
+        xAxis: {
+          ...pre.xAxis,
+          data: res?.tokenUsed?.map((item: any) => item?.date),
+        },
+        series: [
+          {
+            ...pre.series,
+            data: res?.tokenUsed?.map((item: any) => item?.count),
+          },
+        ],
+      }));
+    }
+  };
+
   //获取全部数据
   const getAnalysisDataFn = async () => {
-    const res: any = await getAnalysisData({
-      botId,
-      overviewDays: dayType[overviewType]?.value ?? 7,
-      channelDays: dayType[channelType]?.value ?? 7,
-    });
+    const [result01, result02] = await Promise.allSettled([
+      getAnalysisData01({
+        botId,
+        overviewDays: dayType[overviewType]?.value ?? 7,
+        // channelDays: dayType[channelType]?.value ?? 7,
+      }),
+      getAnalysisData02({
+        botId,
+      }),
+    ]);
+
+    const res01 =
+      result01.status === 'fulfilled'
+        ? result01.value.data
+        : { totalUsers: 0, totalChats: 0, totalMessages: 0, totalTokens: 0 };
+    const res02 = result02.status === 'fulfilled' ? result02.value.data : {};
+
+    // 处理错误信息并显示给用户
+    const errors: string[] = [];
+    if (result01.status === 'rejected') {
+      errors.push(result01.reason?.message || '获取概览数据失败');
+    }
+    if (result02.status === 'rejected') {
+      errors.push(result02.reason?.message || '获取渠道数据失败');
+    }
+
+    // 如果有错误，显示错误信息
+    if (errors.length > 0) {
+      const errorMessage =
+        errors.length === 1 ? errors[0] : `获取数据失败：${errors.join('、')}`;
+      message.error(errorMessage);
+    }
+
+    const res = {
+      ...res01,
+      ...res02,
+    };
     setWebData({
       totalUsers: res?.totalUsers,
       totalChats: res?.totalChats,
       totalMessages: res?.totalMessages,
       totalTokens: res?.totalTokens,
     });
-    //全部会话数
-    if (res?.chatMessages?.length > 0) {
-      setSessionOptions((pre: any) => {
-        return {
-          ...pre,
-          xAxis: {
-            ...pre.xAxis,
-            data: res?.chatMessages?.map((item: any) => item?.date),
-          },
-          series: [
-            {
-              ...pre.series,
-              data: res?.chatMessages?.map((item: any) => item?.count),
-            },
-          ],
-        };
-      });
-    }
+
+    // 计算统计数据
     const dayChatNum = res?.chatMessages?.reduce(
       (acc: any, curr: any) => acc + curr.count,
       0
-    ); //累加得到过去7天会话数据
+    );
     const dayUserNum = res?.activityUser?.reduce(
       (acc: any, curr: any) => acc + curr.count,
       0
-    ); //累加得到过去7天活跃用户数据
+    );
     const dayAvgChatNum = res?.avgChatMessages?.reduce(
       (acc: any, curr: any) => acc + curr.count,
       0
-    ); //累加得到过去7天平均会话互动数数据
+    );
     const dayTokenNum = res?.tokenUsed?.reduce(
       (acc: any, curr: any) => acc + curr.count,
       0
-    ); //累加得到过去7天Token消耗量数据
-    setBeforeData({
-      dayChatNum,
-      dayUserNum,
-      dayAvgChatNum,
-      dayTokenNum,
-    });
-    //活跃用户数
-    if (res?.activityUser?.length > 0) {
-      setUserOptions((pre: any) => {
-        return {
-          ...pre,
-          xAxis: {
-            ...pre.xAxis,
-            data: res?.activityUser?.map((item: any) => item?.date),
-          },
-          series: [
-            {
-              ...pre.series,
-              data: res?.activityUser?.map((item: any) => item?.count),
-            },
-          ],
-        };
-      });
-    }
-    //平均会话互动数
-    if (res?.avgChatMessages?.length > 0) {
-      setInteractionOptions((pre: any) => {
-        return {
-          ...pre,
-          xAxis: {
-            ...pre.xAxis,
-            data: res?.avgChatMessages?.map((item: any) => item?.date),
-          },
-          series: [
-            {
-              ...pre.series,
-              data: res?.avgChatMessages?.map((item: any) => item?.count),
-            },
-          ],
-        };
-      });
-    }
-    //Token消耗量
-    if (res?.tokenUsed?.length > 0) {
-      setTokenOptions((pre: any) => {
-        return {
-          ...pre,
-          xAxis: {
-            ...pre.xAxis,
-            data: res?.tokenUsed?.map((item: any) => item?.date),
-          },
-          series: [
-            {
-              ...pre.series,
-              data: res?.tokenUsed?.map((item: any) => item?.count),
-            },
-          ],
-        };
-      });
-    }
+    );
 
-    //渠道分析会话数
-    if (res?.channelChats?.length > 0) {
-      updateChatChart(res?.channelChats);
-    }
-    //渠道分析用户数
-    if (res?.channelUsers?.length > 0) {
-      updateUserChart(res?.channelUsers);
-    }
+    setBeforeData({ dayChatNum, dayUserNum, dayAvgChatNum, dayTokenNum });
+
+    updateChartData(res);
+
+    //渠道分析
+    if (res?.channelChats?.length > 0) updateChatChart(res?.channelChats);
+    if (res?.channelUsers?.length > 0) updateUserChart(res?.channelUsers);
   };
+
   useEffect(() => {
     detailInfo?.version > 1 && getNodeErrorInfo(botId);
   }, [detailInfo]);

@@ -130,8 +130,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-core-memory:
-    name: 🧠 Build Core Memory
+  build-core-database:
+    name: 🧠 Build Core Database
     runs-on: ubuntu-latest
     needs: detect-and-prepare
     steps:
@@ -157,11 +157,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-memory
+            ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-database
           tags: |
             type=raw,value=latest
 
-      - name: Build and push Core Memory image
+      - name: Build and push Core Database image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -516,25 +516,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 添加Maven依赖缓存 - 仅用于console-hub
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-hub-${{ hashFiles('console/backend/hub/pom.xml', 'console/backend/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-hub-
-            ${{ runner.os }}-maven-
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
-            image=moby/buildkit:master
 
       - name: Login to GitHub Container Registry
         if: needs.detect-and-prepare.outputs.should-push == 'true'
@@ -566,13 +552,8 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: |
-            type=gha,scope=console-hub
-            type=gha,scope=console-hub-build
-            type=registry,ref=${{ env.REGISTRY_GHCR }}/${{ github.repository }}/console-hub:buildcache
-          cache-to: |
-            type=gha,scope=console-hub,mode=max
-            type=registry,ref=${{ env.REGISTRY_GHCR }}/${{ github.repository }}/console-hub:buildcache,mode=max
+          cache-from: type=gha,scope=console-hub
+          cache-to: type=gha,scope=console-hub,mode=max
           provenance: false
           sbom: false
 
@@ -585,7 +566,7 @@ jobs:
     needs:
       - detect-and-prepare
       - build-core-tenant
-      - build-core-memory
+      - build-core-database
       - build-core-rpa
       - build-core-link
       - build-core-aitools
@@ -608,7 +589,7 @@ jobs:
 
           echo "🐳 Docker Build Results:"
           echo "  🏢 Core Tenant: ${{ needs.build-core-tenant.result }}"
-          echo "  🧠 Core Memory: ${{ needs.build-core-memory.result }}"
+          echo "  🧠 Core Database: ${{ needs.build-core-database.result }}"
           echo "  🤖 Core RPA: ${{ needs.build-core-rpa.result }}"
           echo "  🔗 Core Link: ${{ needs.build-core-link.result }}"
           echo "  🛠️ Core AI Tools: ${{ needs.build-core-aitools.result }}"
@@ -624,7 +605,7 @@ jobs:
           TOTAL_COUNT=10
 
           [[ "${{ needs.build-core-tenant.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          [[ "${{ needs.build-core-memory.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [[ "${{ needs.build-core-database.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           [[ "${{ needs.build-core-rpa.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           [[ "${{ needs.build-core-link.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           [[ "${{ needs.build-core-aitools.result }}" == "success" ]] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
@@ -640,7 +621,7 @@ jobs:
             echo ""
             echo "🎯 Published Images:"
             [[ "${{ needs.build-core-tenant.result }}" == "success" ]] && echo "  🏢 ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-tenant:${{ needs.detect-and-prepare.outputs.version }}"
-            [[ "${{ needs.build-core-memory.result }}" == "success" ]] && echo "  🧠 ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-memory:${{ needs.detect-and-prepare.outputs.version }}"
+            [[ "${{ needs.build-core-database.result }}" == "success" ]] && echo "  🧠 ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-database:${{ needs.detect-and-prepare.outputs.version }}"
             [[ "${{ needs.build-core-rpa.result }}" == "success" ]] && echo "  🤖 ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-rpa:${{ needs.detect-and-prepare.outputs.version }}"
             [[ "${{ needs.build-core-link.result }}" == "success" ]] && echo "  🔗 ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-link:${{ needs.detect-and-prepare.outputs.version }}"
             [[ "${{ needs.build-core-aitools.result }}" == "success" ]] && echo "  🛠️ ${{ env.REGISTRY_GHCR }}/${{ github.repository }}/core-aitools:${{ needs.detect-and-prepare.outputs.version }}"

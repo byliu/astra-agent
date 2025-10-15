@@ -7,9 +7,9 @@ creation, updates, retrieval, debugging, and execution of workflow instances.
 
 import json
 import time
-from typing import Any, Dict, cast
+from typing import Any, cast
 
-from sqlmodel import Session  # type: ignore
+from sqlmodel import Session
 
 from workflow.cache import flow as flow_cache
 from workflow.cache.engine import ENGINE_CACHE_PREFIX
@@ -23,7 +23,7 @@ from workflow.engine.entities.node_entities import NodeType
 from workflow.engine.entities.output_mode import EndNodeOutputModeEnum
 from workflow.engine.entities.variable_pool import ParamKey, VariablePool
 from workflow.engine.entities.workflow_dsl import WorkflowDSL
-from workflow.engine.node import SparkFlowEngineNode
+from workflow.engine.nodes.base_node import BaseNode  # type: ignore
 from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
     WorkflowNodeExecutionStatus,
@@ -278,6 +278,11 @@ async def node_debug(workflow_dsl: WorkflowDSL, span: Span) -> NodeDebugRespVo:
     # Disable retry mechanism for node debugging to get immediate feedback
     node_instance.retry_config.should_retry = False
 
+    if node_instance.node_id.startswith(NodeType.FLOW.value):
+        set_flow_node_output_mode(
+            variable_pool=variable_pool, node_instance=node_instance, span=span
+        )
+
     # Execute the node and get results
     res: NodeRunResult = await node_instance.async_execute(variable_pool, span=span)
 
@@ -349,7 +354,7 @@ def build(
 
         # Create workflow engine to validate flow structure
         WorkflowEngineFactory.create_engine(
-            WorkflowDSL.parse_obj(flow.data.get("data")), span
+            WorkflowDSL.model_validate(flow.data.get("data")), span
         )
 
         # Report successful build
@@ -371,8 +376,7 @@ def build(
 
 def set_flow_node_output_mode(
     variable_pool: VariablePool,
-    built_nodes: Dict[str, SparkFlowEngineNode],
-    app_alias_id: str,
+    node_instance: BaseNode,
     span: Span,
 ) -> None:
     """
@@ -386,51 +390,39 @@ def set_flow_node_output_mode(
     :param app_alias_id: Application alias ID for license validation
     :param span: Tracing span for logging operations
     """
-    for key in built_nodes:
-        # Process only flow type nodes
-        if key.startswith(NodeType.FLOW.value):
-            node_instance = built_nodes[key].node_instance
-            if not isinstance(node_instance, FlowNode):
-                continue
-
-            flow_id = node_instance.flowId if node_instance else ""
-            if flow_id:
-                # Query flow end node information
-                with session_getter(get_db_service()) as session:
-                    db_flow = get_latest_published_flow_by(
-                        flow_id, app_alias_id, session, span
-                    )
-
-                # Find end node and extract output mode configuration
-                for node in db_flow.data["data"]["nodes"]:
+    if not isinstance(node_instance, FlowNode):
+        return
+    flow_id: str = node_instance.flowId
+    app_id: str = node_instance.appId
+    node_id: str = node_instance.node_id
+    db_flow = flow_cache.get_flow_by_id(flow_id)
+    if not db_flow:
+        # Query flow end node information
+        with session_getter(get_db_service()) as session:
+            db_flow = get_latest_published_flow_by(flow_id, app_id, session, span)
+    # Find end node and extract output mode configuration
+    for node in db_flow.data["data"]["nodes"]:
+        if (
+            node is not None
+            and node.get("id") is not None
+            and node["id"].startswith("node-end::")
+        ):
+            node_data = node.get("data")
+            if node_data is not None:
+                node_param = node_data.get("nodeParam")
+                if node_param is not None:
+                    output_mode = node_param.get("outputMode")
+                    # Special handling for prompt mode with single output
                     if (
-                        node is not None
-                        and node.get("id") is not None
-                        and node["id"].startswith("node-end::")
+                        output_mode == EndNodeOutputModeEnum.PROMPT_MODE
+                        and len(
+                            node_instance.output_identifier if node_instance else []
+                        )
+                        == 1
                     ):
-                        node_data = node.get("data")
-                        if node_data is not None:
-                            node_param = node_data.get("nodeParam")
-                            if node_param is not None:
-                                output_mode = node_param.get("outputMode")
-
-                                # Special handling for prompt mode with single output
-                                if (
-                                    output_mode == EndNodeOutputModeEnum.PROMPT_MODE
-                                    and key in built_nodes
-                                    and len(
-                                        node_instance.output_identifier
-                                        if node_instance
-                                        else []
-                                    )
-                                    == 1
-                                ):
-                                    output_mode = EndNodeOutputModeEnum.OLD_PROMPT_MODE
-
-                                # Set output mode in variable pool
-                                variable_pool.system_params.set(
-                                    ParamKey.FlowOutputMode, output_mode, node_id=key
-                                )
-                                span.add_info_events(
-                                    {"output_mode": f"{key}: {output_mode}"}
-                                )
+                        output_mode = EndNodeOutputModeEnum.OLD_PROMPT_MODE
+                    # Set output mode in variable pool
+                    variable_pool.system_params.set(
+                        ParamKey.FlowOutputMode, output_mode, node_id=node_id
+                    )
+                    span.add_info_events({"output_mode": f"{node_id}: {output_mode}"})

@@ -97,7 +97,9 @@ class KnowledgeNode(BaseNode):
                     history = history_v2.origin_history
 
             # Get knowledge base URL from environment variables
-            knowledge_recall_url = os.getenv("KNOWLEDGE_URL", "")
+            knowledge_recall_url = (
+                f"{os.getenv('KNOWLEDGE_BASE_URL')}/knowledge/v1/chunk/query"
+            )
             knowledge_config = KnowledgeConfig(
                 top_n=self.topN,
                 rag_type=self.ragType,

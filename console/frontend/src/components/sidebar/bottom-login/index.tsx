@@ -231,9 +231,9 @@ const BottomLogin = ({
                   <div className="ml-2.5 cursor-pointer flex items-center relative flex-1 min-w-0">
                     <span
                       className=" text-overflow text-[14px] text-[#333333] flex-1"
-                      title={user?.username}
+                      title={user?.nickname}
                     >
-                      {user?.username}
+                      {user?.nickname}
                     </span>
 
                     <div className="relative">

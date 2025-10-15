@@ -1,5 +1,6 @@
 package com.iflytek.astron.console.toolkit.service.tool;
 
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson2.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -7,13 +8,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.entity.user.UserInfo;
+import com.iflytek.astron.console.commons.entity.workflow.Workflow;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
+import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowData;
+import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowNode;
+import com.iflytek.astron.console.toolkit.entity.table.ConfigInfo;
 import com.iflytek.astron.console.toolkit.entity.table.tool.*;
 import com.iflytek.astron.console.toolkit.entity.tool.*;
 import com.iflytek.astron.console.toolkit.handler.RpaHandler;
 import com.iflytek.astron.console.toolkit.handler.UserInfoManagerHandler;
+import com.iflytek.astron.console.toolkit.mapper.ConfigInfoMapper;
 import com.iflytek.astron.console.toolkit.mapper.tool.*;
+import com.iflytek.astron.console.toolkit.service.workflow.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,7 +46,9 @@ public class RpaAssistantService {
     private final RpaUserAssistantFieldMapper fieldMapper;
     private final RpaInfoMapper rpaInfoMapper;
     private final RpaHandler rpaHandler;
+    private final WorkflowService workflowService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ConfigInfoMapper configInfoMapper;
 
     /**
      * Create an RPA assistant with plaintext credentials.
@@ -66,13 +75,14 @@ public class RpaAssistantService {
                 .collect(Collectors.toMap(PlatformFieldSpec::getName, s -> s, (a, b) -> a));
 
         // 2. Validate required fields and types (only required & string check for now)
-        validate(specMap, req.fields());
+        Integer count = validate(specMap, req.fields());
 
         // 3. Insert main assistant record
         String username = UserInfoManagerHandler.get().getUsername();
         RpaUserAssistant assistant = new RpaUserAssistant();
         assistant.setUserId(currentUserId);
         assistant.setUserName(username);
+        assistant.setRobotCount(count);
         assistant.setPlatformId(req.platformId());
         assistant.setAssistantName(req.assistantName());
         assistant.setStatus(1);
@@ -111,7 +121,8 @@ public class RpaAssistantService {
                 assistant.getStatus(),
                 req.fields(),
                 new JSONArray(),
-                assistant.getCreateTime());
+                assistant.getCreateTime(),
+                assistant.getUpdateTime());
     }
 
     /**
@@ -142,7 +153,7 @@ public class RpaAssistantService {
      * @param fields actual field key-value pairs
      * @throws BusinessException if required fields are missing or validation fails
      */
-    private void validate(Map<String, PlatformFieldSpec> specMap, Map<String, String> fields) {
+    private Integer validate(Map<String, PlatformFieldSpec> specMap, Map<String, String> fields) {
         // Required fields check
         List<String> missing = specMap.values()
                 .stream()
@@ -156,6 +167,7 @@ public class RpaAssistantService {
         }
         // Type validation (simple demo: only string type is allowed; can extend to number/bool/url/regex
         // etc.)
+        Integer total = 0;
         if (fields != null) {
             for (Map.Entry<String, String> e : fields.entrySet()) {
                 PlatformFieldSpec s = specMap.get(e.getKey());
@@ -165,8 +177,13 @@ public class RpaAssistantService {
                 if (!"string".equals(t)) {
                     // Extend validation for other types here
                 }
+                String value = e.getValue();
+                JSONObject rpaList = rpaHandler.getRpaList(1, 100, value);
+                // 4) Update robot count with actual platform total (not affected by name filter)
+                total = rpaList.getInteger("total");
             }
         }
+        return total;
     }
 
     /**
@@ -210,6 +227,13 @@ public class RpaAssistantService {
         if (records == null) {
             records = new JSONArray();
         }
+        ConfigInfo iconConfig = configInfoMapper.getByCategoryAndCode("ICON", "rpa_robot");
+        for (Object record : records) {
+            if (!(record instanceof JSONObject obj)) {
+                continue;
+            }
+            obj.put("icon", iconConfig.getName() + iconConfig.getValue());
+        }
 
         if (StringUtils.isNotBlank(name)) {
             final String q = name.trim();
@@ -243,7 +267,8 @@ public class RpaAssistantService {
                 a.getStatus(),
                 fields,
                 records,
-                a.getCreateTime());
+                a.getCreateTime(),
+                a.getUpdateTime());
     }
 
     /**
@@ -335,7 +360,81 @@ public class RpaAssistantService {
     @Transactional
     public void delete(String currentUserId, Long assistantId) {
         findByIdAndUser(assistantId, currentUserId);
+        checkRpaIsUsage(currentUserId, assistantId);
         assistantMapper.deleteById(assistantId);
+    }
+
+    /**
+     * Check whether the given RPA assistant is being used in any workflow of the user.
+     *
+     * @param currentUserId current user ID
+     * @param assistantId assistant ID
+     * @throws BusinessException if the assistant is in use by any workflow
+     */
+    private void checkRpaIsUsage(String currentUserId, Long assistantId) {
+        List<Workflow> workflows = workflowService.list(Wrappers.<Workflow>lambdaQuery()
+                .eq(Workflow::getUid, currentUserId)
+                .eq(Workflow::getDeleted, false));
+
+        if (CollUtil.isEmpty(workflows)) {
+            return;
+        }
+
+        for (Workflow workflow : workflows) {
+            String dataJson = workflow.getData();
+            if (StringUtils.isBlank(dataJson)) {
+                continue;
+            }
+
+            BizWorkflowData bizWorkflowData;
+            try {
+                bizWorkflowData = JSON.parseObject(dataJson, BizWorkflowData.class);
+            } catch (Exception e) {
+                log.warn("Invalid workflow data JSON, workflowId={}", workflow.getId(), e);
+                continue;
+            }
+
+            List<BizWorkflowNode> nodes = bizWorkflowData.getNodes();
+            if (CollUtil.isEmpty(nodes)) {
+                continue;
+            }
+
+            boolean inUse = nodes.stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(node -> isRpaNodeUsingAssistant(node, assistantId));
+
+            if (inUse) {
+                throw new BusinessException(ResponseEnum.RPA_IS_USAGE);
+            }
+        }
+    }
+
+    /**
+     * Check if a single node is an RPA node using the specified assistant.
+     *
+     * @param node workflow node
+     * @param assistantId assistant ID
+     * @return true if the node is an RPA node referencing the assistant
+     */
+    private boolean isRpaNodeUsingAssistant(BizWorkflowNode node, Long assistantId) {
+        if (node == null || StringUtils.isBlank(node.getId()) || node.getData() == null) {
+            return false;
+        }
+
+        String nodeId = node.getId();
+        // Defensive: only split once and handle missing prefix
+        String prefix = nodeId.contains("::") ? nodeId.substring(0, nodeId.indexOf("::")) : nodeId;
+        if (!"rpa".equalsIgnoreCase(prefix)) {
+            return false;
+        }
+
+        JSONObject nodeParam = node.getData().getNodeParam();
+        if (nodeParam == null) {
+            return false;
+        }
+
+        Long assId = nodeParam.getLong("assistantId");
+        return Objects.equals(assistantId, assId);
     }
 
     /* —— Helper Methods —— */

@@ -181,7 +181,7 @@ class LLMGenerate(BaseModel):
     created: int = Field(default_factory=current_time)
     """The Unix timestamp (in seconds) of when the chat completion was created."""
 
-    workflow_step: Optional[WorkflowStep] = None
+    workflow_step: WorkflowStep = Field(default_factory=WorkflowStep)
     """Workflow execution step information.
     This field is specific to workflow execution and not part of OpenAI's standard format.
     """
@@ -452,8 +452,6 @@ class LLMGenerate(BaseModel):
         )
         if r.workflow_step:
             r.workflow_step.node = None
-        if not stream:
-            r.workflow_step = None
         return r
 
     @staticmethod

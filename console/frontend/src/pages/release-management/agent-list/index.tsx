@@ -617,8 +617,8 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
             setOpenWxmol(false);
           }}
           agentType={AgentType}
-          agentMassId={
-            AgentType === 'workflow' ? (botInfo?.massId as string) : null
+          agentMaasId={
+            AgentType === 'workflow' ? (botInfo?.maasId as string) : null
           }
         />
         <Table

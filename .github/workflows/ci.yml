@@ -75,7 +75,7 @@ jobs:
               name=$(basename "$project")
               # Handle nested paths
               if [[ "$project" == core/memory/database ]]; then
-                name="core-memory"
+                name="core-database"
               elif [[ "$project" == core/plugin/* ]]; then
                 name="core-$(basename "$project")"
               fi
@@ -185,19 +185,29 @@ jobs:
               ;;
             go)
               echo "🔍 Running Go quality checks..."
-              echo "🛠️ Installing golangci-lint..."
+              echo "🛠️ Installing Go tools..."
+              go install golang.org/x/tools/cmd/goimports@latest
+              go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+              go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
               curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
               export PATH=$PATH:$(go env GOPATH)/bin
-              echo "✨ Checking go fmt compliance..."
-              UNFORMATTED=$(gofmt -l .) && \
+              echo "✨ Checking goimports compliance..."
+              UNFORMATTED=$(goimports -l .) && \
               if [ -n "$UNFORMATTED" ]; then \
                 echo "Files that need formatting:" && \
                 echo "$UNFORMATTED" && \
-                echo "Run 'go fmt ./...' to fix formatting issues." && \
+                echo "Run 'goimports -w .' to fix formatting issues." && \
                 exit 1; \
               fi
               echo "🔍 Running go vet..."
               go vet ./...
+              echo "🔍 Running gocyclo..."
+              gocyclo -over 10 . || (echo "High cyclomatic complexity detected" && exit 1)
+              echo "🔍 Running staticcheck..."
+              PKGS=$(go list ./... 2>/dev/null)
+              if [ -n "$PKGS" ]; then \
+                staticcheck $PKGS || exit 1; \
+              fi
               echo "📋 Running golangci-lint..."
               golangci-lint run ./... --timeout=5m
               ;;

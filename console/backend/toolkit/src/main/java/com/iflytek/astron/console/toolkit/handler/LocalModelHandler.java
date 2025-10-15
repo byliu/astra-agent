@@ -59,7 +59,7 @@ public class LocalModelHandler {
     public String deployModel(ModelDeployVo deployVo) {
         try {
             String url = apiUrl.getLocalModel() + MODEL_DEPLOY;
-            log.info("deployModel request url:{}", url);
+            log.info("deployModel request url={} ,body = {}", url, JSON.toJSONString(deployVo));
             String resp = OkHttpUtil.post(url, JSON.toJSONString(deployVo));
             log.info("deployModel response data:{}", resp);
             JSONObject respObj = JSONObject.parseObject(resp);

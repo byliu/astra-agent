@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { debounce } from 'lodash';
 import { Modal } from 'antd';
+import { getFixedUrl } from '@/components/workflow/utils';
 
 // 文档数据管理 Hook
 const useDocumentData = ({
@@ -174,7 +175,7 @@ const useDocumentSearch = ({
       }
 
       await fetchEventSource(
-        `/xingchen-api/file/search-file?fileName=${encodeURIComponent(
+        `${getFixedUrl('/file/search-file')}?fileName=${encodeURIComponent(
           searchValue
         )}&repoId=${repoId}&pid=${parentId}&tag=${tag}`,
         {

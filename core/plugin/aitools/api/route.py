@@ -15,10 +15,6 @@ import uuid
 from typing import Union
 
 import requests
-from common.otlp.log_trace.node_trace_log import NodeTraceLog, Status
-from common.otlp.metrics.meter import Meter
-from common.otlp.trace.span import Span
-from common.service import get_kafka_producer_service, get_oss_service
 from fastapi import APIRouter, Request
 from plugin.aitools.api.schema.types import (
     OCRLLM,
@@ -45,6 +41,11 @@ from plugin.aitools.service.ocr_llm.entities.req_data_multithreading import (
     OcrLLMReqSourceDataMultithreading,
     PayloadM,
 )
+
+from common.otlp.log_trace.node_trace_log import NodeTraceLog, Status
+from common.otlp.metrics.meter import Meter
+from common.otlp.trace.span import Span
+from common.service import get_kafka_producer_service, get_oss_service
 
 app = APIRouter(prefix="/aitools/v1")
 

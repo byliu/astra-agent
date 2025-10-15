@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.Page;
-import com.iflytek.astron.console.commons.entity.dataset.DatasetStats;
+import com.iflytek.astron.console.commons.dto.dataset.DatasetStats;
 import com.iflytek.astron.console.commons.service.data.IDatasetFileService;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
@@ -559,7 +559,7 @@ public class RepoService extends ServiceImpl<RepoMapper, Repo> {
             repoDto.setAddress(address);
 
             // Agent Bots
-            List<SparkBotVO> sparkBotVOList = sparkBotMapper.listSparkBotByRepoId(repoDto.getId(), UserInfoManagerHandler.getUserId());
+            List<SparkBotVO> sparkBotVOList = sparkBotMapper.listSparkBotByRepoId(repoDto.getId(), repoDto.getUserId());
             if (!CollectionUtils.isEmpty(sparkBotVOList)) {
                 sparkBotVOList.forEach(e -> e.setAddress(address));
             }

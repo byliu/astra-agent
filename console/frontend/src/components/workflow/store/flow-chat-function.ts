@@ -55,7 +55,7 @@ const initChatInfo: ChatInfoType = {
 export const initialStatus = {
   userInput: '',
   chatList: [],
-  chatInfoRef: initChatInfo,
+  chatInfoRef: cloneDeep(initChatInfo),
   messageNodeTextQueue: '',
   endNodeReasoningTextQueue: '',
   endNodeTextQueue: '',
@@ -124,7 +124,7 @@ const handleMoveToPosition = (id: string, nodes: ReactFlowNode[]): void => {
 };
 const pushAskToChatList = (inputs, nodes, nodeId, get): void => {
   get().setChatList(chatList => {
-    const newInputs = inputs || cloneDeep(get().startNodeParams);
+    const newInputs = cloneDeep(inputs) || cloneDeep(get().startNodeParams);
     const askParams: ChatListItem = {
       id: uuid(),
       type: 'ask',
@@ -153,8 +153,6 @@ const pushContentToAnswer = (key, content, get): void => {
   get()[key] = get()[key] + content;
 };
 const clearNodeStatus = (get): void => {
-  console.log('清除数据');
-  get().chatInfoRef = cloneDeep(initChatInfo);
   if (get().userInput) {
     get().setUserInput('');
   }
@@ -188,13 +186,14 @@ const handleSaveDialogue = (get, set): void => {
   saveDialogueAPI(params).then(
     () => currentFlow?.id && getDialogues(currentFlow.id, set)
   );
+  get().chatInfoRef = cloneDeep(initChatInfo);
 };
 const handleAuditFailed = (data, get): void => {
   get().messageNodeTextQueue = '';
   get().endNodeReasoningTextQueue = '';
   get().endNodeTextQueue = '';
   get().setChatList(chatList => {
-    get().chatInfoRef.current.answer = {
+    get().chatInfoRef.answer = {
       messageContent: '',
       reasoningContent: '',
       content: data?.message,
@@ -581,8 +580,6 @@ const runDebugger = (obj: unknown): void => {
     controllerRef: new AbortController(),
   });
   const inputs = {};
-  console.log('enters@@', enters);
-  console.log('get().startNodeParams@@', get().startNodeParams);
   const enterlist = enters ?? get().startNodeParams;
   enterlist.forEach(params => {
     if (
@@ -970,7 +967,6 @@ const setChatList = (change: unknown, get, set): void => {
 const setStartNodeParams = (change: unknown, get, set): void => {
   const newChange =
     typeof change === 'function' ? change(get().startNodeParams) : change;
-  console.log('newChange@@', newChange);
   set({
     startNodeParams: newChange,
   });

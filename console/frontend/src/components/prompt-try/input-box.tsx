@@ -7,7 +7,6 @@ interface InputBoxProps {
   onSend: (text: string) => void;
   onClear: () => void;
   isLoading?: boolean;
-  isCompleted?: boolean;
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
@@ -17,7 +16,6 @@ const InputBox = ({
   onSend,
   onClear,
   isLoading = false,
-  isCompleted = true,
   placeholder,
   value,
   onChange,
@@ -60,7 +58,7 @@ const InputBox = ({
 
   // 清除聊天记录
   const handleClear = () => {
-    if (isLoading || !isCompleted) {
+    if (isLoading) {
       message.warning(t('configBase.promptTry.answerPleaseTryAgainLater'));
       return;
     }
@@ -69,13 +67,15 @@ const InputBox = ({
 
   return (
     <div className="relative w-full rounded-md h-[95px] flex">
-      <div
-        className="w-[107px] h-[26px] absolute -top-[34px] left-0 bg-white border border-[#e4ebf9] rounded-[13px] flex items-center justify-center text-[12px] text-[#535875] z-[40] cursor-pointer hover:text-[#6b89ff]"
-        onClick={handleClear}
-      >
-        <DeleteIcon style={{ pointerEvents: 'none', marginRight: '6px' }} />
-        {t('configBase.promptTry.clearHistory')}
-      </div>
+      {isLoading && (
+        <div
+          className="w-[107px] h-[26px] absolute top-[-34px] left-0 bg-white border border-[#e4ebf9] rounded-[13px] flex items-center justify-center text-[12px] text-[#535875] z-[40] cursor-pointer hover:text-[#6b89ff]"
+          onClick={handleClear}
+        >
+          <DeleteIcon style={{ pointerEvents: 'none', marginRight: '6px' }} />
+          {t('configBase.promptTry.clearHistory')}
+        </div>
+      )}
       <textarea
         className="rounded-[8px] absolute left-[2px] bottom-[2px] w-[calc(100%-4px)] leading-[25px] min-h-[95px] max-h-[180px] resize-none outline-none border border-[#d2dbe7] text-[14px] py-[10px] pr-[100px] pl-[16px] text-[#07133e] z-[32] placeholder:text-[#d0d0da]"
         placeholder={placeholder || t('chatPage.chatWindow.defaultPlaceholder')}

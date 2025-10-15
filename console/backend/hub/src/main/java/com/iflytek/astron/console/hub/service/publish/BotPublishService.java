@@ -4,14 +4,13 @@ import com.iflytek.astron.console.hub.dto.PageResponse;
 import com.iflytek.astron.console.commons.dto.bot.BotListRequestDto;
 import com.iflytek.astron.console.hub.dto.publish.BotPublishInfoDto;
 import com.iflytek.astron.console.hub.dto.publish.BotDetailResponseDto;
-import com.iflytek.astron.console.hub.dto.publish.PublishStatusUpdateDto;
 import com.iflytek.astron.console.hub.dto.publish.BotVersionVO;
 import com.iflytek.astron.console.hub.dto.publish.BotSummaryStatsVO;
 import com.iflytek.astron.console.hub.dto.publish.BotTimeSeriesResponseDto;
 import com.iflytek.astron.console.hub.dto.publish.WechatAuthUrlResponseDto;
 import com.iflytek.astron.console.hub.dto.publish.BotTraceRequestDto;
-import com.iflytek.astron.console.commons.dto.workflow.WorkflowInputsResponseDto;
 import com.iflytek.astron.console.commons.enums.PublishChannelEnum;
+import com.iflytek.astron.console.hub.dto.publish.UnifiedPrepareDto;
 
 /**
  * Bot Publishing Management Service Interface
@@ -48,16 +47,6 @@ public interface BotPublishService {
      */
     BotDetailResponseDto getBotDetail(Integer botId, String currentUid, Long spaceId);
 
-    /**
-     * Update bot publish status - unified handling of publish and offline logic, using ShelfStatusEnum
-     * (0=offline, 1=published)
-     *
-     * @param botId Bot ID
-     * @param updateDto Status update request
-     * @param currentUid Current user ID
-     * @param spaceId Space ID (optional)
-     */
-    void updatePublishStatus(Integer botId, PublishStatusUpdateDto updateDto, String currentUid, Long spaceId);
 
     // ==================== Version Management ====================
 
@@ -98,17 +87,17 @@ public interface BotPublishService {
             String currentUid, Long currentSpaceId);
 
     /**
-     * Record conversation statistics data
+     * Record bot dashboard count log data
      *
      * @param uid User ID
-     * @param spaceId Space ID
+     * @param spaceId Space ID (not used in bot_dashboard_count_log table)
      * @param botId Bot ID
      * @param chatId Chat ID
      * @param sid Session identifier
      * @param tokenConsumed Token consumption count
-     * @param messageRounds Message rounds
+     * @param messageRounds Message rounds (not used in bot_dashboard_count_log table)
      */
-    void recordConversationStats(String uid, Long spaceId, Integer botId, Long chatId,
+    void recordDashboardCountLog(String uid, Long spaceId, Integer botId, Long chatId,
             String sid, Integer tokenConsumed, Integer messageRounds);
 
     // ==================== Publish Channel Management ====================
@@ -152,15 +141,16 @@ public interface BotPublishService {
      */
     PageResponse<Object> getBotTrace(String uid, Integer botId, BotTraceRequestDto requestDto, Long spaceId);
 
-    // ==================== Workflow Input Management ====================
+    // ==================== Publish Prepare Data Management ====================
 
     /**
-     * Get workflow input parameters for bot
+     * Get publish prepare data for different publish types
      *
      * @param botId Bot ID
-     * @param uid User ID
-     * @param spaceId Space ID (optional)
-     * @return Workflow input parameter definitions
+     * @param type Publish type (market, mcp, feishu, api)
+     * @param currentUid Current user ID
+     * @param spaceId Space ID
+     * @return Unified prepare data
      */
-    WorkflowInputsResponseDto getInputsType(Integer botId, String uid, Long spaceId);
+    UnifiedPrepareDto getPrepareData(Integer botId, String type, String currentUid, Long spaceId);
 }

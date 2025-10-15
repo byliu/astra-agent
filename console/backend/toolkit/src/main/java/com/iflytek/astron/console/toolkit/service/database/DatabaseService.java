@@ -806,6 +806,9 @@ public class DatabaseService extends ServiceImpl<DbInfoMapper, DbInfo> {
             // Delete table fields
             dbTableFieldMapper.delete(new UpdateWrapper<DbTableField>().lambda()
                     .eq(DbTableField::getTbId, tbId));
+        } catch (BusinessException ex) {
+            log.error("Failed to delete table, tbId={}", tbId);
+            throw ex;
         } catch (Exception ex) {
             log.error("Failed to delete table, tbId={}", tbId, ex);
             throw new BusinessException(ResponseEnum.DATABASE_TABLE_DELETE_FAILED);
@@ -1210,16 +1213,38 @@ public class DatabaseService extends ServiceImpl<DbInfoMapper, DbInfo> {
                     dto.getExecDev());
 
             List<List<String>> headList = new ArrayList<>();
+            Map<String, String> fieldTypeMap = new HashMap<>(); // Store field name to type mapping
             dbTableFieldMapper.selectList(new QueryWrapper<DbTableField>().lambda()
                     .eq(DbTableField::getTbId, dto.getTbId()))
-                    .forEach(field -> headList.add(Collections.singletonList(field.getName())));
+                    .forEach(field -> {
+                        headList.add(Collections.singletonList(field.getName()));
+                        fieldTypeMap.put(field.getName(), field.getType());
+                    });
 
             List<List<Object>> dataList = new ArrayList<>();
             for (JSONObject row : data) {
                 List<Object> line = new ArrayList<>();
                 for (List<String> h : headList) {
-                    Object val = row.get(h.get(0));
-                    line.add(val != null ? val : "");
+                    String fieldName = h.get(0);
+                    Object val = row.get(fieldName);
+
+                    // Convert boolean values to lowercase for consistency
+                    if (val != null && CommonConst.DBFieldType.BOOLEAN.equalsIgnoreCase(fieldTypeMap.get(fieldName))) {
+                        if (val instanceof Boolean) {
+                            line.add(val.toString().toLowerCase());
+                        } else if (val instanceof String) {
+                            String strVal = ((String) val).trim();
+                            if ("TRUE".equalsIgnoreCase(strVal) || "FALSE".equalsIgnoreCase(strVal)) {
+                                line.add(strVal.toLowerCase());
+                            } else {
+                                line.add(val);
+                            }
+                        } else {
+                            line.add(val);
+                        }
+                    } else {
+                        line.add(val != null ? val : "");
+                    }
                 }
                 dataList.add(line);
             }

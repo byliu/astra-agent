@@ -7,7 +7,8 @@ import useFlowsManager from '@/components/workflow/store/use-flows-manager';
 import { useNodeCommon } from '@/components/workflow/hooks/use-node-common';
 import { WebSocketMessage } from '@/components/workflow/types';
 import { Icons } from '@/components/workflow/icons';
-import { getWsFixedUrl } from '@/components/workflow/utils';
+import { getFixedUrl, getAuthorization } from '@/components/workflow/utils';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 const { TextArea } = Input;
 
@@ -22,7 +23,6 @@ function PromptModal(): React.ReactElement {
   const setUpdateNodeInputData = useFlowsManager(
     state => state.setUpdateNodeInputData
   );
-  const wsRef = useRef<WebSocket | null>(null);
   const textQueue = useRef<string[]>([]);
   const wsMessageStatus = useRef<string>('end');
   const [optimizationPrompt, setOptimizationPrompt] = useState<string>('');
@@ -42,41 +42,40 @@ function PromptModal(): React.ReactElement {
     setOptimizationPrompt(() => '');
     wsMessageStatus.current = 'start';
     setIsReciving(true);
-    const url = getWsFixedUrl('/prompt-enhance');
-    wsRef.current = new WebSocket(url);
-    wsRef.current.onopen = (): void => {
-      if (wsRef.current) {
-        wsRef.current.send(
-          JSON.stringify({ prompt: promptData, name: currentFlow?.name })
-        );
-      }
-    };
-    wsRef.current.onclose = (): void => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      wsMessageStatus.current = 'end';
-    };
-    wsRef.current.onerror = (): void => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      wsMessageStatus.current = 'end';
-    };
-    wsRef.current.onmessage = (e: MessageEvent): void => {
-      if (e && e.data) {
-        if (e.data && isJSON(e.data)) {
-          const data: WebSocketMessage = JSON.parse(e.data);
-          const content = data?.payload?.choices?.text?.[0]?.content;
-          if (content) {
-            textQueue.current = [...textQueue.current, ...content.split('')];
-          }
-          if (data?.header?.status === 2) {
-            wsMessageStatus.current = 'end';
+    const url = getFixedUrl('/prompt/enhance');
+    const controller = new AbortController();
+    fetchEventSource(url, {
+      openWhenHidden: true,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: getAuthorization(),
+      },
+      signal: controller.signal,
+      body: JSON.stringify({ prompt: promptData, name: currentFlow?.name }),
+      onmessage(e) {
+        if (e && e.data) {
+          if (e.data && isJSON(e.data)) {
+            const data: WebSocketMessage = JSON.parse(e.data);
+            const content = data?.payload?.choices?.text?.[0]?.content;
+            if (content) {
+              textQueue.current = [...textQueue.current, ...content.split('')];
+            }
+            if (data?.header?.status === 2) {
+              wsMessageStatus.current = 'end';
+            }
           }
         }
-      }
-    };
+      },
+      onerror() {
+        controller.abort();
+        wsMessageStatus.current = 'end';
+      },
+      onclose() {
+        controller.abort();
+        wsMessageStatus.current = 'end';
+      },
+    });
   });
 
   useEffect(() => {

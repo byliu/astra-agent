@@ -54,7 +54,7 @@ public class RedisUtil {
     private static final DefaultRedisScript<Long> LUA_RENEW =
             new DefaultRedisScript<>(
                     "if redis.call('get', KEYS[1]) == ARGV[1] then " +
-                            "  return redis.call('pexpire', KEYS[1], ARGV[2]) " +
+                            "  return redis.call('pexpire', KEYS[1], tonumber(ARGV[2])) " +
                             "else return 0 end",
                     Long.class);
 
@@ -116,10 +116,11 @@ public class RedisUtil {
     public boolean renew(String key, long ttlSeconds, String token) {
         requireKey(key);
         Objects.requireNonNull(token, "token must not be null");
+        long pttl = Math.max(1, ttlSeconds) * 1000L;
         Long ret = redisTemplate.execute(LUA_RENEW,
                 Collections.singletonList(key),
                 token,
-                String.valueOf(Math.max(1, ttlSeconds) * 1000));
+                pttl);
         boolean ok = ret != null && ret > 0;
         log.debug("redis.renew key={}, ttl={}s, token={}, ok={}", key, ttlSeconds, safe(token), ok);
         return ok;

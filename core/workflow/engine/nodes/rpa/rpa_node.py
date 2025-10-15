@@ -24,7 +24,7 @@ class _StreamResponse(BaseModel):
     code: int
     message: str
     sid: str = ""
-    data: Dict[str, Any] = Field(default_factory=dict)
+    data: Dict[str, Any] | None = Field(default_factory=dict)
 
 
 class RPANode(BaseNode):
@@ -47,7 +47,7 @@ class RPANode(BaseNode):
                 )
             span.add_info_events({"rpa_input": f"{inputs}"})
             status = WorkflowNodeExecutionStatus.SUCCEEDED
-            url = os.getenv("RPA_URL", "")
+            url = f"{os.getenv('RPA_BASE_URL')}/rpa/v1/exec"
             req_body = {
                 "project_id": self.projectId,
                 "sid": span.sid,
@@ -60,7 +60,7 @@ class RPANode(BaseNode):
                 "Authorization": self.header.get("apiKey", ""),
             }
 
-            data = {}
+            data: Dict[str, Any] = {}
             if event_log_node_trace:
                 event_log_node_trace.append_config_data(
                     {
@@ -70,7 +70,7 @@ class RPANode(BaseNode):
                 )
 
             async with aiohttp.ClientSession(
-                timeout=ClientTimeout(total=30 * 60, sock_connect=30)
+                timeout=ClientTimeout(total=24 * 60 * 60, sock_connect=30)
             ) as session:
                 async with session.post(
                     url=url, headers=headers, json=req_body
@@ -88,10 +88,14 @@ class RPANode(BaseNode):
                                 err_code=CodeEnum.RPA_REQUEST_ERROR,
                                 err_msg=frame.message,
                             )
-                        data = frame.data
-            for output in self.output_identifier:
-                if output in data:
-                    outputs.update({output: data.get(output)})
+                        data = frame.data if frame.data is not None else {}
+            outputs.update(
+                {
+                    output: data.get(output)
+                    for output in self.output_identifier
+                    if output in data
+                }
+            )
 
             return NodeRunResult(
                 status=status,
@@ -100,6 +104,17 @@ class RPANode(BaseNode):
                 node_id=self.node_id,
                 node_type=self.node_type,
                 alias_name=self.alias_name,
+            )
+        except CustomException as e:
+            span.record_exception(e)
+            return NodeRunResult(
+                inputs=inputs,
+                outputs=outputs,
+                node_id=self.node_id,
+                alias_name=self.alias_name,
+                node_type=self.node_type,
+                status=WorkflowNodeExecutionStatus.FAILED,
+                error=e,
             )
         except Exception as e:
             status = WorkflowNodeExecutionStatus.FAILED

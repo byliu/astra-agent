@@ -64,27 +64,21 @@ const useAddKnowledge = (): useAddKnowledgeProps => {
 
     configListRepos(params)
       .then(data => {
-        setAllData(
-          isPro
-            ? data.pageData?.filter(
-                item => item?.tag === 'CBG-RAG' || item?.tag === 'AIUI-RAG2'
-              )
-            : data.pageData
-        );
+        setAllData(data.pageData || []);
       })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     getKnowledges();
-  }, [orderBy, isPro, tag]);
+  }, [orderBy, tag]);
 
   const getKnowledgesDebounce = useCallback(
     debounce((e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       getKnowledges(value);
     }, 500),
-    [orderBy, isPro, tag]
+    [orderBy, tag]
   );
 
   const checkedIds = useMemo(() => {
@@ -150,22 +144,16 @@ const useAddKnowledge = (): useAddKnowledgeProps => {
   const versionList = useMemo(() => {
     const options = [
       {
-        label: t('workflow.nodes.relatedKnowledgeModal.xingchen'),
-        value: 'AIUI-RAG2',
-      },
-      {
         label: t('workflow.nodes.relatedKnowledgeModal.xingpu'),
         value: 'CBG-RAG',
       },
       {
-        label: t('workflow.nodes.relatedKnowledgeModal.personal'),
-        value: 'SparkDesk-RAG',
+        label: 'Ragflow',
+        value: 'Ragflow-RAG',
       },
     ];
-    return isPro
-      ? options.filter(item => item.value !== 'SparkDesk-RAG')
-      : options;
-  }, [isPro, t]);
+    return options;
+  }, []);
   return {
     allData,
     setAllData,
@@ -229,7 +217,7 @@ const KnowledgeList = ({
                 >
                   {item.name}
                 </p>
-                <img src={item?.corner} className="w-[54px] h-[28px]" alt="" />
+                <img src={item?.corner} className="h-[20px]" alt="" />
               </div>
               <div
                 className="border border-[#E5E5E5] py-1 px-6 rounded-lg cursor-pointer"

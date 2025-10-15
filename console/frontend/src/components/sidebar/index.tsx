@@ -209,6 +209,7 @@ const Sidebar = ({
             setNoticeModalVisible(true);
           }}
           onNotLogin={onNotLogin}
+          isCollapsed={isCollapsed}
         />
 
         {/* Bottom Login */}

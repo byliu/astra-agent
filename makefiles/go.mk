@@ -41,7 +41,7 @@ install-tools-go: ## 🛠️ Install Go development tools
 		$(GO) install github.com/segmentio/golines@latest; \
 		$(GO) install github.com/fzipp/gocyclo/cmd/gocyclo@latest; \
 		$(GO) install honnef.co/go/tools/cmd/staticcheck@2025.1.1; \
-		$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0; \
+		$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0; \
 		echo "$(GREEN)Go tools installed$(RESET)"; \
 	else \
 		echo "$(BLUE)Skipping Go tools (no Go project detected)$(RESET)"; \
@@ -119,12 +119,12 @@ check-go: ## 🔍 Check Go code quality
 					echo "$(YELLOW)    Running staticcheck...$(RESET)"; \
 					PKGS="$$(go list ./... 2>/dev/null)"; \
 					if [ -n "$$PKGS" ]; then \
-						$(STATICCHECK) $$PKGS 2>/dev/null || true; \
+						$(STATICCHECK) $$PKGS || (echo "$(RED)staticcheck failed$(RESET)" && exit 1); \
 					fi; \
 				fi; \
 				if command -v $(GOLANGCI_LINT) >/dev/null 2>&1; then \
 					echo "$(YELLOW)    Running golangci-lint...$(RESET)"; \
-					GOCACHE=$$(pwd)/.gocache GOLANGCI_LINT_CACHE=$$(pwd)/.golangci-cache $(GOLANGCI_LINT) run ./... 2>/dev/null || true; \
+					GOCACHE=$$(pwd)/.gocache GOLANGCI_LINT_CACHE=$$(pwd)/.golangci-cache $(GOLANGCI_LINT) run ./... --timeout=5m || (echo "$(RED)golangci-lint failed$(RESET)" && exit 1); \
 				fi; \
 				cd - > /dev/null; \
 			else \

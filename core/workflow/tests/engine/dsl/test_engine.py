@@ -59,7 +59,8 @@ class TestWorkflowEngine:
     def test_create_workflow_engine(self) -> None:
         """Test DSL construction and engine creation from base schema."""
         engine = WorkflowEngineFactory.create_engine(
-            WorkflowDSL.parse_obj(json.loads(BASE_DSL_SCHEMA).get("data", {})), Span()
+            WorkflowDSL.model_validate(json.loads(BASE_DSL_SCHEMA).get("data", {})),
+            Span(),
         )
         assert engine is not None
 
@@ -424,7 +425,8 @@ class TestWorkflowEngineAdvanced:
         mock_span = Mock(spec=Span)
 
         self.engine = WorkflowEngineFactory.create_engine(
-            WorkflowDSL.parse_obj(json.loads(BASE_DSL_SCHEMA).get("data", {})), Span()
+            WorkflowDSL.model_validate(json.loads(BASE_DSL_SCHEMA).get("data", {})),
+            Span(),
         )
 
         mock_result = Mock(spec=NodeRunResult)
@@ -461,7 +463,8 @@ class TestWorkflowEngineAdvanced:
         mock_result = Mock(spec=NodeRunResult)
 
         self.engine = WorkflowEngineFactory.create_engine(
-            WorkflowDSL.parse_obj(json.loads(BASE_DSL_SCHEMA).get("data", {})), Span()
+            WorkflowDSL.model_validate(json.loads(BASE_DSL_SCHEMA).get("data", {})),
+            Span(),
         )
         self.engine.engine_ctx.dfs_tasks = []
 

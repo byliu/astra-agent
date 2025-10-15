@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
+
 	"tenant/internal/models"
 	"tenant/tools/database"
-	"time"
 )
 
 type AppDao struct {
@@ -32,11 +33,13 @@ func NewAppDao(db *database.Database) (*AppDao, error) {
 	selectSql := fmt.Sprintf(`SELECT %s FROM tb_app `, sqlField)
 	countSql := `SELECT count(1) from tb_app `
 
-	return &AppDao{db: db,
+	return &AppDao{
+			db:        db,
 			insertSql: insertSql,
 			updateSql: updateSql,
 			selectSql: selectSql,
-			countSql:  countSql},
+			countSql:  countSql,
+		},
 		nil
 }
 
@@ -148,7 +151,6 @@ func (dao *AppDao) Select(options ...SqlOption) ([]*models.App, error) {
 }
 
 func (dao *AppDao) Count(isLock bool, tx *sql.Tx, options ...SqlOption) (int64, error) {
-
 	finalSql, params := buildQuery(dao.countSql, options...)
 	if isLock {
 		finalSql = finalSql + " for update"
@@ -234,6 +236,7 @@ func (dao *AppDao) WithName(name string) SqlOption {
 		return "app_name like ?", []interface{}{name}
 	}
 }
+
 func (dao *AppDao) WithSetName(name string) SqlOption {
 	return func() (string, []interface{}) {
 		return "app_name=?", []interface{}{name}

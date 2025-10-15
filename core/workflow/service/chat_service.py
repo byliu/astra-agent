@@ -199,16 +199,19 @@ async def _get_or_build_workflow_engine(
     if need_rebuild:
         start_time = time.time() * 1000
         sparkflow_engine = WorkflowEngineFactory.create_engine(
-            WorkflowDSL.parse_obj(workflow_dsl.get("data", {})), span_context
+            WorkflowDSL.model_validate(workflow_dsl.get("data", {})), span_context
         )
         span_context.add_info_event("Engine not found in cache, rebuilding from DSL")
 
-        set_flow_node_output_mode(
-            sparkflow_engine.engine_ctx.variable_pool,
-            sparkflow_engine.engine_ctx.built_nodes,
-            app_alias_id,
-            span_context,
-        )
+        for key in sparkflow_engine.engine_ctx.built_nodes:
+            if key.startswith(NodeType.FLOW.value):
+                set_flow_node_output_mode(
+                    variable_pool=sparkflow_engine.engine_ctx.variable_pool,
+                    node_instance=sparkflow_engine.engine_ctx.built_nodes[
+                        key
+                    ].node_instance,
+                    span=span_context,
+                )
         sparkflow_engine.engine_ctx.variable_pool.system_params.set(
             ParamKey.IsRelease, is_release
         )
@@ -760,36 +763,6 @@ async def _get_resume_response(
     return response
 
 
-def _deal_streaming_step(
-    response_frame: LLMGenerate, last_workflow_step: WorkflowStep
-) -> None:
-    """
-    Process streaming response frame and update workflow step information.
-
-    This function handles sequence numbering and progress tracking for
-    streaming responses to ensure proper ordering and progress display.
-
-    :param response_frame: Current response frame to process
-    :param last_workflow_step: Previous workflow step for sequence tracking
-    :return: None
-    """
-    last_workflow_step.seq += 1
-
-    if not response_frame.workflow_step:
-        return
-
-    response_frame.workflow_step.seq = last_workflow_step.seq
-
-    # Ensure progress does not regress
-    response_frame.workflow_step.progress = round(
-        response_frame.workflow_step.progress, 2
-    )
-    if response_frame.workflow_step.progress < last_workflow_step.progress:
-        response_frame.workflow_step.progress = last_workflow_step.progress
-    else:
-        last_workflow_step.progress = response_frame.workflow_step.progress
-
-
 def _filter_response_frame(
     response_frame: LLMGenerate,
     is_stream: bool,
@@ -797,7 +770,7 @@ def _filter_response_frame(
     message_cache: list,
     reasoning_content_cache: list,
     is_release: bool,
-) -> Tuple[Optional[LLMGenerate], bool]:
+) -> Optional[LLMGenerate]:
     """
     Filter or process a response frame based on node type, content, and streaming state.
 
@@ -816,70 +789,113 @@ def _filter_response_frame(
     """
 
     if not is_release:
-        return response_frame, True
+        return response_frame
 
     node_id = (
         response_frame.workflow_step.node.id
         if response_frame.workflow_step and response_frame.workflow_step.node
         else ""
     )
-    node_type_prefix = node_id.split(":")[0]
+    node_type = node_id.split(":")[0]
     choice = response_frame.choices[0]
     delta = choice.delta
+    is_stop = choice.finish_reason == ChatStatus.FINISH_REASON.value
+    is_content_empty = not delta.content and not delta.reasoning_content
+    is_interrupted = choice.finish_reason == ChatStatus.INTERRUPT.value
+
+    response_frame.workflow_step.node = None
+
+    if is_stop:
+        response_frame.workflow_step.seq = last_workflow_step.seq + 1
+        if not is_stream:
+            delta.content = "".join(message_cache)
+            delta.reasoning_content = "".join(reasoning_content_cache)
+        return response_frame
 
     # Only process specific node types (flow_obj or MESSAGE/END/QUESTION_ANSWER)
-    valid_node_types = {
+    if node_type not in [
         NodeType.MESSAGE.value,
         NodeType.END.value,
         NodeType.QUESTION_ANSWER.value,
-    }
-    is_valid_node = node_id == "flow_obj" or node_type_prefix in valid_node_types
-    if not is_valid_node:
-        return None, False
+    ]:
+        return None
 
     # Filter out frames with empty content unless it's a valid stop or interrupt
-    is_content_empty = not delta.content and not delta.reasoning_content
-    is_valid_stop = (
-        node_id == "flow_obj" and choice.finish_reason == ChatStatus.FINISH_REASON.value
-    )
-    is_interrupted = choice.finish_reason == ChatStatus.INTERRUPT.value
-    if is_content_empty and not (is_valid_stop or is_interrupted):
-        return None, False
+    if is_content_empty and not (is_stop or is_interrupted):
+        return None
 
     # Handle streaming mode
-    if is_stream:
-        _deal_streaming_step(response_frame, last_workflow_step)
-        # flow_obj node should not display content
-        if node_id == "flow_obj":
-            delta.content = ""
+    _deal_streaming_step(is_stream, response_frame, last_workflow_step)
+    _cache_content_and_reasoning_content(
+        is_stream,
+        response_frame,
+        message_cache,
+        reasoning_content_cache,
+    )
 
-    # Handle non-streaming mode
-    else:
-        if node_type_prefix in {NodeType.MESSAGE.value, NodeType.END.value}:
-            # Cache content, wait for flow_obj stop to return unified result
-            message_cache.append(delta.content)
-            reasoning_content_cache.append(delta.reasoning_content)
-            return None, False
-
-        elif (
-            node_id == "flow_obj"
-            and choice.finish_reason == ChatStatus.FINISH_REASON.value
-        ):
-            # Concatenate cached content
-            delta.content = "".join(message_cache)
-            delta.reasoning_content = "".join(reasoning_content_cache)
-
-    # Remove unnecessary fields to reduce response data size
-    if response_frame.workflow_step and response_frame.workflow_step.node:
-        response_frame.workflow_step.node = None
-
-    if not is_stream and response_frame.workflow_step:
-        response_frame.workflow_step = None
+    if not is_stream and not is_interrupted:
+        return None
 
     # Standardize index
     choice.index = 0
 
-    return response_frame, True
+    return response_frame
+
+
+def _deal_streaming_step(
+    is_stream: bool, response_frame: LLMGenerate, last_workflow_step: WorkflowStep
+) -> None:
+    """
+    Process streaming response frame and update workflow step information.
+
+    This function handles sequence numbering and progress tracking for
+    streaming responses to ensure proper ordering and progress display.
+
+    :param response_frame: Current response frame to process
+    :param last_workflow_step: Previous workflow step for sequence tracking
+    :return: None
+    """
+
+    if not is_stream:
+        return
+
+    last_workflow_step.seq += 1
+
+    if not response_frame.workflow_step:
+        return
+
+    response_frame.workflow_step.seq = last_workflow_step.seq
+
+    # Ensure progress does not regress
+    response_frame.workflow_step.progress = round(
+        response_frame.workflow_step.progress, 2
+    )
+    if response_frame.workflow_step.progress < last_workflow_step.progress:
+        response_frame.workflow_step.progress = last_workflow_step.progress
+    else:
+        last_workflow_step.progress = response_frame.workflow_step.progress
+
+
+def _cache_content_and_reasoning_content(
+    is_stream: bool,
+    response_frame: LLMGenerate,
+    message_cache: List[str],
+    reasoning_content_cache: List[str],
+) -> None:
+    """
+    Cache content and reasoning content for non-streaming mode
+
+    :param is_stream: Whether this is a streaming response
+    :param response_frame: Current response frame to process
+    :param message_cache: Cached content for non-streaming mode
+    :param reasoning_content_cache: Cached reasoning content for non-streaming mode
+    :return: None
+    """
+    if not is_stream:
+        message_cache.append(response_frame.choices[0].delta.content)
+        reasoning_content_cache.append(
+            response_frame.choices[0].delta.reasoning_content
+        )
 
 
 async def _chat_response_stream(
@@ -937,7 +953,7 @@ async def _chat_response_stream(
                     else last_response
                 )
 
-                response, should_return = _filter_response_frame(
+                response = _filter_response_frame(
                     response_frame=response,
                     is_stream=is_stream,
                     last_workflow_step=last_workflow_step,
@@ -945,18 +961,11 @@ async def _chat_response_stream(
                     reasoning_content_cache=reasoning_content_cache,
                     is_release=is_release,
                 )
-
-                if not should_return:
-                    continue
-
                 if not response:
-                    raise CustomException(CodeEnum.OPEN_API_ERROR)
+                    continue
 
                 # deal with event data
                 if response.event_data:
-                    yield await _del_response_resume_data(
-                        app_audit_policy, response, is_stream, event_id
-                    )
                     # forward queue messages
                     _ = asyncio.create_task(
                         _forward_queue_messages(
@@ -966,6 +975,9 @@ async def _chat_response_stream(
                             event_id,
                             span_context,
                         )
+                    )
+                    yield await _del_response_resume_data(
+                        app_audit_policy, response, is_stream, event_id
                     )
                     return
 
@@ -1165,64 +1177,65 @@ async def chat_resume_response_stream(
     final_reasoning_content = ""
     last_workflow_step = WorkflowStep(seq=0, progress=0)
 
-    while True:
+    with span.start() as span_context:
         try:
             # Question-answer supports audit
             if audit_policy == AppAuditPolicy.AGENT_PLATFORM.value and event_id:
                 raise CustomException(CodeEnum.AUDIT_QA_ERROR)
 
-            src_response: LLMGenerate = await _get_resume_response(event, None)
+            while True:
 
-            span.add_info_events(
-                {
-                    "response": json.dumps(
-                        src_response.model_dump(exclude_none=True), ensure_ascii=False
-                    )
-                }
-            )
-
-            response, should_return = _filter_response_frame(
-                response_frame=src_response,
-                is_stream=is_stream,
-                last_workflow_step=last_workflow_step,
-                message_cache=message_cache,
-                reasoning_content_cache=reasoning_content_cache,
-                is_release=is_release,
-            )
-            if not should_return:
-                continue
-
-            if not response:
-                raise CustomException(CodeEnum.OPEN_API_ERROR)
-
-            if response and response.event_data:
-                EventRegistry().on_interrupt(event_id=event_id)
-                response.id = span.sid
-                yield Streaming.generate_data(response.model_dump(exclude_none=True))
-                return
-
-            final_content += response.choices[0].delta.content
-            final_reasoning_content += response.choices[0].delta.reasoning_content
-
-            span.add_info_events(
-                {
-                    "llm_resp": json.dumps(
-                        response.model_dump(exclude_none=True), ensure_ascii=False
-                    )
-                }
-            )
-            response.id = span.sid
-            yield Streaming.generate_data(response.model_dump(exclude_none=True))
-
-            if response.choices[0].finish_reason == ChatStatus.FINISH_REASON.value:
-                span.add_info_event(
-                    f"Workflow output data processed through audit:\n"
-                    f"final_content: {final_content}, \n"
-                    f"final_reasoning_content: {final_reasoning_content}"
+                src_response: LLMGenerate = await _get_resume_response(event, None)
+                span_context.add_info_events(
+                    {
+                        "response": json.dumps(
+                            src_response.model_dump(exclude_none=True),
+                            ensure_ascii=False,
+                        )
+                    }
                 )
-                # Exit condition met
-                EventRegistry().on_finished(event_id=event_id)
-                return
+
+                response = _filter_response_frame(
+                    response_frame=src_response,
+                    is_stream=is_stream,
+                    last_workflow_step=last_workflow_step,
+                    message_cache=message_cache,
+                    reasoning_content_cache=reasoning_content_cache,
+                    is_release=is_release,
+                )
+                if not response:
+                    continue
+
+                if response and response.event_data:
+                    EventRegistry().on_interrupt(event_id=event_id)
+                    response.id = span_context.sid
+                    yield Streaming.generate_data(
+                        response.model_dump(exclude_none=True)
+                    )
+                    return
+
+                final_content += response.choices[0].delta.content
+                final_reasoning_content += response.choices[0].delta.reasoning_content
+
+                span_context.add_info_events(
+                    {
+                        "llm_resp": json.dumps(
+                            response.model_dump(exclude_none=True), ensure_ascii=False
+                        )
+                    }
+                )
+                response.id = span_context.sid
+                yield Streaming.generate_data(response.model_dump(exclude_none=True))
+
+                if response.choices[0].finish_reason == ChatStatus.FINISH_REASON.value:
+                    span_context.add_info_event(
+                        f"Workflow output data processed through audit:\n"
+                        f"final_content: {final_content}, \n"
+                        f"final_reasoning_content: {final_reasoning_content}"
+                    )
+                    # Exit condition met
+                    EventRegistry().on_finished(event_id=event_id)
+                    return
 
         except (Exception, asyncio.TimeoutError, CustomException) as e:
             code = CodeEnum.OPEN_API_STREAM_QUEUE_TIMEOUT_ERROR.code
@@ -1234,9 +1247,9 @@ async def chat_resume_response_stream(
             llm_resp = LLMGenerate.workflow_end_error(
                 code=code,
                 message=message,
-                sid=span.sid,
+                sid=span_context.sid,
             )
-            span.add_info_events(
+            span_context.add_info_events(
                 {
                     "llm_resp": json.dumps(
                         llm_resp.model_dump(exclude_none=True), ensure_ascii=False
@@ -1244,6 +1257,6 @@ async def chat_resume_response_stream(
                 }
             )
             EventRegistry().on_finished(event_id=event_id)
-            llm_resp.id = span.sid
+            llm_resp.id = span_context.sid
             yield Streaming.generate_data(llm_resp.model_dump(exclude_none=True))
             return

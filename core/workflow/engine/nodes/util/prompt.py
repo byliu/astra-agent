@@ -208,9 +208,11 @@ class PromptUtils:
 
         # Step3: Filter valid variable names
         for key in raw_matches:
-            if not variable_pattern.match(key):
+            # Remove any extra leading/trailing braces that were captured (e.g. from {{{input}}})
+            cleaned = key.strip("{}")
+            if not variable_pattern.match(cleaned):
                 continue
-            placeholders.append(key)
+            placeholders.append(cleaned)
         return placeholders
 
     @staticmethod
@@ -262,9 +264,16 @@ class PromptUtils:
         ]
 
         # Build the regularity to capture all delimiters
-        pattern = "(" + "|".join(map(re.escape, placeholders_with_brackets)) + ")"
-        parts = re.split(pattern, template)
+        if placeholders_with_brackets:
+            pattern = "(" + "|".join(map(re.escape, placeholders_with_brackets)) + ")"
+            parts = re.split(pattern, template)
+        else:
+            parts = [template]
+
         for i, part in enumerate(parts):
+
+            if part == "":
+                continue
 
             # Handle placeholder information
             if part in placeholders_with_brackets:

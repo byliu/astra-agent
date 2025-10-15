@@ -101,6 +101,7 @@ const translation = {
   deleteFailed: '删除失败',
   noFileSelected: '请选择文件',
   importFailed: '导入失败',
+  duplicateFieldsIgnored: '重复字段已忽略',
 };
 
 export default translation;

@@ -1099,14 +1099,12 @@ export const ToolDetail: FC<{
               style={{
                 background: currentToolInfo?.avatarColor
                   ? currentToolInfo?.avatarColor
-                  : `url(${
-                      currentToolInfo?.address + currentToolInfo?.icon
-                    }) no-repeat center / cover`,
+                  : `url(${currentToolInfo?.icon}) no-repeat center / cover`,
               }}
             >
               {currentToolInfo?.avatarColor && (
                 <img
-                  src={currentToolInfo?.address + currentToolInfo?.icon}
+                  src={currentToolInfo?.icon || ''}
                   className="w-[22px] h-[22px]"
                   alt=""
                 />

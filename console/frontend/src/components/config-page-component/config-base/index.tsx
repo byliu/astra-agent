@@ -155,8 +155,24 @@ const BaseConfig: React.FC<ChatProps> = ({
     speed: 50,
   });
   const [modelList, setModelList]: any = useState([
-    { model: 'spark', promptAnswerCompleted: true },
-    { model: 'spark', promptAnswerCompleted: true },
+    {
+      modelId: 'null',
+      modelName: '星火大模型 Spark X1',
+      modelDomain: 'x1',
+      model: '', // 将在 modelOptions 加载后初始化
+      modelIcon:
+        'https://openres.xfyun.cn/xfyundoc/2025-09-24/e9b74fbb-c2d6-4f4a-8c07-0ea7f03ee03a/1758681839941/icon.png',
+      promptAnswerCompleted: true,
+    },
+    {
+      modelId: 'null',
+      modelName: '星火大模型 Spark X1',
+      modelDomain: 'x1',
+      model: '', // 将在 modelOptions 加载后初始化
+      modelIcon:
+        'https://openres.xfyun.cn/xfyundoc/2025-09-24/e9b74fbb-c2d6-4f4a-8c07-0ea7f03ee03a/1758681839941/icon.png',
+      promptAnswerCompleted: true,
+    },
   ]);
   const [questionTipActive, setQuestionTipActive] = useState(-1);
   const navigate = useNavigate();
@@ -239,6 +255,10 @@ const BaseConfig: React.FC<ChatProps> = ({
   const [form] = Form.useForm();
   const [model, setModel] = useState('spark');
   const [modelOptions, setModelOptions] = useState<ModelListData[]>([]);
+  const [pendingModelData, setPendingModelData] = useState<{
+    modelId?: string;
+    modelDomain?: string;
+  } | null>(null);
 
   // 获取模型列表
   const getModelListData = (): void => {
@@ -247,8 +267,65 @@ const BaseConfig: React.FC<ChatProps> = ({
     });
   };
 
+  // 处理模型回显的函数
+  const handleModelDisplay = (modelId?: string, modelDomain?: string): void => {
+    if (modelOptions.length === 0) {
+      // 如果 modelOptions 还没有加载，保存待处理的数据
+      setPendingModelData({ modelId, modelDomain });
+      return;
+    }
+
+    const matchedModel = findModelOption(modelId, modelDomain);
+    if (matchedModel) {
+      // 找到匹配的模型，需要找到其在 modelOptions 中的索引
+      const modelIndex = modelOptions.findIndex(
+        option => option === matchedModel
+      );
+      setModel(getModelUniqueKey(matchedModel, modelIndex));
+    } else {
+      // 如果找不到匹配的模型，使用原来的逻辑
+      setModel(modelDomain || 'spark');
+    }
+  };
+
   const handleModelChange = (value: string): void => {
     setModel(value);
+  };
+
+  // 生成模型的唯一标识符
+  const getModelUniqueKey = (option: ModelListData, index?: number): string => {
+    if (option.isCustom && option.modelId) {
+      // 自定义模型使用 modelId 作为唯一标识
+      return option.modelId;
+    }
+    // 默认模型使用 modelDomain + index 作为唯一标识，确保唯一性
+    return `${option.modelDomain}_${index ?? 0}`;
+  };
+
+  // 根据 modelId 或 modelDomain 查找对应的模型选项
+  const findModelOption = (
+    modelId?: string,
+    modelDomain?: string
+  ): ModelListData | undefined => {
+    if (modelId) {
+      const modelUse = modelOptions.find(option => option.modelId === modelId);
+      return modelUse;
+    }
+    if (modelDomain) {
+      return modelOptions.find(
+        option => option.modelDomain === modelDomain && !option.isCustom
+      );
+    }
+    return undefined;
+  };
+
+  // 根据唯一标识符查找对应的模型选项
+  const findModelOptionByUniqueKey = (
+    uniqueKey: string
+  ): ModelListData | undefined => {
+    return modelOptions.find(
+      (option, index) => getModelUniqueKey(option, index) === uniqueKey
+    );
   };
 
   const handleModelChangeNew = (e: string, index: number): void => {
@@ -347,9 +424,15 @@ const BaseConfig: React.FC<ChatProps> = ({
         .filter((key: any) => choosedAlltool[key])
         .join(','),
       prologue: prologue,
-      model: model,
-      isCustom: modelOptions?.find(item => item.modelDomain === model)
-        ?.isCustom,
+      model: (() => {
+        const selectedModel = findModelOptionByUniqueKey(model);
+        return selectedModel?.modelDomain || model;
+      })(),
+      modelId: (() => {
+        const selectedModel = findModelOptionByUniqueKey(model);
+        return selectedModel?.isCustom ? selectedModel.modelId : null;
+      })(),
+      isCustom: findModelOptionByUniqueKey(model)?.isCustom,
       prompt: prompt,
       ...(!useFormValues && { promptStructList: [] }),
     };
@@ -476,12 +559,39 @@ const BaseConfig: React.FC<ChatProps> = ({
     getModelListData();
   }, []);
 
+  // 监听 modelOptions 加载完成，处理待回显的模型数据
+  useEffect(() => {
+    if (modelOptions.length > 0 && pendingModelData) {
+      const { modelId, modelDomain } = pendingModelData;
+      handleModelDisplay(modelId, modelDomain);
+      setPendingModelData(null); // 清除待处理数据
+      const firstModel = modelOptions[0];
+      if (!firstModel) return;
+      setModelList((prevList: any[]) =>
+        prevList.map((item, index) => {
+          // 如果已经有 model 字段，就不更新
+          if (item.model) {
+            return item;
+          }
+          // 否则，设置为第一个 modelOption 的 uniqueKey
+          return {
+            ...item,
+            model: getModelUniqueKey(firstModel, 0),
+            modelName: firstModel.modelName,
+            modelIcon: firstModel.modelIcon,
+            modelDomain: firstModel.modelDomain,
+            modelId: firstModel.modelId,
+          };
+        })
+      );
+    }
+  }, [modelOptions, pendingModelData]);
+
   useEffect(() => {
     const obj: any = {};
     obj.botDesc = botTemplateInfoValue.botDesc;
     obj.botName = botTemplateInfoValue.botName;
     obj.botType = botTemplateInfoValue.botType;
-    console.log('🚀 ~ useEffect ~ obj:', obj);
     setBaseinfo(obj);
     const create = searchParams.get('create');
     if (create) {
@@ -497,12 +607,7 @@ const BaseConfig: React.FC<ChatProps> = ({
       setBottypeList(filteredBottypeList);
       const save = searchParams.get('save');
       const botId = searchParams.get('botId');
-      console.log(
-        '🚀 ~ getBotType ~ botId:',
-        botId,
-        '--------',
-        botTemplateInfoValue
-      );
+
       if (botId) {
         sessionStorage.removeItem('botTemplateInfoValue');
 
@@ -574,7 +679,14 @@ const BaseConfig: React.FC<ChatProps> = ({
           form.setFieldsValue(save == 'true' ? configPageData : res);
           setDetailInfo(save == 'true' ? { ...res, ...configPageData } : res);
           setCoverUrl(save == 'true' ? configPageData?.avatar : res.avatar);
-          setModel(save == 'true' ? configPageData?.model : res.model);
+
+          // 处理模型回显逻辑
+          const currentModelData = save == 'true' ? configPageData : res;
+          const modelId = currentModelData?.modelId;
+          const modelDomain = currentModelData?.model;
+
+          // 使用新的处理函数
+          handleModelDisplay(modelId, modelDomain);
           const filteredPrompt =
             save == 'true'
               ? typeof configPageData?.prompt === 'string'
@@ -882,7 +994,7 @@ const BaseConfig: React.FC<ChatProps> = ({
         });
       } else {
         // 默认模式：触发单个PromptTry实例
-        console.log('Triggering default mode');
+        // console.log('Triggering default mode');
         if (defaultPromptTryRef.current) {
           defaultPromptTryRef.current.send(text);
         }
@@ -964,9 +1076,19 @@ const BaseConfig: React.FC<ChatProps> = ({
       return;
     }
     debouncedAddModelPk(showModelPk, setShowModelPk);
+    const firstModel = modelOptions[0];
     setModelList([
       ...modelList,
-      { model: 'spark', promptAnswerCompleted: true },
+      {
+        modelId: firstModel?.modelId || 'null',
+        modelName: firstModel?.modelName || '星火大模型 Spark X1',
+        modelDomain: firstModel?.modelDomain || 'x1',
+        model: firstModel ? getModelUniqueKey(firstModel, 0) : 'x1_0',
+        modelIcon:
+          firstModel?.modelIcon ||
+          'https://openres.xfyun.cn/xfyundoc/2025-09-24/e9b74fbb-c2d6-4f4a-8c07-0ea7f03ee03a/1758681839941/icon.png',
+        promptAnswerCompleted: true,
+      },
     ]);
   };
 
@@ -1069,10 +1191,17 @@ const BaseConfig: React.FC<ChatProps> = ({
                         .filter((key: any) => choosedAlltool[key])
                         .join(','),
                       prologue: prologue,
-                      model: model,
-                      isCustom: modelOptions?.find(
-                        item => item.modelDomain === model
-                      )?.isCustom,
+                      model: (() => {
+                        const selectedModel = findModelOptionByUniqueKey(model);
+                        return selectedModel?.modelDomain || model;
+                      })(),
+                      modelId: (() => {
+                        const selectedModel = findModelOptionByUniqueKey(model);
+                        return selectedModel?.isCustom
+                          ? selectedModel.modelId
+                          : null;
+                      })(),
+                      isCustom: findModelOptionByUniqueKey(model)?.isCustom,
                       prompt: prompt,
                     };
                     updateBot(obj)
@@ -1121,10 +1250,17 @@ const BaseConfig: React.FC<ChatProps> = ({
                         .filter((key: any) => choosedAlltool[key])
                         .join(','),
                       prologue: prologue,
-                      model: model,
-                      isCustom: modelOptions?.find(
-                        item => item.modelDomain === model
-                      )?.isCustom,
+                      model: (() => {
+                        const selectedModel = findModelOptionByUniqueKey(model);
+                        return selectedModel?.modelDomain || model;
+                      })(),
+                      modelId: (() => {
+                        const selectedModel = findModelOptionByUniqueKey(model);
+                        return selectedModel?.isCustom
+                          ? selectedModel.modelId
+                          : null;
+                      })(),
+                      isCustom: findModelOptionByUniqueKey(model)?.isCustom,
                       prompt: prompt,
                     };
                     updateBot(obj)
@@ -1504,10 +1640,10 @@ const BaseConfig: React.FC<ChatProps> = ({
                       style={{ width: '100%' }}
                       placeholder={t('configBase.pleaseSelectModel')}
                     >
-                      {modelOptions.map(option => (
+                      {modelOptions.map((option, index) => (
                         <Option
-                          key={option.modelDomain}
-                          value={option.modelDomain}
+                          key={getModelUniqueKey(option, index)}
+                          value={getModelUniqueKey(option, index)}
                         >
                           <div className="flex items-center">
                             <img
@@ -1664,15 +1800,7 @@ const BaseConfig: React.FC<ChatProps> = ({
               {/* 模型对比才显示 */}
               {showModelPk !== 0 && !showTipPk && (
                 <div className={styles.testBtn}>
-                  <Button
-                    onClick={() => {
-                      setShowModelPk(0);
-                      setModelList([
-                        { model: 'spark', promptAnswerCompleted: true },
-                        { model: 'spark', promptAnswerCompleted: true },
-                      ]);
-                    }}
-                  >
+                  <Button onClick={() => setShowModelPk(0)}>
                     {t('configBase.restoreDefaultDisplay')}
                   </Button>
                   <Button onClick={addModelPk}>
@@ -1697,6 +1825,7 @@ const BaseConfig: React.FC<ChatProps> = ({
                       promptText={promptNow}
                       supportContext={supportContextFlag ? 1 : 0}
                       choosedAlltool={choosedAlltool}
+                      findModelOptionByUniqueKey={findModelOptionByUniqueKey}
                     />
                   )}
                   {showTipPk &&
@@ -1734,6 +1863,9 @@ const BaseConfig: React.FC<ChatProps> = ({
                           promptText={promptNow}
                           supportContext={supportContextFlag ? 1 : 0}
                           choosedAlltool={choosedAlltool}
+                          findModelOptionByUniqueKey={
+                            findModelOptionByUniqueKey
+                          }
                         />
                       </div>
                     ))}
@@ -1743,7 +1875,7 @@ const BaseConfig: React.FC<ChatProps> = ({
               {/* 模型对比 样式区域 */}
               {showModelPk > 0 && !showTipPk && (
                 <>
-                  {modelList.map((item: PageDataItem, index: number) => (
+                  {modelList.map((item: ModelListData, index: number) => (
                     <div
                       key={index}
                       style={
@@ -1762,15 +1894,15 @@ const BaseConfig: React.FC<ChatProps> = ({
                         style={{ display: 'flex', justifyContent: 'center' }}
                       >
                         <Select
-                          defaultValue={item.model}
+                          value={item.model}
                           onChange={e => handleModelChangeNew(e, index)}
                           style={{ width: '60%' }}
                           placeholder="请选择模型"
                         >
-                          {modelOptions.map(option => (
+                          {modelOptions.map((option, index) => (
                             <Option
-                              key={option.modelDomain}
-                              value={option.modelDomain}
+                              key={getModelUniqueKey(option, index)}
+                              value={getModelUniqueKey(option, index)}
                             >
                               <div className="flex items-center">
                                 <img
@@ -1790,16 +1922,16 @@ const BaseConfig: React.FC<ChatProps> = ({
                             modelPromptTryRefs.current[index] = ref;
                           }
                         }}
-                        newModel={item.model}
                         baseinfo={baseinfo}
                         inputExample={inputExample}
                         coverUrl={coverUrl}
                         selectSource={selectSource}
                         prompt={prompt}
-                        model={model}
+                        model={item.model}
                         promptText={promptNow}
                         supportContext={supportContextFlag ? 1 : 0}
                         choosedAlltool={choosedAlltool}
+                        findModelOptionByUniqueKey={findModelOptionByUniqueKey}
                       />
                     </div>
                   ))}
@@ -1814,7 +1946,6 @@ const BaseConfig: React.FC<ChatProps> = ({
               value={askValue}
               onChange={setAskValue}
               isLoading={globalLoading}
-              isCompleted={!globalLoading}
             />
           </div>
         </div>

@@ -4,8 +4,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.iflytek.astron.console.commons.annotation.space.SpacePreAuth;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
-import com.iflytek.astron.console.commons.entity.bot.BotCreateForm;
-import com.iflytek.astron.console.commons.entity.bot.BotInfoDto;
+import com.iflytek.astron.console.commons.dto.bot.BotCreateForm;
+import com.iflytek.astron.console.commons.dto.bot.BotInfoDto;
 import com.iflytek.astron.console.commons.entity.bot.TakeoffList;
 import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
 import com.iflytek.astron.console.commons.exception.BusinessException;
@@ -97,12 +97,12 @@ public class BotController {
 
     @PostMapping("/publish")
     @Operation(summary = "publish agent")
-    public ApiResult<String> massPublish(HttpServletRequest request, @RequestBody JSONObject botJson) {
+    public ApiResult<String> maasPublish(HttpServletRequest request, @RequestBody JSONObject botJson) {
         String uid = RequestContextUtil.getUID();
         String botId = (String) botJson.get("botId");
         botPermissionUtil.checkBot(Integer.parseInt(botId));
         maasUtil.setBotTag(botJson);
-        log.info("***** uid: {}, botId: {} submit MASS assistant", uid, botId);
+        log.info("***** uid: {}, botId: {} submit MAAS assistant", uid, botId);
         String flowId = botJson.getString("flowId");
         JSONObject result = maasUtil.createApi(flowId, tenantId);
         if (Objects.isNull(result)) {
@@ -118,7 +118,7 @@ public class BotController {
      * @param takeoffList
      * @return
      */
-    @SpacePreAuth(key = "ChatBotMarketController_takeoffBot_POST")
+    @SpacePreAuth(key = "BotController_takeoffBot_POST")
     @PostMapping("/take-off-bot")
     @Operation(summary = "take off agent")
     public ApiResult<Boolean> takeoffBot(HttpServletRequest request, @RequestBody TakeoffList takeoffList) {
@@ -166,7 +166,7 @@ public class BotController {
     /**
      * Copy assistant to specified assistant
      */
-    @SpacePreAuth(key = "BotV2Controller_copyBot2_POST")
+    @SpacePreAuth(key = "BotController_copyBot2_POST")
     @PostMapping("/copy-bot")
     public ApiResult<Void> copyBot2(HttpServletRequest request, @RequestParam Long botId) {
         botPermissionUtil.checkBot(Math.toIntExact(botId));

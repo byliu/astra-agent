@@ -453,7 +453,7 @@ const PromptTry = ({
       body: form,
       headers: {
         ...headerConfig,
-        'Lang-Code': getLanguageCode(),
+        'Accept-Language': getLanguageCode(),
       },
       openWhenHidden: true,
       signal: controller.signal,

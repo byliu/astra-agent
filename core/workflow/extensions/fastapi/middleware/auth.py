@@ -121,12 +121,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         :return: The app source detail
         """
 
-        url = os.getenv("APP_MANAGE_PLAT_APP_DETAILS_WITH_API_KEY")
-        if not url:
-            raise CustomException(
-                CodeEnum.APP_GET_WITH_REMOTE_FAILED_ERROR,
-                err_msg="APP_MANAGE_PLAT_APP_DETAILS_WITH_API_KEY not configured",
-            )
+        url = f"{os.getenv('APP_MANAGE_PLAT_BASE_URL')}/v2/app/key/api_key"
 
         api_key = authorization.split(" ")[1].split(":")[0]
         if not api_key:

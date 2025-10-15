@@ -432,8 +432,9 @@ const DropDownList = ({
     return (
       <div
         className={isFocused ? 'bg-gray-100 rounded px-1' : ''}
-        onClick={() => {
-          handleTreeSelect([focusedKey]);
+        onClick={(e) => {
+          e?.stopPropagation();
+          handleTreeSelect([value.id]);
         }}
       >
         {blueWrappedContent}
@@ -468,10 +469,6 @@ const DropDownList = ({
           titleRender={titleRender}
           showLine={false}
           treeData={treeData}
-          onSelect={(key, info) => {
-            info.nativeEvent.stopPropagation();
-            handleTreeSelect(key);
-          }}
           selectedKeys={keyboardNavigationActive ? [focusedKey] : []}
         />
       ) : (
@@ -731,7 +728,7 @@ const useFlowTemplateInput = ({
       onChange(text);
     }, 500)
   );
-  const handleInput = useMemoizedFn((e?) => {
+  const handleInput = useMemoizedFn(() => {
     const editor = editorRef.current;
     let text = '';
     if (text === '\n') text = '';

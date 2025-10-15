@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+
 	"tenant/internal/dao"
 	"tenant/internal/models"
 	"tenant/tools/generator"
@@ -24,10 +25,11 @@ func NewAppService(appDao *dao.AppDao, authDao *dao.AuthDao) (*AppService, error
 		authDao: authDao,
 	}, nil
 }
+
 func (biz *AppService) SaveApp(app *models.App, auth *models.Auth) (result *AddAppResult, err error) {
 	tx, err := biz.appDao.BeginTx()
 	if err != nil {
-		return
+		return result, err
 	}
 	defer func() {
 		biz.rollback(tx, err)
@@ -40,19 +42,19 @@ func (biz *AppService) SaveApp(app *models.App, auth *models.Auth) (result *AddA
 		biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error： %v", err)
-		return
+		return result, err
 	}
 	if nameCount > 0 {
 		log.Printf("app name[%v] has been exist", app.AppName)
 		err = NewBizErr(APPNameHasExist, fmt.Sprintf("app name[%v] has been exist", app.AppName))
-		return
+		return result, err
 	}
 	if app.ChannelId == app.Source {
 		app.ChannelId = "0"
 	}
 	_, err = biz.appDao.Insert(app, tx)
 	if err != nil {
-		return
+		return result, err
 	}
 	if auth == nil {
 		auth = &models.Auth{
@@ -67,20 +69,20 @@ func (biz *AppService) SaveApp(app *models.App, auth *models.Auth) (result *AddA
 	_, err = biz.authDao.Insert(auth, tx)
 	if err != nil {
 		log.Printf("call authDao.Insert error: %v", err)
-		return
+		return result, err
 	}
 	result = &AddAppResult{
 		AppId:     app.AppId,
 		ApiKey:    auth.ApiKey,
 		ApiSecret: auth.ApiSecret,
 	}
-	return
+	return result, err
 }
 
 func (biz *AppService) ModifyApp(app *models.App) (err error) {
 	tx, err := biz.appDao.BeginTx()
 	if err != nil {
-		return
+		return err
 	}
 
 	defer func() {
@@ -90,12 +92,12 @@ func (biz *AppService) ModifyApp(app *models.App) (err error) {
 	apps, err := biz.appDao.Select(biz.appDao.WithAppId(app.AppId), biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error: %v", err)
-		return
+		return err
 	}
 
 	if len(apps) <= 0 {
 		err = NewBizErr(AppIdNotExist, fmt.Sprintf("request app id(%s) not found", app.AppId))
-		return
+		return err
 	}
 	nameCount := int64(0)
 	sqlOptions := make([]dao.SqlOption, 0, 4)
@@ -108,16 +110,15 @@ func (biz *AppService) ModifyApp(app *models.App) (err error) {
 			biz.appDao.WithName(app.AppName),
 			biz.appDao.WithSource(app.Source),
 			biz.appDao.WithIsDelete(false))
-
 		if err != nil {
 			log.Printf("call appDao.count error: %v", err)
-			return
+			return err
 		}
 
 		if nameCount > 0 {
 			log.Printf("app name[%v] has been exist", app.AppName)
 			err = NewBizErr(APPNameHasExist, "app name has been exist")
-			return
+			return err
 		}
 
 		sqlOptions = append(sqlOptions, biz.appDao.WithSetName(app.AppName))
@@ -133,13 +134,13 @@ func (biz *AppService) ModifyApp(app *models.App) (err error) {
 	if err != nil {
 		log.Printf("call appDao.Update error: %v", err)
 	}
-	return
+	return err
 }
 
 func (biz *AppService) DisableOrEnable(appId string, disable bool) (err error) {
 	tx, err := biz.appDao.BeginTx()
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		biz.rollback(tx, err)
@@ -150,29 +151,33 @@ func (biz *AppService) DisableOrEnable(appId string, disable bool) (err error) {
 		biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error: %v", err)
-		return
+		return err
 	}
 	if appCount <= 0 {
 		err = NewBizErr(AppIdNotExist, fmt.Sprintf("request app id(%s) not found", appId))
-		return
+		return err
 	}
 
-	rowNum, err := biz.appDao.Update([]dao.SqlOption{biz.appDao.WithAppId(appId), biz.appDao.WithIsDisable(!disable)}, tx, biz.appDao.WithIsDisable(disable))
+	rowNum, err := biz.appDao.Update(
+		[]dao.SqlOption{biz.appDao.WithAppId(appId), biz.appDao.WithIsDisable(!disable)},
+		tx,
+		biz.appDao.WithIsDisable(disable),
+	)
 	if err != nil {
 		log.Printf("call appDao.update error: %v", err)
 	}
 
 	if rowNum <= 0 {
 		log.Printf("appid[%v] has been %v", appId, disable)
-		return
+		return err
 	}
-	return
+	return err
 }
 
 func (biz *AppService) Delete(appId string) (err error) {
 	tx, err := biz.appDao.BeginTx()
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		biz.rollback(tx, err)
@@ -182,23 +187,23 @@ func (biz *AppService) Delete(appId string) (err error) {
 		biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error: %v", err)
-		return
+		return err
 	}
 	if appCount <= 0 {
 		err = NewBizErr(AppIdNotExist, "request app_id not found")
-		return
+		return err
 	}
 	_, err = biz.appDao.Delete(tx, biz.appDao.WithAppId(appId))
 	if err != nil {
 		log.Printf("call appDao.AppDelete error: %v", err)
-		return
+		return err
 	}
 	_, err = biz.authDao.Delete(tx, biz.authDao.WithAppId(appId))
 	if err != nil {
 		log.Printf("call authDao.AppDelete error: %v", err)
-		return
+		return err
 	}
-	return
+	return err
 }
 
 func (biz *AppService) Query(query *AppQuery) ([]*models.App, error) {

@@ -3,7 +3,7 @@ package com.iflytek.astron.console.commons.util;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson2.JSONObject;
-import com.iflytek.astron.console.commons.entity.bot.BotCreateForm;
+import com.iflytek.astron.console.commons.dto.bot.BotCreateForm;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.commons.entity.workflow.Workflow;
 import com.iflytek.astron.console.commons.service.bot.BotService;
@@ -61,12 +61,12 @@ public class BotUtil {
         chatBotDataService.createBot(botBase);
 
         String flowId = workflow.getFlowId();
-        JSONObject mass = new JSONObject();
+        JSONObject maas = new JSONObject();
         JSONObject data = new JSONObject();
         data.put("flowId", flowId);
         data.put("id", workflow.getId());
-        mass.put("data", data);
-        botService.addMaasInfo(uid, mass, botBase.getId(), spaceId);
+        maas.put("data", data);
+        botService.addMaasInfo(uid, maas, botBase.getId(), spaceId);
         return botBase.getId();
     }
 

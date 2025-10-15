@@ -26,7 +26,17 @@ func (s *SidGenerator2) NewSid(sub string) (string, error) {
 	indexNow := atomic.AddInt64(&s.index, 1) & 0xffff
 	tmInt := time.Now().UnixNano() / 1000000
 	tm := fmt.Sprintf("%011x", tmInt)
-	sid := fmt.Sprintf("%3s%04x%04x@%2s%s%04s%02s%d", sub, pid, indexNow, s.Location, tm[len(tm)-11:], s.ShortLocalIP, s.Port[:2], sid2)
+	sid := fmt.Sprintf(
+		"%3s%04x%04x@%2s%s%04s%02s%d",
+		sub,
+		pid,
+		indexNow,
+		s.Location,
+		tm[len(tm)-11:],
+		s.ShortLocalIP,
+		s.Port[:2],
+		sid2,
+	)
 	return sid, nil
 }
 

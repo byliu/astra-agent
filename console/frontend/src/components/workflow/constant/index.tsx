@@ -91,6 +91,14 @@ export const originOutputTypeList: OriginOutputType[] = [
         label: 'Audio',
         value: 'audio',
       },
+      {
+        label: 'Video',
+        value: 'video',
+      },
+      {
+        label: 'Subtitle',
+        value: 'subtitle',
+      },
     ],
   },
   {

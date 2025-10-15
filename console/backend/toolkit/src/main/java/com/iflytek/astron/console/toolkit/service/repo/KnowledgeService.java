@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
@@ -39,7 +40,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -405,10 +410,12 @@ public class KnowledgeService {
         // try {
         // session.startTransaction();
         // knowledgeRepository.deleteById(id);
+        if(mysqlKnowledge.getEnabled().equals(1)) {
+            JSONArray delKbList = new JSONArray();
+            delKbList.add(knowledge.getId());
+            this.deleteKnowledgeChunks(uuids.getFirst(), delKbList);
+        }
         knowledgeMapper.deleteById(id);
-        JSONArray delKbList = new JSONArray();
-        delKbList.add(knowledge.getId());
-        this.deleteKnowledgeChunks(uuids.getFirst(), delKbList);
         // session.commitTransaction();
         // } catch (Exception e) {
         // // Rollback transaction
@@ -435,23 +442,68 @@ public class KnowledgeService {
     @Async
     public void knowledgeExtractAsync(String contentType, String url, SliceConfig sliceConfig, FileInfoV2 fileInfoV2, ExtractKnowledgeTask extractKnowledgeTask) {
         // 1/2: Parse the user-provided text and perform chunking (completed in one interface)
-        SplitRequest request = new SplitRequest();
-        request.setFile(url.replaceAll("\\+", "%20"));
-        request.setLengthRange(sliceConfig.getLengthRange());
-        request.setCutOff(sliceConfig.getSeperator());
-        if (ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType())) {
-            request.setResourceType(1);
-        }
-        // Compatibility for old and new knowledge bases, handled by new CBG knowledge base
         String source = fileInfoV2.getSource();
-        request.setRagType(source);
+        KnowledgeResponse response;
+        
+        // Compatibility for old and new knowledge bases, handled by new CBG knowledge base
         if (ProjectContent.isCbgRagCompatible(source)) {
-            // sliceFileVO.getSliceConfig().setSeperator(Collections.singletonList("\n"));
-            List<String> sliceConf = sliceConfig.getSeperator();
-            // request.setSeparator(Collections.singletonList("\n"));
-            request.setSeparator(Collections.singletonList(sliceConf.get(0)));
+            // Use upload mode for CBG compatible sources
+            try {
+                // Get file from S3
+                String s3Key = fileInfoV2.getAddress();
+                InputStream fileStream = s3Util.getObject(s3Key);
+                if (fileStream == null) {
+                    this.updateTaskAndFileStatus(fileInfoV2, extractKnowledgeTask, "Failed to get file from S3", false);
+                    return;
+                }
+                
+                // Convert InputStream to MultipartFile
+                byte[] fileBytes = inputStreamToByteArray(fileStream);
+                MultipartFile multipartFile = new MockMultipartFile(
+                    "file",
+                    fileInfoV2.getName(),
+                    "application/octet-stream",
+                    fileBytes
+                );
+                
+                try {
+                    fileStream.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close file stream", e);
+                }
+                
+                List<String> sliceConf = sliceConfig.getSeperator();
+                List<String> separator = (sliceConf != null && !sliceConf.isEmpty()) 
+                    ? Collections.singletonList(sliceConf.get(0)) 
+                    : Collections.singletonList("\n");
+                
+                Integer resourceType = ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType()) ? 1 : 0;
+                
+                response = knowledgeV2ServiceCallHandler.documentUpload(
+                    multipartFile,
+                    sliceConfig.getLengthRange(), 
+                    separator, 
+                    source, 
+                    resourceType
+                );
+            } catch (Exception e) {
+                log.error("Failed to upload file for chunking: {}", e.getMessage(), e);
+                this.updateTaskAndFileStatus(fileInfoV2, extractKnowledgeTask, "Failed to upload file: " + e.getMessage(), false);
+                return;
+            }
+        } else {
+            // Use original URL mode for other sources
+            SplitRequest request = new SplitRequest();
+            request.setFile(url.replaceAll("\\+", "%20"));
+            request.setLengthRange(sliceConfig.getLengthRange());
+            request.setCutOff(sliceConfig.getSeperator());
+            if (ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType())) {
+                request.setResourceType(1);
+            }
+            request.setRagType(source);
+            response = knowledgeV2ServiceCallHandler.documentSplit(request);
         }
-        KnowledgeResponse response = knowledgeV2ServiceCallHandler.documentSplit(request);
+        
         if (response.getCode() != 0) {
             String errMsg = response.getMessage();
             log.error("Document chunking failed : {}", errMsg);
@@ -530,23 +582,68 @@ public class KnowledgeService {
     public void knowledgeEmbeddingExtractAsync(String contentType, String url, SliceConfig sliceConfig, FileInfoV2 fileInfoV2,
             ExtractKnowledgeTask extractKnowledgeTask, FileInfoV2Service fileInfoV2Service) {
         // 1/2: Parse the user-provided text and perform chunking (completed in one interface)
-        SplitRequest request = new SplitRequest();
-        request.setFile(url.replaceAll("\\+", "%20"));
-        request.setLengthRange(sliceConfig.getLengthRange());
-        request.setCutOff(sliceConfig.getSeperator());
-        if (ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType())) {
-            request.setResourceType(1);
-        }
-        // Compatibility for old and new knowledge bases, handled by new CBG knowledge base
         String source = fileInfoV2.getSource();
-        request.setRagType(source);
+        KnowledgeResponse response;
+        
+        // Compatibility for old and new knowledge bases, handled by new CBG knowledge base
         if (ProjectContent.isCbgRagCompatible(source)) {
-            // sliceFileVO.getSliceConfig().setSeperator(Collections.singletonList("\n"));
-            List<String> sliceConf = sliceConfig.getSeperator();
-            // request.setSeparator(Collections.singletonList("\n"));
-            request.setSeparator(Collections.singletonList(sliceConf.get(0)));
+            // Use upload mode for CBG compatible sources
+            try {
+                // Get file from S3
+                String s3Key = fileInfoV2.getAddress();
+                InputStream fileStream = s3Util.getObject(s3Key);
+                if (fileStream == null) {
+                    this.updateTaskAndFileStatus(fileInfoV2, extractKnowledgeTask, "Failed to get file from S3", false);
+                    return;
+                }
+                
+                // Convert InputStream to MultipartFile
+                byte[] fileBytes = inputStreamToByteArray(fileStream);
+                MultipartFile multipartFile = new MockMultipartFile(
+                    "file",
+                    fileInfoV2.getName(),
+                    "application/octet-stream",
+                    fileBytes
+                );
+                
+                try {
+                    fileStream.close();
+                } catch (Exception e) {
+                    log.warn("Failed to close file stream", e);
+                }
+                
+                List<String> sliceConf = sliceConfig.getSeperator();
+                List<String> separator = (sliceConf != null && !sliceConf.isEmpty()) 
+                    ? Collections.singletonList(sliceConf.get(0)) 
+                    : Collections.singletonList("\n");
+                
+                Integer resourceType = ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType()) ? 1 : 0;
+                
+                response = knowledgeV2ServiceCallHandler.documentUpload(
+                    multipartFile,
+                    sliceConfig.getLengthRange(), 
+                    separator, 
+                    source, 
+                    resourceType
+                );
+            } catch (Exception e) {
+                log.error("Failed to upload file for chunking: {}", e.getMessage(), e);
+                this.updateTaskAndFileStatus(fileInfoV2, extractKnowledgeTask, "Failed to upload file: " + e.getMessage(), false);
+                return;
+            }
+        } else {
+            // Use original URL mode for other sources
+            SplitRequest request = new SplitRequest();
+            request.setFile(url.replaceAll("\\+", "%20"));
+            request.setLengthRange(sliceConfig.getLengthRange());
+            request.setCutOff(sliceConfig.getSeperator());
+            if (ProjectContent.HTML_FILE_TYPE.equals(fileInfoV2.getType())) {
+                request.setResourceType(1);
+            }
+            request.setRagType(source);
+            response = knowledgeV2ServiceCallHandler.documentSplit(request);
         }
-        KnowledgeResponse response = knowledgeV2ServiceCallHandler.documentSplit(request);
+        
         if (response.getCode() != 0) {
             String errMsg = response.getMessage();
             log.error("Document chunking failed : {}", errMsg);
@@ -1453,5 +1550,23 @@ public class KnowledgeService {
             }
         }
         return jsonArray;
+    }
+
+    /**
+     * Convert InputStream to byte array
+     *
+     * @param inputStream input stream
+     * @return byte array
+     * @throws IOException if read fails
+     */
+    private byte[] inputStreamToByteArray(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[8192];
+        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
     }
 }

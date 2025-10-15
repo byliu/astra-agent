@@ -1199,9 +1199,11 @@ class BaseLLMNode(BaseNode):
             span_context.add_info_events(
                 {"user_message": json.dumps(user_message, ensure_ascii=False)}
             )
-        user_message.extend(
-            filter(None, [image_msg, system_msg, *payload_comp_history, user_msg])
-        )
+        history = [
+            item if isinstance(item, dict) else item.__dict__
+            for item in payload_comp_history
+        ]
+        user_message.extend(filter(None, [image_msg, system_msg, *history, user_msg]))
         return user_message
 
     async def _chat_with_llm(
@@ -1285,7 +1287,7 @@ class BaseLLMNode(BaseNode):
                             msg_or_end_node_deps=msg_or_end_node_deps or {},
                             llm_content=msg,
                         )
-                    texts.append(content)
+                    texts.append(content if content else "")
                     if status in [
                         SparkLLMStatus.END.value,
                         ChatStatus.FINISH_REASON.value,

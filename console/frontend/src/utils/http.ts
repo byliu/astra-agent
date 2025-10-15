@@ -32,11 +32,11 @@ import { handleLoginRedirect } from './auth';
 export const getLanguageCode = (): string => {
   const lang = i18n.language || 'zh';
 
-  // 已经是简化的格式了，直接使用
+  // 返回Accept-Language标准格式
   if (lang.toLowerCase().startsWith('zh')) {
-    return 'zh';
+    return 'zh-CN';
   } else if (lang.toLowerCase().startsWith('en')) {
-    return 'en';
+    return 'en-US';
   }
 
   return lang;
@@ -178,6 +178,9 @@ export const initBusinessError = (
   response: AxiosResponse,
   result: ResponseResult
 ) => {
+  if (result?.code !== 0) {
+    message.error(result?.message || result?.desc);
+  }
   // 添加套餐用量耗尽处理
   if ([11120].includes(result.code)) {
     eventBus.emit('showUsageExhausted', {
@@ -307,11 +310,11 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.headers.common['web-v'] = packageJson?.version ?? '0.0.1';
 
 // 设置初始语言头部
-axios.defaults.headers.common['Lang-Code'] = getLanguageCode();
+axios.defaults.headers.common['Accept-Language'] = getLanguageCode();
 
 // 监听语言变化，更新请求头
 i18n.on('languageChanged', () => {
-  axios.defaults.headers.common['Lang-Code'] = getLanguageCode();
+  axios.defaults.headers.common['Accept-Language'] = getLanguageCode();
 });
 
 const pendingRequest = new Map(); // 请求对象
@@ -394,7 +397,7 @@ axios.interceptors.request.use(
       config.headers['Authorization'] = 'Bearer ' + latestAccessToken;
     }
     // 确保每个请求都使用最新的语言设置
-    config.headers['Lang-Code'] = getLanguageCode();
+    config.headers['Accept-Language'] = getLanguageCode();
 
     return config;
   },
@@ -455,12 +458,12 @@ const getBaseURL = (): string => {
   // 兜底逻辑：通过import.meta.env.MODE获取构建时的环境模式
   switch (mode) {
     case 'development':
-      return 'http://172.29.202.54:8080/';
+      return 'http://172.29.202.54:8080';
     case 'test':
-      return 'http://172.29.201.92:8080/';
+      return 'http://172.29.201.92:8080';
     default:
       // production和其他环境保持原有逻辑
-      return 'http://172.29.201.92:8080/';
+      return 'http://172.29.201.92:8080';
   }
 };
 

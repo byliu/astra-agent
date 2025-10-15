@@ -1143,6 +1143,8 @@ export const generateUploadType = (type: string): string[] => {
     excel: ['xls', 'xlsx', 'csv'],
     txt: ['txt'],
     audio: ['wav', 'mp3', 'flac', 'm4a', 'aac', 'ogg', 'wma', 'midi'],
+    video: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'],
+    subtitle: ['srt', 'vtt', 'ass', 'ssa'],
   };
 
   return typeMap[type] || [];

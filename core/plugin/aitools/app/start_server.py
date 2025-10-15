@@ -5,10 +5,11 @@ Server startup module responsible for FastAPI application initialization and sta
 import os
 
 import uvicorn
-from common.initialize.initialize import initialize_services
 from fastapi import FastAPI
 from plugin.aitools.api.route import app
 from plugin.aitools.const.const import SERVICE_APP_KEY, SERVICE_PORT_KEY
+
+from common.initialize.initialize import initialize_services
 
 
 class AIToolsServer:

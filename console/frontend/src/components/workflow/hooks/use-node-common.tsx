@@ -27,6 +27,7 @@ import {
   AgentNodeOneClickUpdate,
   ToolNodeOneClickUpdate,
   FlowNodeOneClickUpdate,
+  RpaNodeOneClickUpdate,
 } from '@/components/workflow/hooks/use-one-click-update';
 import {
   NodeCommonProps,
@@ -177,6 +178,9 @@ const useNodeInfo = ({ id, data }): UseNodeInfoReturn => {
     //工具节点需要特判一下，使用工具本身的描述
     if (nodeType === 'plugin') {
       return data?.nodeParam?.toolDescription;
+    }
+    if (nodeType === 'rpa') {
+      return data?.nodeParam?.rpaDescription;
     }
     const currentNode = nodeList
       ?.flatMap(item => item?.nodes)
@@ -844,7 +848,7 @@ const useNodeHandle = ({ id, data }): UseNodeHandleReturn => {
   }, [data?.parentId, showIterativeModal]);
 
   const hasSourceHandle = useMemo(() => {
-    if (nodeType === 'node-end') {
+    if (nodeType === 'node-end' || nodeType === 'iteration-node-end') {
       return false;
     }
     if (nodeType === 'decision-making') {
@@ -970,7 +974,7 @@ const useNodeInputRender = ({ id, data }): UseNodeInputRenderReturn => {
           }));
           const iteratorStartNode = nodes?.find(
             node =>
-              node?.data?.parentId === id && node?.nodeType === 'node-start'
+              node?.data?.parentId === id && node?.nodeType === 'iteration-node-start'
           );
           setNode(iteratorStartNode?.id, old => {
             old.data.outputs = outputs;
@@ -1092,6 +1096,8 @@ export const useNodeCommon = ({
       return <ToolNodeOneClickUpdate id={id} data={data} />;
     } else if (nodeType === 'flow') {
       return <FlowNodeOneClickUpdate id={id} data={data} />;
+    } else if (nodeType === 'rpa') {
+      return <RpaNodeOneClickUpdate id={id} data={data} />;
     }
     return null;
   };

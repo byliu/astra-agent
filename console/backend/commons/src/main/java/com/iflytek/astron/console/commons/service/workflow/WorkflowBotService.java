@@ -1,7 +1,7 @@
 package com.iflytek.astron.console.commons.service.workflow;
 
-import com.iflytek.astron.console.commons.entity.workflow.CloneSynchronize;
+import com.iflytek.astron.console.commons.dto.workflow.CloneSynchronize;
 
 public interface WorkflowBotService {
-    Integer massCopySynchronize(CloneSynchronize synchronize);
+    Integer maasCopySynchronize(CloneSynchronize synchronize);
 }

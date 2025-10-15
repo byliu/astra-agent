@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from workflow.consts.engine.error_handler import ErrorHandler
 
@@ -14,8 +14,10 @@ class RetryConfig(BaseModel):
     :param custom_output: Custom output to return when retry fails
     """
 
-    timeout: float = 60
-    should_retry: bool = False
-    max_retries: int = 0
-    error_strategy: int = ErrorHandler.Interrupted.value
-    custom_output: dict = {}
+    timeout: float = Field(default=60, alias="timeout")
+    should_retry: bool = Field(default=False, alias="shouldRetry")
+    max_retries: int = Field(default=0, alias="maxRetries")
+    error_strategy: int = Field(
+        default=ErrorHandler.Interrupted.value, alias="errorStrategy"
+    )
+    custom_output: dict = Field(default_factory=dict, alias="customOutput")

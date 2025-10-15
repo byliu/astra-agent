@@ -17,6 +17,7 @@ import deleteIcon from '@/assets/imgs/database/delete-circle.png';
 import { DatabaseItem, TableField, OperateType } from '@/types/database';
 import i18next from 'i18next';
 import { ResponseBusinessError } from '@/types/global';
+import styles from './test-table.module.scss';
 
 const isDateString = (str: string): boolean => {
   const date = dayjs(str);
@@ -241,9 +242,9 @@ const TestTable = forwardRef<
   );
 
   return (
-    <div className="flex-1 h-0 pt-4" ref={containerRef}>
+    <div className={styles.databaseTable} ref={containerRef}>
       <Table<Record<string, unknown>>
-        className={`tool-params-table [&_.ant-table-thead_.ant-table-cell]:text-gray-500 [&_.ant-table-cell]:align-middle [&_.ant-checkbox-inner]:bg-white [&_.ant-checkbox-inner]:border [&_.ant-checkbox-inner]:border-blue-200 [&_.ant-checkbox-checked_.ant-checkbox-inner]:bg-blue-600 [&_.ant-checkbox-indeterminate_.ant-checkbox-inner:after]:bg-blue-600`}
+        className={`tool-params-table`}
         pagination={false}
         columns={mergeColumns}
         dataSource={dataSource}
@@ -251,6 +252,7 @@ const TestTable = forwardRef<
         rowSelection={rowSelection}
         loading={loading}
         scroll={{ x: 'max-content', y: tableHeight }}
+        locale={{ emptyText: ' ' }}
       />
     </div>
   );

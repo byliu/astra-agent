@@ -50,28 +50,7 @@ function index({ id, data }): React.ReactElement {
               }, currentModel);
             }}
             dropdownRender={menu => (
-              <div
-                className="overscroll-contain"
-                onWheel={e => e.stopPropagation()}
-              >
-                {menu}
-                <div
-                  className="text-[#275EFF] text-center text-xs cursor-pointer"
-                  onClick={e => {
-                    e.stopPropagation();
-                    window.open(
-                      'https://training.xfyun.cn/modelSquare',
-                      '_blank'
-                    );
-                  }}
-                  style={{
-                    height: '30px',
-                    lineHeight: '30px',
-                  }}
-                >
-                  {t('workflow.nodes.modelSelect.selectMoreModels')}
-                </div>
-              </div>
+              <div className="overscroll-contain">{menu}</div>
             )}
           >
             {models.map(model => (
@@ -80,11 +59,7 @@ function index({ id, data }): React.ReactElement {
                   <div className="flex items-start gap-2 flex-1 overflow-hidden">
                     <div className="flex items-center gap-2">
                       <img
-                        src={
-                          model?.llmSource === 0
-                            ? model?.address + model?.icon
-                            : model.icon
-                        }
+                        src={model.icon}
                         className="w-[20px] h-[20px] flex-shrink-0"
                       />
                       <span className="text-xs">{model.name}</span>

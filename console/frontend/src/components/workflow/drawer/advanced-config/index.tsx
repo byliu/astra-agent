@@ -5,6 +5,7 @@ import useFlowsManager from '@/components/workflow/store/use-flows-manager';
 import { saveFlowAPI } from '@/services/flow';
 import { debounce, cloneDeep } from 'lodash';
 import { isJSON } from '@/utils';
+import { getFixedUrl, getAuthorization } from '@/components/workflow/utils';
 import OpeningRemarks from './opening-remarks';
 import { useTranslation } from 'react-i18next';
 import {
@@ -457,9 +458,12 @@ const useAdvancedConfiguration = (): useAdvancedConfigurationProps => {
 
   const uploadProps: UploadProps = {
     name: 'file',
-    action: '/xingchen-api/image/upload',
+    action: getFixedUrl('/image/upload'),
     showUploadList: false,
     accept: '.png,.jpg,.jpeg',
+    headers: {
+      Authorization: getAuthorization(),
+    },
     beforeUpload,
     onChange: info => {
       const file = info.file;

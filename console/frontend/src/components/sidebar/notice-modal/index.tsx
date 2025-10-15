@@ -248,7 +248,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
               {(!notificationData?.totalCount ||
                 notificationData?.totalCount <= 0) &&
                 renderEmptyState(t)}
-              {notificationData?.totalCount &&
+              {!!notificationData?.totalCount &&
                 notificationData?.totalCount > 0 &&
                 notificationData?.notifications?.map((item: Notification) =>
                   renderNotificationItem(

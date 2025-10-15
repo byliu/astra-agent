@@ -1,8 +1,6 @@
 package com.iflytek.astron.console.toolkit.service.workflow;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -69,17 +67,7 @@ public class VersionService {
     }
 
     public Object list_botId_Page(Page<WorkflowVersion> page, String botId) {
-        Page<WorkflowVersion> newPage = new Page<>(page.getCurrent(), page.getSize());
-
-        LambdaQueryWrapper<WorkflowVersion> wrapper = new QueryWrapper<WorkflowVersion>()
-                .lambda()
-                .eq(WorkflowVersion::getBotId, botId)
-                .eq(WorkflowVersion::getDeleted, 1)
-                .eq(WorkflowVersion::getPublishResult, "Success")
-                .groupBy(WorkflowVersion::getName)
-                .orderByDesc(WorkflowVersion::getCreatedTime);
-
-        return workflowVersionMapper.selectPage(newPage, wrapper);
+        return workflowVersionMapper.selectPageLatestByName(page, botId);
     }
 
     /**

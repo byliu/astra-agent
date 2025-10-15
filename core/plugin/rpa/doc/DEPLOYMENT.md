@@ -86,7 +86,7 @@ XIAOWU_RPA_TASK_QUERY_URL=https://your-rpa-api.com/query
 python main.py
 
 # Method 2: Using uvicorn (recommended for development)
-uvicorn api.app:rpa_server_app --reload --host 127.0.0.1 --port 19999
+uvicorn api.app:rpa_server_app --reload --host 127.0.0.1 --port 17198
 
 # Method 3: Using custom startup script
 python -c "
@@ -95,7 +95,7 @@ from plugin.rpa.api.app import rpa_server_app
 uvicorn.run(
     rpa_server_app,
     host='127.0.0.1',
-    port=19999,
+    port=17198,
     reload=True,
     log_level='debug'
 )"
@@ -105,10 +105,10 @@ uvicorn.run(
 
 ```bash
 # Check service status
-curl http://127.0.0.1:19999/rpa/v1/docs
+curl http://127.0.0.1:17198/rpa/v1/docs
 
 # Run health check
-curl -X POST http://127.0.0.1:19999/rpa/v1/exec \
+curl -X POST http://127.0.0.1:17198/rpa/v1/exec \
   -H "Authorization: Bearer test-token" \
   -H "Content-Type: application/json" \
   -d '{"project_id": "health-check"}'
@@ -146,11 +146,11 @@ RUN mkdir -p logs
 RUN chmod +x main.py
 
 # Expose port
-EXPOSE 19999
+EXPOSE 17198
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:19999/rpa/v1/docs || exit 1
+    CMD curl -f http://localhost:17198/rpa/v1/docs || exit 1
 
 # Startup command
 CMD ["python", "main.py"]
@@ -166,7 +166,7 @@ services:
   rpa-server:
     build: .
     ports:
-      - "19999:19999"
+      - "17198:17198"
     environment:
       - LOG_LEVEL=INFO
       - LOG_PATH=/app/logs
@@ -178,7 +178,7 @@ services:
       - ./config:/app/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:19999/rpa/v1/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:17198/rpa/v1/docs"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -220,7 +220,7 @@ docker-compose down
 # Run single container
 docker run -d \
   --name rpa-server \
-  -p 19999:19999 \
+  -p 17198:17198 \
   -e LOG_LEVEL=INFO \
   -e XIAOWU_RPA_TASK_CREATE_URL=https://your-api.com/create \
   -e XIAOWU_RPA_TASK_QUERY_URL=https://your-api.com/query \
@@ -244,7 +244,7 @@ pip install gunicorn
 gunicorn api.app:rpa_server_app \
   -w 4 \
   -k uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:19999 \
+  --bind 0.0.0.0:17198 \
   --access-logfile logs/access.log \
   --error-logfile logs/error.log \
   --log-level info \
@@ -255,7 +255,7 @@ gunicorn api.app:rpa_server_app \
 
 ```python
 # gunicorn.conf.py
-bind = "0.0.0.0:19999"
+bind = "0.0.0.0:17198"
 workers = 4
 worker_class = "uvicorn.workers.UvicornWorker"
 worker_connections = 1000
@@ -385,7 +385,7 @@ pm2 save
 # /etc/nginx/sites-available/rpa-server
 upstream rpa_backend {
     least_conn;
-    server 127.0.0.1:19999 weight=1 max_fails=3 fail_timeout=30s;
+    server 127.0.0.1:17198 weight=1 max_fails=3 fail_timeout=30s;
     server 127.0.0.1:19998 weight=1 max_fails=3 fail_timeout=30s;
     server 127.0.0.1:19997 weight=1 max_fails=3 fail_timeout=30s;
 }
@@ -485,7 +485,7 @@ backend rpa_servers
     balance roundrobin
     option httpchk GET /rpa/v1/docs
     http-check expect status 200
-    server rpa1 127.0.0.1:19999 check
+    server rpa1 127.0.0.1:17198 check
     server rpa2 127.0.0.1:19998 check backup
     server rpa3 127.0.0.1:19997 check backup
 
@@ -588,8 +588,8 @@ async def get_metrics():
 
 ```bash
 # Check port usage
-sudo netstat -tulpn | grep 19999
-sudo lsof -i :19999
+sudo netstat -tulpn | grep 17198
+sudo lsof -i :17198
 
 # Check configuration files
 python -c "

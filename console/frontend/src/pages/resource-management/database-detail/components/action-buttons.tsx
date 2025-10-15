@@ -35,7 +35,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       <Button
         onClick={onAddData}
         type="default"
-        className="h-8 rounded-lg border border-blue-100 text-blue-600"
+        className="!h-8 !rounded-lg !border !border-blue-100 !text-blue-600"
         icon={<img src={addTableFields} alt="" />}
       >
         {t('database.addData')}
@@ -43,7 +43,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       <Button
         onClick={onBatchDelete}
         type="default"
-        className="h-8 rounded-lg border border-blue-100 text-blue-600"
+        className="!h-8 !rounded-lg !border !border-blue-100 !text-blue-600"
         icon={<img src={deleteIcon} alt="" />}
       >
         {t('database.batchDelete')}
@@ -52,7 +52,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         <Button
           type="default"
           onClick={onRefreshData}
-          className="h-8 rounded-lg border border-blue-100 text-blue-600"
+          className="!h-8 !rounded-lg !border !border-blue-100 !text-blue-600"
           icon={<img src={refreshIcon} alt="" />}
         >
           {t('database.refreshData')}
@@ -61,7 +61,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       <Button
         onClick={onImportData}
         type="default"
-        className="h-8 rounded-lg border border-blue-100 text-blue-600"
+        className="!h-8 !rounded-lg !border !border-blue-100 !text-blue-600"
         icon={<img src={importDataTable} alt="" />}
       >
         {t('database.importDataAction')}
@@ -70,7 +70,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         onClick={onExportData}
         loading={exportLoading}
         type="default"
-        className="h-8 rounded-lg border border-blue-100 text-blue-600"
+        className="!h-8 !rounded-lg !border !border-blue-100 !text-blue-600"
         icon={<img src={exportIcon} alt="" />}
       >
         {t('database.exportData')}

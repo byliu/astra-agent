@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { isJSON } from '@/utils';
 import { v4 as uuid } from 'uuid';
 import { getLatestWorkflow } from '@/services/flow';
+import { getRpaDetail } from '@/services/rpa';
+import { transRpaParameters } from '@/utils/rpa';
 
 import oneClickUpdate from '@/assets/imgs/plugin/one-click-update.svg';
 
@@ -322,6 +324,83 @@ export const FlowNodeOneClickUpdate = ({ id, data }): React.ReactElement => {
         >
           <div
             className="bg-[#1FC92D] flex items-center gap-1 cursor-pointer"
+            style={{
+              padding: '2px 15px 2px 2px',
+              borderRadius: '10px',
+            }}
+          >
+            <img src={oneClickUpdate} className="w-[16px] h-[16px]" alt="" />
+            <span className="text-xs text-white">
+              {t('workflow.nodes.agentNode.oneClickUpdate')}
+            </span>
+          </div>
+        </Popconfirm>
+      ) : null}
+    </>
+  );
+};
+
+export const RpaNodeOneClickUpdate = ({ id, data }): React.ReactElement => {
+  const { t } = useTranslation();
+  const getCurrentStore = useFlowsManager(state => state.getCurrentStore);
+  const currentStore = getCurrentStore();
+  const setNode = currentStore(state => state.setNode);
+  const autoSaveCurrentFlow = useFlowsManager(
+    state => state.autoSaveCurrentFlow
+  );
+  const canPublishSetNot = useFlowsManager(state => state.canPublishSetNot);
+  const updateNodeRef = currentStore(state => state.updateNodeRef);
+
+  const shouldUpdateNode = useMemo(() => {
+    return data?.isLatest === false;
+  }, [data?.isLatest]);
+
+  const handleOneClickUpdate = useCallback(() => {
+    const rpaId = data?.nodeParam?.assistantId;
+    const robotName = data?.nodeParam?.projectId;
+
+    getRpaDetail(rpaId, { name: robotName }).then(res => {
+      const robot = res?.robots?.find(r => r.project_id === robotName);
+      if (!robot) return;
+
+      setNode(id, old => {
+        old.data.nodeParam.version = robot.version;
+        old.data.inputs = transRpaParameters(
+          robot.parameters?.filter(item => item.varDirection === 0) || []
+        );
+        old.data.outputs = transRpaParameters(
+          robot.parameters?.filter(item => item.varDirection === 1) || []
+        );
+        old.data.isLatest = true;
+        return cloneDeep(old);
+      });
+      updateNodeRef(id);
+      autoSaveCurrentFlow();
+      canPublishSetNot();
+    });
+  }, [setNode, id, data, autoSaveCurrentFlow, canPublishSetNot, updateNodeRef]);
+
+  return (
+    <>
+      {shouldUpdateNode ? (
+        <Popconfirm
+          icon={null}
+          title={null}
+          description={t('workflow.nodes.common.confirmUpdate')}
+          okButtonProps={{
+            autoInsertSpace: false,
+            className: 'popver-footer-button',
+          }}
+          cancelButtonProps={{
+            autoInsertSpace: false,
+            className: 'popver-footer-button',
+          }}
+          onConfirm={handleOneClickUpdate}
+          onPopupClick={e => e.stopPropagation()}
+        >
+          <div
+            className="bg-[#1FC92D] flex items-center gap-1 cursor-pointer"
+            onClick={e => e.stopPropagation()}
             style={{
               padding: '2px 15px 2px 2px',
               borderRadius: '10px',

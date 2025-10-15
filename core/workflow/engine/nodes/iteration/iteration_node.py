@@ -12,7 +12,6 @@ from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
     WorkflowNodeExecutionStatus,
 )
-from workflow.engine.nodes.util.prompt import prompt_template_replace
 from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.otlp.log_trace.node_log import NodeLog
@@ -311,7 +310,6 @@ class IterationEndNode(BaseNode):
     the configured output mode.
     """
 
-    template: str = ""
     outputMode: int
 
     async def async_execute(
@@ -334,7 +332,6 @@ class IterationEndNode(BaseNode):
         :param kwargs: Additional keyword arguments
         :return: NodeRunResult containing execution status and processed outputs
         """
-        prompt_template = self.template
         inputs: dict = {}
         outputs: dict = {}
         try:
@@ -347,21 +344,11 @@ class IterationEndNode(BaseNode):
                     }
                 )
 
-            if self.outputMode == 1:
-                prompt_template = prompt_template_replace(
-                    input_identifier=self.input_identifier,
-                    _prompt_template=prompt_template,
-                    node_id=self.node_id,
-                    variable_pool=variable_pool,
-                    span_context=span,
-                )
-
             return NodeRunResult(
                 status=WorkflowNodeExecutionStatus.SUCCEEDED,
                 inputs=inputs,
                 outputs=outputs,
                 node_id=self.node_id,
-                node_answer_content=prompt_template,
                 node_type=self.node_type,
                 alias_name=self.alias_name,
             )

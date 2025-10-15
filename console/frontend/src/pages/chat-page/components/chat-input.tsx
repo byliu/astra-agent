@@ -11,7 +11,7 @@ import stopIcon from '@/assets/imgs/chat/stop-icon.svg';
 import delIcon from '@/assets/imgs/chat/delete-history.svg';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { clearChatList, postNewChat } from '@/services/chat';
+import { postNewChat } from '@/services/chat';
 import { message, Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import DeleteModal from './delete-modal';

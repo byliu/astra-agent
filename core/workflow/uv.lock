@@ -1659,15 +1659,6 @@ wheels = [
 ]
 
 [[package]]
-name = "restrictedpython"
-version = "8.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/f3/3cfd684abf456f536a842e4fabe1ca360a8e94d1fc329f261c34c1d98825/restrictedpython-8.0.tar.gz", hash = "sha256:3af2312bc67e5fced887fb85b006c89861da72488128b155beea81eb6a0a9b24", size = 448747, upload-time = "2025-01-23T07:15:53.14Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/31/b33804f873742ab20c8ed82a75652bf60a6205116dfec8bb092a6ebef084/RestrictedPython-8.0-py3-none-any.whl", hash = "sha256:ed3d894efd7d6cac0a5f13f75583b8458378d400d7dd4c083b59233eba85fe69", size = 27238, upload-time = "2025-01-23T07:15:50.428Z" },
-]
-
-[[package]]
 name = "rich"
 version = "13.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2147,7 +2138,6 @@ dependencies = [
     { name = "redis-py-cluster", marker = "python_full_version < '4.0'" },
     { name = "referencing", marker = "python_full_version < '4.0'" },
     { name = "requests", marker = "python_full_version < '4.0'" },
-    { name = "restrictedpython" },
     { name = "rich", marker = "python_full_version < '4.0'" },
     { name = "rpds-py", marker = "python_full_version < '4.0'" },
     { name = "setuptools", marker = "python_full_version < '4.0'" },
@@ -2248,7 +2238,6 @@ requires-dist = [
     { name = "redis-py-cluster", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==2.1.3" },
     { name = "referencing", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==0.35.1" },
     { name = "requests", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==2.32.3" },
-    { name = "restrictedpython", specifier = ">=8.0" },
     { name = "rich", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==13.7.1" },
     { name = "rpds-py", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==0.19.0" },
     { name = "setuptools", marker = "python_full_version >= '3.11' and python_full_version < '4.0'", specifier = "==70.3.0" },

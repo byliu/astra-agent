@@ -18,7 +18,7 @@ class NodeRef(BaseModel):
     name: str = Field(..., min_length=1)
 
 
-LiteralValue = Union[str, int, bool, float, List[Any], Dict[str, Any]]
+LiteralValue = Union[str, int, bool, float]
 Content = Union[NodeRef, LiteralValue]
 
 

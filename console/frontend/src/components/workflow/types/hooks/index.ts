@@ -275,6 +275,7 @@ export interface UseNodeCommonReturn {
 }
 
 export interface UseFlowCommonReturn {
+  startWorkflowKeydownEvent: boolean;
   handleAddNode: (
     addNode: AddNodeType,
     position: PositionType

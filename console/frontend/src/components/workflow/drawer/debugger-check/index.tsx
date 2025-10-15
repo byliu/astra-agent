@@ -15,6 +15,7 @@ import {
 
 // 从统一的图标管理中导入
 import { Icons } from '@/components/workflow/icons';
+import { useMemoizedFn } from 'ahooks';
 
 // 获取 Debugger Check 模块的图标
 const icons = Icons.debuggerCheck;
@@ -27,6 +28,10 @@ function OperationResult({
   const errNodes = useFlowsManager(state => state.errNodes) as ErrorNode[];
   const checkFlow = useFlowsManager(state => state.checkFlow) as () => void;
   const currentStore = useFlowsManager(state => state.getCurrentStore());
+  const nodeList = useFlowsManager(state => state.nodeList);
+  const setNodeInfoEditDrawerlInfo = useFlowsManager(
+    state => state.setNodeInfoEditDrawerlInfo
+  );
   const nodes = currentStore(state => state.nodes);
   const moveToPosition = currentStore(state => state.moveToPosition);
   const [drawerStyle, setDrawerStyle] = useState<DrawerStyle>({
@@ -49,25 +54,44 @@ function OperationResult({
       window.removeEventListener('resize', handleAdjustmentDrawerStyle);
   }, [drawerStyle]);
 
-  const handleMoveToPosition = useCallback(
-    (id: string, inputNodes?: ReactFlowNode[]): void => {
-      const currentNode = (inputNodes || nodes).find(node => node.id === id);
-      const zoom = 0.8;
-      const xPos = currentNode?.position?.x ?? 0;
-      const yPos = currentNode?.position?.y ?? 0;
-      const position: PositionData = {
-        x: -xPos * zoom + 200,
-        y: -yPos * zoom + 200,
-        zoom,
-      };
-      moveToPosition(position);
-    },
-    [nodes, moveToPosition]
-  );
+  const handleMoveToPosition = useMemoizedFn((id: string): void => {
+    const currentNode = nodes.find(node => node.id === id);
+    const zoom = 0.8;
+    const xPos = currentNode?.position?.x ?? 0;
+    const yPos = currentNode?.position?.y ?? 0;
+    const position: PositionData = {
+      x: -xPos * zoom + 200,
+      y: -yPos * zoom + 200,
+      zoom,
+    };
+    moveToPosition(position);
+    setNodeInfoEditDrawerlInfo({
+      open: true,
+      nodeId: id,
+    });
+  });
 
+  const handleClickErrorNode = useMemoizedFn((id: string) => {
+    handleMoveToPosition(id);
+  });
   const showErrorNodesDrawer = useMemo(() => {
     return errNodes?.length !== 0;
   }, [errNodes]);
+
+  const nodeIcon = useMemoizedFn((nodeType: string) => {
+    let nodeFinallyType = '';
+    if (nodeType === 'iteration-node-start') {
+      nodeFinallyType = 'node-start';
+    } else if (nodeType === 'iteration-node-end') {
+      nodeFinallyType = 'node-end';
+    } else {
+      nodeFinallyType = nodeType;
+    }
+    const currentNode = nodeList
+      ?.flatMap(item => item?.nodes)
+      ?.find(item => item?.idType === nodeFinallyType);
+    return currentNode?.data?.icon;
+  });
 
   return (
     <Drawer
@@ -112,10 +136,14 @@ function OperationResult({
               <div
                 key={node.id}
                 className="border border-[#E0E3E7] p-4 mt-4 rounded-lg cursor-pointer"
-                onClick={() => handleMoveToPosition(node.id)}
+                onClick={() => handleClickErrorNode(node.id)}
               >
                 <div className="flex items-center  gap-5">
-                  <img src={node?.icon} className="w-[30px] h-[30px]" alt="" />
+                  <img
+                    src={nodeIcon(node.nodeType)}
+                    className="w-[30px] h-[30px]"
+                    alt=""
+                  />
                   <div className="flex flex-col gap-1">
                     <span className="text-base font-medium">{node.name}</span>
                     <span className="text-[#F74E43] text-xs">
@@ -131,7 +159,7 @@ function OperationResult({
                 {node?.childErrList?.map(childNode => (
                   <div key={childNode?.id} className="flex items-center  gap-5">
                     <img
-                      src={childNode?.icon}
+                      src={nodeIcon(childNode.nodeType)}
                       className="w-[30px] h-[30px]"
                       alt=""
                     />

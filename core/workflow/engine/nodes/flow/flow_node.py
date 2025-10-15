@@ -122,9 +122,8 @@ class FlowNode(BaseNode):
             token_usage: dict[Any, Any] = {}
 
             # Get the workflow SSE endpoint URL
-            sparkflow_url_sse = os.getenv(
-                "WORKFLOW_URL_SSE",
-                "https://xingchen-api.xf-yun.com/workflow/v1/chat/completions",
+            sparkflow_url_sse = (
+                f"{os.getenv('WORKFLOW_BASE_URL')}/workflow/v1/chat/completions"
             )
 
             # Execute the nested workflow via SSE API
@@ -351,7 +350,11 @@ class FlowNode(BaseNode):
                     origin_history=variable_pool.history_v2.origin_history,
                     rounds=rounds,
                 )
-                history = history_v2.origin_history
+                history = [
+                    item if isinstance(item, dict) else item.__dict__
+                    for item in history_v2.origin_history
+                ]
+        origin_inputs = copy.deepcopy(inputs)
 
         # Add chat history to inputs if available
         if history:
@@ -361,7 +364,7 @@ class FlowNode(BaseNode):
         req_body = {
             "flow_id": self.flowId,
             "uid": self.uid,
-            "parameters": inputs,
+            "parameters": origin_inputs,
             "ext": {},
             "stream": True,
             "history": history,

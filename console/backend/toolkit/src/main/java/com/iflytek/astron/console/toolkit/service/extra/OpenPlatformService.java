@@ -3,10 +3,11 @@ package com.iflytek.astron.console.toolkit.service.extra;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
-import com.iflytek.astron.console.commons.entity.workflow.CloneSynchronize;
+import com.iflytek.astron.console.commons.dto.workflow.CloneSynchronize;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.service.workflow.WorkflowBotService;
 import com.iflytek.astron.console.toolkit.config.properties.ApiUrl;
+import com.iflytek.astron.console.toolkit.config.properties.CommonConfig;
 import com.iflytek.astron.console.toolkit.entity.common.FlagResponseEntity;
 import com.iflytek.astron.console.toolkit.tool.OpenPlatformTool;
 import com.iflytek.astron.console.toolkit.util.OkHttpUtil;
@@ -25,10 +26,10 @@ import java.util.*;
 @Slf4j
 @Service
 public class OpenPlatformService {
-    public static final String MAAS1024APP = "mass1024";
-
     @Resource
     ApiUrl apiUrl;
+    @Resource
+    CommonConfig commonConfig;
     @Autowired
     private WorkflowBotService botMassService;
 
@@ -56,7 +57,7 @@ public class OpenPlatformService {
         cloneSynchronize.setCurrentId(currentId);
         cloneSynchronize.setSpaceId(spaceId);
         log.info("OpenPlatformService syncWorkflowClonereqBody = {}", cloneSynchronize);
-        Integer botId = botMassService.massCopySynchronize(cloneSynchronize);
+        Integer botId = botMassService.maasCopySynchronize(cloneSynchronize);
         log.info("OpenPlatformService syncWorkflowClone response = {}", botId);
         return botId;
     }
@@ -103,8 +104,8 @@ public class OpenPlatformService {
         Map<String, String> headers = new HashMap<>();
         long timestamp = System.currentTimeMillis() / 1000;
         headers.put("timestamp", String.valueOf(timestamp));
-        headers.put("signature", OpenPlatformTool.getSignature(MAAS1024APP, secret, timestamp));
-        headers.put("appId", MAAS1024APP);
+        headers.put("signature", OpenPlatformTool.getSignature(commonConfig.getAppId(), secret, timestamp));
+        headers.put("appId", commonConfig.getAppId());
 
         return headers;
     }

@@ -18,13 +18,8 @@ import useFlowStore from '@/components/workflow/store/use-flow-store';
 
 import chatResultClose from '@/assets/imgs/workflow/chat-result-close.png';
 
-// ========= Props 类型 =========
-interface IndexProps {
-  currentTab?: string;
-}
-
 // ========= 组件 =========
-const Index: React.FC<IndexProps> = ({ currentTab = 'arrange' }) => {
+const Index: React.ReactElement = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const location = useLocation();
@@ -148,7 +143,7 @@ const Index: React.FC<IndexProps> = ({ currentTab = 'arrange' }) => {
         </div>
       </div>
       {/* 顶部工具栏 */}
-      <FlowHeader currentTab={currentTab}>
+      <FlowHeader currentFlow={currentFlow}>
         {showNodeList ? (
           <BtnGroups
             publishModal={publishModal}
@@ -170,7 +165,7 @@ const Index: React.FC<IndexProps> = ({ currentTab = 'arrange' }) => {
         wrapperClassName="flow-spin-wrapper"
       >
         <div className="w-full h-full">
-          <div className="flex items-start w-full h-full">
+          <div className="flex items-start w-full h-full px-6">
             {showNodeList && <NodeList />}
             <FlowContainer zoom={zoom} setZoom={setZoom} />
           </div>

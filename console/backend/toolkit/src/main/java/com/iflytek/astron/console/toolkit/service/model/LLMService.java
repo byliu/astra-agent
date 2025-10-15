@@ -227,7 +227,8 @@ public class LLMService {
         if (spaceId != null) {
             lambdaQueryWrapper.eq(Model::getSpaceId, spaceId);
         } else {
-            lambdaQueryWrapper.eq(Model::getUid, userId);
+            lambdaQueryWrapper.eq(Model::getUid, userId)
+                    .isNull(Model::getSpaceId);
         }
         List<Model> models = modelMapper.selectList(lambdaQueryWrapper);
 
@@ -243,9 +244,36 @@ public class LLMService {
             llmInfoVo.setTag(JSONArray.parseArray(model.getTag(), String.class));
             llmInfoVo.setLlmSource(0);
             llmInfoVo.setDomain(model.getDomain());
-            llmInfoVo.setConfig(model.getConfig());
+            JSONArray config = JSONArray.parseArray(model.getConfig());
+            for (Object o : config) {
+                JSONObject obj = (JSONObject) o;
+                // 1.0 2.0 3.0 4.0
+                Float precision = obj.getFloat("precision");
+                if (precision != null) {
+                    obj.put("precision", convertPrecisionValue(precision));
+                }
+            }
+            llmInfoVo.setConfig(JSON.toJSONString(config));
             personalList.add(llmInfoVo);
         }
+    }
+
+    /**
+     * Convert precision value (e.g., 1.0 -> 0.1, 2.0 -> 0.01, etc.)
+     *
+     * @param precision Original precision value, usually an integer or float like 1.0, 2.0
+     * @return Converted float value, or original if not valid (e.g., 0.5 stays 0.5)
+     */
+    private Float convertPrecisionValue(Float precision) {
+        if (precision == null) {
+            return null;
+        }
+        int intPrec = Math.round(precision);
+        if (precision >= 1 && Math.abs(precision - intPrec) < 1e-6) {
+            // 1 -> 0.1, 2 -> 0.01, 3 -> 0.001 ...
+            return 1f / (float) Math.pow(10, intPrec);
+        }
+        return precision;
     }
 
     /**

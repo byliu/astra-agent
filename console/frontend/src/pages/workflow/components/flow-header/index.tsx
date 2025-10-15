@@ -1,5 +1,5 @@
-import React, { useMemo, useState, ReactNode, memo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useMemo, useState, ReactNode, memo, useEffect } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useFlowsManager from '@/components/workflow/store/use-flows-manager';
 import FlowEdit from '@/components/workflow/modal/flow-edit';
@@ -107,20 +107,21 @@ const FlowTabs: React.FC<FlowTabsProps> = ({ currentTab, id, t, navigate }) => (
   </div>
 );
 
-const FlowHeader: React.FC<FlowHeaderProps> = ({
-  currentTab = 'arrange',
-  children,
-}) => {
+const FlowHeader: React.FC<FlowHeaderProps> = ({ children, currentFlow }) => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  const currentFlow = useFlowsManager(state => state.currentFlow);
+  const location = useLocation();
   const flowResult = useFlowsManager(state => state.flowResult);
   const historyVersion = useFlowsManager(state => state.historyVersion);
   const historyVersionData = useFlowsManager(state => state.historyVersionData);
-
+  const [currentTab, setCurrentTab] = useState('arrange');
   const [editModal, setEditModal] = useState(false);
+
+  useEffect(() => {
+    console.log('location@@', location);
+    setCurrentTab(location?.pathname?.split('/')?.pop());
+  }, [location]);
 
   return (
     <div onKeyDown={e => e.stopPropagation()}>
@@ -137,7 +138,7 @@ const FlowHeader: React.FC<FlowHeaderProps> = ({
             src={arrowLeft}
             className="w-[28px] cursor-pointer"
             alt=""
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/space/agent')}
           />
           <div className="relative flex items-center gap-4">
             <img
@@ -148,36 +149,40 @@ const FlowHeader: React.FC<FlowHeaderProps> = ({
             <div className="flex flex-col h-full">
               <div className="flex items-center gap-1 text-center">
                 <span className="font-medium">{currentFlow?.name}</span>
-                <img
-                  src={flowEditIcon}
-                  className="w-[14px] h-[14px] cursor-pointer"
-                  alt=""
-                  onClick={() => setEditModal(true)}
-                />
+                {currentTab === 'arrange' && (
+                  <img
+                    src={flowEditIcon}
+                    className="w-[14px] h-[14px] cursor-pointer"
+                    alt=""
+                    onClick={() => setEditModal(true)}
+                  />
+                )}
                 {historyVersion && (
                   <span className="bg-[#E9EEFF] w-[30px] h-[18px] text-[#275EFF] text-[10px] rounded-[4px] flex items-center justify-center rounded-[7px]">
                     {historyVersionData?.name}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-[14px] mt-[3px]">
-                <p
-                  className="text-desc max-w-[160px] text-overflow"
-                  title={currentFlow?.description}
-                >
-                  {historyVersion
-                    ? historyVersionData?.description
-                    : currentFlow?.description}
-                </p>
-                {historyVersion == false && (
-                  <div className="text-[14px] text-[#9E9E9E] rounded-sm flex items-center jusity-center">
-                    {t('workflow.nodes.header.autoSaved')}{' '}
-                    {dayjs(currentFlow?.updateTime)?.format(
-                      'YYYY-MM-DD HH:mm:ss'
-                    )}
-                  </div>
-                )}
-              </div>
+              {currentTab === 'arrange' && (
+                <div className="flex items-center gap-3 text-[14px] mt-[3px]">
+                  <p
+                    className="text-desc max-w-[160px] text-overflow"
+                    title={currentFlow?.description}
+                  >
+                    {historyVersion
+                      ? historyVersionData?.description
+                      : currentFlow?.description}
+                  </p>
+                  {historyVersion == false && (
+                    <div className="text-[14px] text-[#9E9E9E] rounded-sm flex items-center jusity-center">
+                      {t('workflow.nodes.header.autoSaved')}{' '}
+                      {dayjs(currentFlow?.updateTime)?.format(
+                        'YYYY-MM-DD HH:mm:ss'
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <FlowStatus flowResult={flowResult} t={t} />
           </div>

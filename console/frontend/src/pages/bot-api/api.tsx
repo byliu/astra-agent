@@ -48,7 +48,7 @@ export default function BotApi({
 
   const createApiFn = async (publishBindId?: any, appIdParam?: any) => {
     try {
-      await createApi({ botId, appId: appIdParam || appId, publishBindId });
+      await createApi({ botId, appId: appIdParam || appId });
       setFreshCount(freshCount + 1);
       message.success('绑定成功');
     } catch (e: any) {
@@ -103,7 +103,7 @@ export default function BotApi({
    * load api info
    * @param id botId
    */
-  const loadAPiInfo = async (id: any) => {
+  const loadAPiInfo = async (id: string) => {
     const res = await getApiInfo(id);
     setApiInfo(res);
   };
@@ -139,7 +139,7 @@ export default function BotApi({
   useEffect(() => {
     if (appList?.length) {
       loadAPiInfo(botId);
-      loadApiUsageData(botId);
+      // loadApiUsageData(botId);
     } else if (!hasFetchedApiList) {
       loadAppList();
       setHasFetchedApiList(true);
@@ -360,7 +360,7 @@ export default function BotApi({
               </div>
             )}
           </div>
-          <div className={styles.right}>
+          {/* <div className={styles.right}>
             <div className={styles.statistic_card}>
               <div className={styles.statistic_data}>
                 <img
@@ -369,7 +369,6 @@ export default function BotApi({
                   className={styles.data_img}
                 />
                 <div className={styles.data_used_num}>
-                  {/* {'_ _'} */}
                   {apiInfo ? apiUsage?.usedCount : '_ _'}
                 </div>
                 <div className={styles.data_title}>
@@ -384,7 +383,6 @@ export default function BotApi({
                   className={styles.data_img}
                 />
                 <div className={styles.data_used_num}>
-                  {/* {'_ _'} */}
                   {apiInfo ? apiUsage?.left : '_ _'}
                 </div>
                 <div className={styles.data_title}>
@@ -399,7 +397,6 @@ export default function BotApi({
                   className={styles.data_img}
                 />
                 <div className={styles.data_used_num}>
-                  {/* {'_ _'} */}
                   {apiInfo ? apiUsage?.conc : '_ _'}
                 </div>
                 <div className={styles.data_title}>QPS</div>
@@ -413,7 +410,7 @@ export default function BotApi({
                 <li>{t('botApi.apiKeyWarn')}</li>
               </ul>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
       <Modal

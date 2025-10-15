@@ -36,8 +36,8 @@ type AppData struct {
 }
 
 type AuthData struct {
-	ApiKey    string `json:"api_key"`    // 鉴权key
-	ApiSecret string `json:"api_secret"` // 鉴权私钥
+	ApiKey    string `json:"api_key"`    // Authentication key
+	ApiSecret string `json:"api_secret"` // Authentication secret
 }
 
 type AllowListData struct {

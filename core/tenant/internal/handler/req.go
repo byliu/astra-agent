@@ -2,9 +2,10 @@ package handler
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AppListReq struct {

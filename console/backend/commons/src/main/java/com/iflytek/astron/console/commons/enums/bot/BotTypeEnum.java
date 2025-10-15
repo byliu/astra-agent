@@ -20,4 +20,30 @@ public enum BotTypeEnum {
     public Integer getType() {
         return type;
     }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    /**
+     * Get enum by type
+     */
+    public static BotTypeEnum getByType(Integer type) {
+        if (type == null) {
+            return null;
+        }
+        for (BotTypeEnum botType : values()) {
+            if (botType.getType().equals(type)) {
+                return botType;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Determine if it is a workflow bot
+     */
+    public static boolean isWorkflowBot(Integer type) {
+        return WORKFLOW_BOT.getType().equals(type);
+    }
 }

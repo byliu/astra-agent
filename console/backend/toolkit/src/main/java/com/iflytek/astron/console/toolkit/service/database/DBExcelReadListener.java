@@ -16,16 +16,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Excel file listener for reading structured row data.
- * <p>
- * Responsibilities:
- * <ul>
- * <li>Read Excel rows and convert to structured {@code Map<columnName, value>} to avoid SQL
- * concatenation.</li>
- * <li>Validate headers and required fields.</li>
- * <li>Fill null values with field defaults or type defaults.</li>
- * <li>Enforce a maximum row limit to prevent excessive processing.</li>
- * </ul>
+ * Read Excel -> Generate structured row data (each row Map<column name, value>), avoid SQL
+ * concatenation. - Validate headers and required fields - Null values fall back to field default
+ * values/type default values - Can set maximum row limit
  */
 public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, String>> {
 
@@ -34,8 +27,8 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
 
     private final List<DbTableField> tableFields;
     private final List<Map<String, Object>> rowsSink; // Output container
-    private final String uid; // Auto-fill uid for each row
-    private final int maxRows; // Row limit (safety control)
+    private final String uid; // Automatically add uid to each row
+    private final int maxRows; // Read limit (prevent explosion)
 
     private List<String> expectedHeaders;
     private List<String> notNullFieldsList;
@@ -43,14 +36,7 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
     private int accepted = 0;
     private boolean headerValidated = false;
 
-    /**
-     * Recommended constructor: directly loads parsed rows into {@code rowsSink}.
-     *
-     * @param tableFields table field metadata
-     * @param rowsSink container for parsed row results
-     * @param uid unique user ID to attach to each row
-     * @param maxRows maximum number of rows to accept (minimum 1)
-     */
+    /** Recommended usage: load into rowsSink at once */
     public DBExcelReadListener(List<DbTableField> tableFields,
             List<Map<String, Object>> rowsSink,
             String uid,
@@ -61,13 +47,6 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
         this.maxRows = Math.max(1, maxRows);
     }
 
-    /**
-     * Validate header row.
-     *
-     * @param headMap header row from Excel, mapping column index to column name
-     * @param context analysis context
-     * @throws IllegalArgumentException if the actual headers do not match the expected headers
-     */
     @Override
     public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
         List<String> actualHeaders = new ArrayList<>(headMap.values());
@@ -83,29 +62,22 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
                 .map(DbTableField::getName)
                 .collect(Collectors.toList());
 
-        // Require exact order matching, consistent with the original logic
+        // Here requires consistent order: maintain consistency with your original logic
         if (!CollectionUtils.isEqualCollection(expectedHeaders, actualHeaders)) {
-            throw new IllegalArgumentException("Header mismatch! Expected: " + expectedHeaders + ", Actual: " + actualHeaders);
+            throw new IllegalArgumentException("Header mismatch! Expected headers: " + expectedHeaders + ", Actual headers: " + actualHeaders);
         } else {
             expectedHeaders = actualHeaders;
         }
         headerValidated = true;
     }
 
-    /**
-     * Process each row of Excel data.
-     *
-     * @param row current row values (column index -> cell value)
-     * @param context analysis context
-     * @throws BusinessException if headers have not been validated
-     */
     @Override
     public void invoke(Map<Integer, String> row, AnalysisContext context) {
         if (!headerValidated) {
-            throw new BusinessException(ResponseEnum.RESPONSE_FAILED, "Header not validated. Please check the Excel file.");
+            throw new BusinessException(ResponseEnum.RESPONSE_FAILED, "Headers not yet validated, please check Excel file.");
         }
         if (accepted >= maxRows) {
-            return; // Exceeding limit, ignore subsequent rows to ensure availability
+            return; // Exceed limit, directly ignore subsequent rows to ensure availability
         }
 
         Map<String, Object> out = new LinkedHashMap<>();
@@ -113,7 +85,7 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
 
         for (int i = 0; i < expectedHeaders.size(); i++) {
             String header = expectedHeaders.get(i);
-            String raw = row.get(i); // Raw cell value (may be null)
+            String raw = row.get(i); // Cell raw value (may be null)
             DbTableField meta = tableFields.stream()
                     .filter(f -> f.getName().equals(header))
                     .findFirst()
@@ -121,7 +93,7 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
 
             Object v;
             if (StringUtils.isBlank(raw)) {
-                // Null value: required -> use field default; optional -> type default or null
+                // Null value: required -> use field default value; not required -> type default value (or null)
                 v = chooseDefault(meta, notNullFieldsList.contains(header));
             } else {
                 v = parseByType(raw, meta.getType());
@@ -133,29 +105,15 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
         accepted++;
     }
 
-    /**
-     * Validate after all rows are analyzed.
-     *
-     * @param analysisContext analysis context
-     * @throws IllegalArgumentException if no valid data was parsed
-     */
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
         if (accepted == 0) {
-            throw new IllegalArgumentException("No valid data found in the file. Please check if Excel data is correct!");
+            throw new IllegalArgumentException("No valid data in file, please check if excel data is correct!");
         }
     }
 
-    // —— Helpers: parsing and defaults —— //
+    // —— Helper: Parse and default values —— //
 
-    /**
-     * Parse a string into the target Java type based on field type.
-     *
-     * @param s string value
-     * @param type field type
-     * @return parsed object (Long, BigDecimal, Boolean, LocalDateTime, or String)
-     * @throws IllegalArgumentException if parsing fails for unsupported formats
-     */
     private Object parseByType(String s, String type) {
         String t = StringUtils.lowerCase(type);
         switch (t) {
@@ -166,37 +124,30 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
             case CommonConst.DBFieldType.BOOLEAN:
                 return parseBoolean(s);
             case CommonConst.DBFieldType.TIME:
-                // Require standard format to avoid ambiguous parsing
+                // Require standard format to avoid ambiguity in smart parsing
                 return LocalDateTime.parse(s.trim(), TS);
             default:
-                return s; // Keep original string
+                return s; // String as is
         }
     }
 
-    /**
-     * Choose default value based on field metadata.
-     *
-     * @param f field definition
-     * @param required whether the field is required
-     * @return default value based on configuration or type
-     */
     private Object chooseDefault(DbTableField f, boolean required) {
         String t = StringUtils.lowerCase(f.getType());
         String def = f.getDefaultValue();
 
         if (StringUtils.isNotBlank(def)) {
-            // User provided default: try to parse according to field type
+            // User has configured default value: try to parse by field type
             try {
                 return parseByType(def, t);
             } catch (Exception ignore) {
-                // Fallback: treat as string
+                // Fallback: as string
                 return def;
             }
         }
 
-        // No configured default
+        // No default value configured
         if (required) {
-            // Required but empty: provide type default value
+            // Required but empty: give type default value
             switch (t) {
                 case CommonConst.DBFieldType.INTEGER:
                     return 0L;
@@ -207,35 +158,38 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
                 case CommonConst.DBFieldType.TIME:
                     return LocalDateTime.now();
                 default:
-                    return ""; // String defaults to empty string
+                    return ""; // String gives empty string
             }
         } else {
-            // Optional: allow null (depending on downstream persistence rules)
+            // Not required: can be null (determined by write layer whether to allow)
             switch (t) {
                 case CommonConst.DBFieldType.INTEGER:
+                    return null;
                 case CommonConst.DBFieldType.NUMBER:
+                    return null;
                 case CommonConst.DBFieldType.BOOLEAN:
+                    return null;
                 case CommonConst.DBFieldType.TIME:
                     return null;
                 default:
-                    return ""; // Empty string is more user-friendly
+                    return ""; // String gives empty string more friendly
             }
         }
     }
 
-    /**
-     * Parse a string into Boolean.
-     *
-     * @param s string representation
-     * @return Boolean true/false
-     * @throws IllegalArgumentException if the value cannot be interpreted as Boolean
-     */
     private Boolean parseBoolean(String s) {
         String x = s.trim().toLowerCase(Locale.ROOT);
-        if (x.equals("1") || x.equals("true") || x.equals("t") || x.equals("yes") || x.equals("y"))
+
+        // Support various true values (case-insensitive)
+        if (x.equals("true")) {
             return Boolean.TRUE;
-        if (x.equals("0") || x.equals("false") || x.equals("f") || x.equals("no") || x.equals("n"))
+        }
+
+        // Support various false values (case-insensitive)
+        if (x.equals("false")) {
             return Boolean.FALSE;
-        throw new BusinessException(ResponseEnum.RESPONSE_FAILED, "Cannot parse boolean value: " + s);
+        }
+
+        throw new IllegalArgumentException("Unable to parse boolean value: '" + s);
     }
 }

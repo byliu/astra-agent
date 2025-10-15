@@ -25,6 +25,7 @@ type Config struct {
 func (c *Config) String() string {
 	return fmt.Sprintf("Config{Server: %v, DataBase: %v, Log: %v}", c.Server, c.DataBase, c.Log)
 }
+
 func (c *Config) Validate() error {
 	if c.Server.Port == 0 {
 		return fmt.Errorf("server port is required")
@@ -46,6 +47,7 @@ func (c *Config) Validate() error {
 	}
 	return nil
 }
+
 func LoadConfig(path string) (*Config, error) {
 	cfg := &Config{}
 	// load config from local file

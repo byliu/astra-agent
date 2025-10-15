@@ -15,6 +15,7 @@ export const versionList: {
   type: VersionType;
   title: string;
   description?: string;
+  link?: string;
 }[] = [
   // {
   //   type: 'AIUI-RAG2',
@@ -25,6 +26,7 @@ export const versionList: {
     type: 'Ragflow-RAG',
     title: 'ragflowRAG',
     description: 'ragflowRAGDescription',
+    link: 'https://github.com/infiniflow/ragflow?tab=readme-ov-file',
   },
   {
     type: 'CBG-RAG',
@@ -187,7 +189,9 @@ export const CreateModal: FC<{ setCreateModal: (value: boolean) => void }> = ({
         <div className="mt-6 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="text-second font-medium text-sm">
-              <span className="text-[#F74E43]">*</span>
+              <span className="text-[#F74E43] mr-1 text-[18px] align-middle">
+                *
+              </span>
               {t('knowledge.knowledgeVersion')}
             </div>
           </div>
@@ -200,6 +204,7 @@ export const CreateModal: FC<{ setCreateModal: (value: boolean) => void }> = ({
                 type={item.type}
                 title={item.title}
                 description={item.description || ''}
+                link={item.link || ''}
               />
             ))}
           </div>
@@ -233,7 +238,8 @@ export const VersionItem: FC<{
   type: VersionType;
   title: string;
   description: string;
-}> = ({ version, setVersion, type, title, description }) => {
+  link?: string;
+}> = ({ version, setVersion, type, title, description, link }) => {
   const { t } = useTranslation();
   return (
     <div
@@ -252,7 +258,21 @@ export const VersionItem: FC<{
       >
         {t(`knowledge.${title}`)}
       </div>
-      <p className="text-desc">{t(`knowledge.${description}`)}</p>
+      <p className="text-desc">
+        {t(`knowledge.${description}`)}
+        {link && (
+          <a
+            className="hover:text-[#275EFF]"
+            rel="noopener noreferrer"
+            onClick={e => {
+              e.stopPropagation();
+              window.open(link);
+            }}
+          >
+            {link}
+          </a>
+        )}
+      </p>
       {version === type && (
         <img
           src={knowledgeVersionChecked}

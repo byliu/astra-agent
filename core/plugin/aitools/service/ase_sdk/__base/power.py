@@ -3,8 +3,8 @@ import json
 import queue
 import threading
 from abc import ABC, abstractmethod
-from urllib.parse import urlencode
 from typing import Any, Generator, Union
+from urllib.parse import urlencode
 
 import requests
 from plugin.aitools.service.ase_sdk.__base.entities.req_data import (

@@ -107,6 +107,7 @@ const translation = {
   deleteFailed: 'Delete failed',
   noFileSelected: 'Please select file',
   importFailed: 'Import failed',
+  duplicateFieldsIgnored: 'Duplicate fields ignored',
 };
 
 export default translation;

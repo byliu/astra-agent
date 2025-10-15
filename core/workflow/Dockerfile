@@ -2,11 +2,11 @@
 FROM python:3.11-slim
 
 # Set the working directory for the application
-WORKDIR /opt/openstellar
+WORKDIR /opt/core
 
 # Configure environment variables for Python path and UV cache
-ENV PATH=$PATH:/opt/openstellar
-ENV PYTHONPATH /opt/openstellar
+ENV PATH=$PATH:/opt/core
+ENV PYTHONPATH /opt/core
 ENV UV_NO_CACHE=1
 
 # Install curl and dependencies (commented out - not currently needed)

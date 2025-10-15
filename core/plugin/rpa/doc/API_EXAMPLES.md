@@ -15,7 +15,7 @@ This document provides detailed API usage examples for the Xingchen RPA Server.
 
 ### API Endpoints
 
-- **Base URL**: `http://localhost:19999`
+- **Base URL**: `http://localhost:17198`
 - **API Version**: `v1`
 - **Main Endpoint**: `/rpa/v1/exec`
 
@@ -77,7 +77,7 @@ class RPAClient:
 
 # Usage Example
 async def main():
-    client = RPAClient("http://localhost:19999", "your-token-here")
+    client = RPAClient("http://localhost:17198", "your-token-here")
 
     try:
         async for event in client.execute_task(
@@ -159,7 +159,7 @@ class SyncRPAClient:
 
 # Usage Example
 def main():
-    client = SyncRPAClient("http://localhost:19999", "your-token-here")
+    client = SyncRPAClient("http://localhost:17198", "your-token-here")
 
     for event in client.execute_task(
         project_id="test-project-123",
@@ -251,7 +251,7 @@ class RPAClient {
 
 // Usage Example
 async function main() {
-    const client = new RPAClient('http://localhost:19999', 'your-token-here');
+    const client = new RPAClient('http://localhost:17198', 'your-token-here');
 
     try {
         const stream = await client.executeTask(
@@ -360,7 +360,7 @@ class NodeRPAClient {
 
 // Usage Example
 async function main() {
-    const client = new NodeRPAClient('http://localhost:19999', 'your-token-here');
+    const client = new NodeRPAClient('http://localhost:17198', 'your-token-here');
 
     try {
         const events = await client.executeTask(
@@ -394,7 +394,7 @@ main();
 ### Basic Request
 
 ```bash
-curl -X POST "http://localhost:19999/rpa/v1/exec" \
+curl -X POST "http://localhost:17198/rpa/v1/exec" \
   -H "Authorization: Bearer your-token-here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -411,7 +411,7 @@ curl -X POST "http://localhost:19999/rpa/v1/exec" \
 ### Request with Timeout
 
 ```bash
-curl -X POST "http://localhost:19999/rpa/v1/exec" \
+curl -X POST "http://localhost:17198/rpa/v1/exec" \
   -H "Authorization: Bearer your-token-here" \
   -H "Content-Type: application/json" \
   -m 600 \
@@ -431,7 +431,7 @@ curl -X POST "http://localhost:19999/rpa/v1/exec" \
 
 ```bash
 # Set environment variables
-export RPA_SERVER_URL="http://localhost:19999"
+export RPA_SERVER_URL="http://localhost:17198"
 export RPA_TOKEN="your-token-here"
 
 # Request using environment variables
@@ -498,7 +498,7 @@ async def robust_execute_task(client, project_id, max_retries=3):
 
 # Usage Example
 async def main():
-    client = RPAClient("http://localhost:19999", "your-token")
+    client = RPAClient("http://localhost:17198", "your-token")
 
     try:
         result = await robust_execute_task(client, "test-project-123")
@@ -581,7 +581,7 @@ class BatchRPAClient:
 
 # Usage Example
 async def batch_example():
-    client = BatchRPAClient("http://localhost:19999", "your-token", max_concurrent=3)
+    client = BatchRPAClient("http://localhost:17198", "your-token", max_concurrent=3)
 
     # Define batch tasks
     tasks = [
@@ -670,7 +670,7 @@ class ProgressMonitor:
 
 # Usage Example
 async def monitor_example():
-    client = RPAClient("http://localhost:19999", "your-token")
+    client = RPAClient("http://localhost:17198", "your-token")
     monitor = ProgressMonitor(client)
 
     try:

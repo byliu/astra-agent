@@ -50,14 +50,14 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
       inputExample: ['', '', ''],
     };
     if (flag) {
-      req['massId'] = item.mass_id;
+      req['maasId'] = item.maasId;
       req['name'] = item.title + Date.now();
       await createFromTemplate(req)
         .then((res: any) => {
           navigate(`/work_flow/${res.maasId}/arrange`);
         })
         .catch(e => {
-          message.error(e?.msg || '创建失败');
+          message.error(e?.message || '创建失败');
         });
     } else {
       await submitBotBaseInfo(req)
@@ -65,7 +65,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
           navigate(`/work_flow/${res.maasId}/arrange`);
         })
         .catch(e => {
-          message.error(e?.msg || '创建失败');
+          message.error(e?.message || '创建失败');
         });
     }
     setAddAgentTemplateLoading(false);
@@ -270,7 +270,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                     {starModeShowList.map((item, index) => {
                       return (
                         <div
-                          key={item.mass_id + item._id?.timestamp}
+                          key={item.maasId}
                           className={styles.agentType_Type_content}
                           ref={ref => (mouseNowPageRef.current[index] = ref)}
                           onMouseLeave={() => {

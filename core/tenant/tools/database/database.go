@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+
 	"tenant/config"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type DBType string
@@ -51,7 +53,6 @@ func (db *Database) buildMysql(conf *config.Config) error {
 
 	client, err := sql.Open("mysql",
 		fmt.Sprintf("%s:%s@tcp%s", conf.DataBase.UserName, conf.DataBase.Password, conf.DataBase.Url))
-
 	if err != nil {
 		return err
 	}

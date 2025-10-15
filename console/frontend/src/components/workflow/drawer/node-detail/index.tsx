@@ -70,6 +70,7 @@ function index(): React.ReactElement {
     showNodeOperation,
     nodeDesciption,
     isCodeNode,
+    nodeIcon,
   }: NodeCommonResult = useNodeCommon({
     id: nodeInfo?.id || '',
     data: nodeInfo?.data,
@@ -103,11 +104,7 @@ function index(): React.ReactElement {
       <div className="w-full p-[14px] pb-[6px] sticky top-0 bg-white z-10">
         <div className="w-full flex items-center gap-3 justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src={nodeInfo?.data?.icon}
-              className="w-[18px] h-[18px]"
-              alt=""
-            />
+            <img src={nodeIcon} className="w-[18px] h-[18px]" alt="" />
             <Label
               {...({
                 data,

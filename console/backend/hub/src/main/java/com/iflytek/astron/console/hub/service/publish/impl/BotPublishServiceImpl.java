@@ -1,46 +1,53 @@
 package com.iflytek.astron.console.hub.service.publish.impl;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
 import com.iflytek.astron.console.hub.dto.PageResponse;
 import com.iflytek.astron.console.commons.dto.bot.BotListRequestDto;
 import com.iflytek.astron.console.hub.dto.publish.BotPublishInfoDto;
 import com.iflytek.astron.console.hub.dto.publish.BotDetailResponseDto;
-import com.iflytek.astron.console.hub.dto.publish.PublishStatusUpdateDto;
 import com.iflytek.astron.console.hub.dto.publish.BotVersionVO;
 import com.iflytek.astron.console.hub.dto.publish.BotSummaryStatsVO;
 import com.iflytek.astron.console.hub.dto.publish.BotTimeSeriesResponseDto;
 import com.iflytek.astron.console.hub.dto.publish.BotTimeSeriesStatsVO;
 import com.iflytek.astron.console.hub.dto.publish.WechatAuthUrlResponseDto;
 import com.iflytek.astron.console.hub.dto.publish.BotTraceRequestDto;
-import com.iflytek.astron.console.commons.dto.workflow.WorkflowInputsResponseDto;
-import com.iflytek.astron.console.hub.service.publish.WorkflowInputService;
+import com.iflytek.astron.console.hub.dto.publish.UnifiedPrepareDto;
+import com.iflytek.astron.console.hub.dto.publish.prepare.*;
+import com.iflytek.astron.console.hub.dto.publish.prepare.WechatPrepareDto;
+import com.iflytek.astron.console.commons.enums.bot.ReleaseTypeEnum;
+import com.iflytek.astron.console.commons.service.data.UserLangChainDataService;
 import com.iflytek.astron.console.commons.enums.PublishChannelEnum;
 import com.iflytek.astron.console.commons.enums.ShelfStatusEnum;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotMarketMapper;
-import com.iflytek.astron.console.hub.mapper.BotConversationStatsMapper;
+import com.iflytek.astron.console.commons.mapper.bot.ChatBotApiMapper;
+import com.iflytek.astron.console.hub.mapper.BotDashboardCountLogMapper;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotBaseMapper;
-import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.hub.converter.BotPublishConverter;
 import com.iflytek.astron.console.hub.converter.WorkflowVersionConverter;
 import com.iflytek.astron.console.hub.service.publish.PublishChannelService;
 import com.iflytek.astron.console.hub.service.wechat.WechatThirdpartyService;
-import com.iflytek.astron.console.commons.entity.bot.BotPublishQueryResult;
-import com.iflytek.astron.console.commons.entity.bot.ChatBotMarket;
-import com.iflytek.astron.console.hub.entity.BotConversationStats;
+import com.iflytek.astron.console.commons.dto.bot.BotPublishQueryResult;
+import com.iflytek.astron.console.commons.dto.bot.ChatBotApi;
+import com.iflytek.astron.console.hub.entity.BotDashboardCountLog;
 import com.iflytek.astron.console.hub.service.publish.BotPublishService;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
+import com.iflytek.astron.console.commons.util.BotFileParamUtil;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowVersion;
 import com.iflytek.astron.console.toolkit.mapper.workflow.WorkflowVersionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import com.iflytek.astron.console.commons.dto.bot.BotQueryCondition;
 import com.iflytek.astron.console.hub.event.BotPublishStatusChangedEvent;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -66,14 +73,20 @@ public class BotPublishServiceImpl implements BotPublishService {
     private final PublishChannelService publishChannelService;
     private final WechatThirdpartyService wechatThirdpartyService;
     private final ApplicationEventPublisher eventPublisher;
-    private final WorkflowInputService workflowInputService;
+    private final UserLangChainDataService userLangChainDataService;
 
     // Version management related
     private final WorkflowVersionMapper workflowVersionMapper;
     private final WorkflowVersionConverter workflowVersionConverter;
 
     // Statistics data related
-    private final BotConversationStatsMapper botConversationStatsMapper;
+    private final BotDashboardCountLogMapper botDashboardCountLogMapper;
+
+    // MaaS API related
+    private final ChatBotApiMapper chatBotApiMapper;
+
+    @Value("${maas.appId}")
+    private String maasAppId;
 
     @Override
     public PageResponse<BotPublishInfoDto> getBotList(
@@ -126,81 +139,44 @@ public class BotPublishServiceImpl implements BotPublishService {
             detailDto.setWechatAppid(null);
         }
 
-        log.info("Bot details query completed: botId={}, channels={}", botId, detailDto.getPublishChannels());
+        // 4. Get MaaS App ID
+        String maasId = getMaasIdByBotId(botId);
+        detailDto.setMaasId(maasId);
+
+        log.info("Bot details query completed: botId={}, channels={}, maasId={}",
+                botId, detailDto.getPublishChannels(), maasId);
         return detailDto;
     }
 
-    @Override
-    public void updatePublishStatus(Integer botId, PublishStatusUpdateDto updateDto, String currentUid, Long spaceId) {
-        log.info("Update bot publish status: botId={}, action={}, uid={}, spaceId={}",
-                botId, updateDto.getAction(), currentUid, spaceId);
 
-        // 1. First validate bot permission
-        int hasPermission = chatBotBaseMapper.checkBotPermission(botId, currentUid, spaceId);
-        if (hasPermission == 0) {
-            throw new BusinessException(ResponseEnum.BOT_NOT_EXISTS);
+
+    // ==================== MaaS Integration ====================
+
+    /**
+     * Get MaaS App ID by Bot ID Query chat_bot_api table to find appId, fallback to configured maas
+     * appId
+     */
+    private String getMaasIdByBotId(Integer botId) {
+        try {
+            LambdaQueryWrapper<ChatBotApi> queryWrapper = new LambdaQueryWrapper<ChatBotApi>()
+                    .eq(ChatBotApi::getBotId, botId)
+                    .last("LIMIT 1");
+
+            ChatBotApi chatBotApi = chatBotApiMapper.selectOne(queryWrapper);
+
+            if (chatBotApi != null && chatBotApi.getAppId() != null) {
+                log.debug("Found maasId for botId {}: {}", botId, chatBotApi.getAppId());
+                return chatBotApi.getAppId();
+            } else {
+                log.debug("No maasId found for botId: {}, using configured maas appId: {}", botId, maasAppId);
+                return maasAppId;
+            }
+        } catch (Exception e) {
+            log.error("Failed to get maasId for botId: {}, using configured maas appId: {}", botId, maasAppId, e);
+            return maasAppId;
         }
-
-        // 2. Query current publish status (may be null for never published bots)
-        BotPublishQueryResult queryResult = chatBotMarketMapper.selectBotDetail(botId, currentUid, spaceId);
-        Integer currentStatus = queryResult != null ? queryResult.getBotStatus() : null;
-        String currentChannels = queryResult != null ? queryResult.getPublishChannels() : null;
-
-        // 2. Calculate new status and channel based on operation type
-        Integer newStatus;
-        String newChannels;
-
-        if ("PUBLISH".equals(updateDto.getAction())) {
-            // Publish to market
-            // null status means never published, treat as off-shelf, can be published
-            Integer effectiveStatus = currentStatus != null ? currentStatus : ShelfStatusEnum.OFF_SHELF.getCode();
-
-            if (effectiveStatus.equals(ShelfStatusEnum.ON_SHELF.getCode())) {
-                log.warn("Bot already published, no need to repeat operation: botId={}", botId);
-                return;
-            }
-
-            // Only offline status (including never published) can be published to market
-            if (!effectiveStatus.equals(ShelfStatusEnum.OFF_SHELF.getCode())) {
-                throw new BusinessException(ResponseEnum.BOT_STATUS_NOT_ALLOW_PUBLISH);
-            }
-
-            newStatus = ShelfStatusEnum.ON_SHELF.getCode();
-            newChannels = publishChannelService.updatePublishChannels(currentChannels, PublishChannelEnum.MARKET.getCode(), true);
-
-        } else if ("OFFLINE".equals(updateDto.getAction())) {
-            // Take offline from market
-            if (currentStatus == null || !currentStatus.equals(ShelfStatusEnum.ON_SHELF.getCode())) {
-                throw new BusinessException(ResponseEnum.BOT_STATUS_NOT_ALLOW_OFFLINE);
-            }
-
-            newStatus = ShelfStatusEnum.OFF_SHELF.getCode();
-            newChannels = publishChannelService.updatePublishChannels(currentChannels, PublishChannelEnum.MARKET.getCode(), false);
-
-        } else {
-            throw new BusinessException(ResponseEnum.PARAMS_ERROR);
-        }
-
-        // 3. Update database (if first time publishing, need to insert record first)
-        if (currentStatus == null) {
-            // First time publishing, need to insert new record
-            insertChatBotMarketRecord(botId, currentUid, spaceId, newStatus, newChannels);
-        } else {
-            // Update existing record
-            int updateCount = chatBotMarketMapper.updatePublishStatus(botId, currentUid, spaceId, newStatus, newChannels);
-            if (updateCount == 0) {
-                throw new BusinessException(ResponseEnum.BOT_UPDATE_FAILED);
-            }
-        }
-
-        log.info("Bot publish status updated successfully: botId={}, {} -> {}, channels: {} -> {}",
-                botId, currentStatus, newStatus, currentChannels, newChannels);
-
-        // Publish status change event
-        eventPublisher.publishEvent(new BotPublishStatusChangedEvent(
-                this, botId, currentUid, spaceId, updateDto.getAction(),
-                currentStatus, newStatus, newChannels));
     }
+
 
     // ==================== Version Management ====================
 
@@ -212,15 +188,22 @@ public class BotPublishServiceImpl implements BotPublishService {
         // 1. Permission validation - ensure user has permission to access the bot
         validateBotPermission(botId, uid, spaceId);
 
-        // 2. Pagination query version list - query workflow_version table
-        Page<WorkflowVersion> pageParam = new Page<>(page, size);
-        Page<WorkflowVersion> resultPage = workflowVersionMapper.selectPageByCondition(pageParam, String.valueOf(botId));
+        // 2. Get flowId from botId
+        String flowId = userLangChainDataService.findFlowIdByBotId(botId);
+        if (flowId == null || flowId.trim().isEmpty()) {
+            log.warn("No flowId found for botId={}", botId);
+            return PageResponse.of(page, size, 0L, new ArrayList<>());
+        }
 
-        // 3. Use MapStruct batch conversion to VO
+        // 3. Pagination query version list - query workflow_version table using flowId
+        Page<WorkflowVersion> pageParam = new Page<>(page, size);
+        Page<WorkflowVersion> resultPage = workflowVersionMapper.selectPageByCondition(pageParam, flowId);
+
+        // 4. Use MapStruct batch conversion to VO
         List<WorkflowVersion> versions = resultPage.getRecords();
         List<BotVersionVO> versionList = workflowVersionConverter.toVersionVOList(versions);
 
-        log.info("Query workflow version list successful: botId={}, total={}", botId, resultPage.getTotal());
+        log.info("Query workflow version list successful: botId={}, flowId={}, total={}", botId, flowId, resultPage.getTotal());
         return PageResponse.of(page, size, resultPage.getTotal(), versionList);
     }
 
@@ -238,7 +221,7 @@ public class BotPublishServiceImpl implements BotPublishService {
         }
 
         // 2. Query summary statistics data
-        BotSummaryStatsVO summaryStats = botConversationStatsMapper.selectSummaryStats(botId, null, null);
+        BotSummaryStatsVO summaryStats = botDashboardCountLogMapper.selectSummaryStats(botId, null, null);
         if (summaryStats == null) {
             // If no statistics data, return default values (using primitive type long, will be 0 automatically)
             summaryStats = new BotSummaryStatsVO();
@@ -264,7 +247,7 @@ public class BotPublishServiceImpl implements BotPublishService {
 
         // 2. Query time series statistics data
         LocalDate startDate = LocalDate.now().minusDays(overviewDays);
-        List<BotTimeSeriesStatsVO> timeSeriesStats = botConversationStatsMapper.selectTimeSeriesStats(
+        List<BotTimeSeriesStatsVO> timeSeriesStats = botDashboardCountLogMapper.selectTimeSeriesStats(
                 botId, startDate, null, null);
 
         // 3. Build time series data response
@@ -281,31 +264,31 @@ public class BotPublishServiceImpl implements BotPublishService {
     }
 
     @Override
-    public void recordConversationStats(String uid, Long spaceId, Integer botId, Long chatId,
+    public void recordDashboardCountLog(String uid, Long spaceId, Integer botId, Long chatId,
             String sid, Integer tokenConsumed, Integer messageRounds) {
-        log.info("Record conversation statistics: uid={}, spaceId={}, botId={}, chatId={}, tokenConsumed={}, messageRounds={}",
+        log.info("Record dashboard count log: uid={}, spaceId={}, botId={}, chatId={}, tokenConsumed={}, messageRounds={}",
                 uid, spaceId, botId, chatId, tokenConsumed, messageRounds);
 
         try {
-            BotConversationStats stats = BotConversationStats.createBuilder()
+            BotDashboardCountLog countLog = BotDashboardCountLog.createBuilder()
                     .uid(uid)
-                    .spaceId(spaceId)
                     .botId(botId)
+                    .channel(1)
                     .chatId(chatId)
+                    .chatTime(0)
+                    .token(tokenConsumed)
                     .sid(sid)
-                    .tokenConsumed(tokenConsumed)
-                    .messageRounds(messageRounds)
                     .build();
-            int result = botConversationStatsMapper.insert(stats);
+            int result = botDashboardCountLogMapper.insert(countLog);
 
             if (result > 0) {
-                log.info("Conversation statistics recorded successfully: chatId={}, statsId={}", chatId, stats.getId());
+                log.info("Dashboard count log recorded successfully: chatId={}, logId={}", chatId, countLog.getId());
 
             } else {
-                log.warn("Conversation statistics record failed: chatId={}", chatId);
+                log.warn("Dashboard count log record failed: chatId={}", chatId);
             }
         } catch (Exception e) {
-            log.error("Record conversation statistics exception: chatId={}", chatId, e);
+            log.error("Record dashboard count log exception: chatId={}", chatId, e);
             // Do not throw exception to avoid affecting main business flow
         }
     }
@@ -322,38 +305,6 @@ public class BotPublishServiceImpl implements BotPublishService {
         }
     }
 
-    /**
-     * Insert bot market record (used for first time publishing)
-     */
-    private void insertChatBotMarketRecord(Integer botId, String uid, Long spaceId, Integer status, String channels) {
-        // First query bot basic information
-        ChatBotBase botBase = chatBotBaseMapper.selectById(botId);
-        if (botBase == null) {
-            throw new BusinessException(ResponseEnum.BOT_NOT_EXISTS);
-        }
-
-        // Create market record
-        ChatBotMarket marketRecord = new ChatBotMarket();
-        marketRecord.setBotId(botId);
-        marketRecord.setUid(uid);
-        marketRecord.setBotName(botBase.getBotName());
-        marketRecord.setBotType(botBase.getBotType());
-        marketRecord.setAvatar(botBase.getAvatar());
-        marketRecord.setBotDesc(botBase.getBotDesc());
-        marketRecord.setBotStatus(status);
-        marketRecord.setPublishChannels(channels);
-        marketRecord.setIsDelete(0);
-        marketRecord.setCreateTime(LocalDateTime.now());
-        marketRecord.setUpdateTime(LocalDateTime.now());
-
-        // Insert record
-        int insertCount = chatBotMarketMapper.insert(marketRecord);
-        if (insertCount == 0) {
-            throw new BusinessException(ResponseEnum.BOT_UPDATE_FAILED);
-        }
-
-        log.info("Create bot market record successfully: botId={}, status={}, channels={}", botId, status, channels);
-    }
 
     /**
      * Get current publish channel
@@ -369,12 +320,15 @@ public class BotPublishServiceImpl implements BotPublishService {
     }
 
     /**
-     * Create market record (for publish channel)
+     * Create market record (for publish channel) Note: This method now delegates to event-driven
+     * architecture
      */
     private void createMarketRecordForChannel(Integer botId, String uid, Long spaceId, String channels) {
-        // Call existing create market record method
-        insertChatBotMarketRecord(botId, uid, spaceId, ShelfStatusEnum.OFF_SHELF.getCode(), channels);
-        log.info("Create market record for publish channel: botId={}, uid={}, spaceId={}, channels={}",
+        // Publish event to create market record - handled by InstructionalBotPublishListener
+        eventPublisher.publishEvent(new BotPublishStatusChangedEvent(
+                this, botId, uid, spaceId, "PUBLISH",
+                null, ShelfStatusEnum.OFF_SHELF.getCode(), channels));
+        log.info("Create market record event published: botId={}, uid={}, spaceId={}, channels={}",
                 botId, uid, spaceId, channels);
     }
 
@@ -525,18 +479,186 @@ public class BotPublishServiceImpl implements BotPublishService {
         return PageResponse.of(requestDto.getPage(), requestDto.getPageSize(), 0L, new ArrayList<>());
     }
 
-    // ==================== Workflow Input Management ====================
+    // ==================== Publish Prepare Data Management ====================
 
     @Override
-    public WorkflowInputsResponseDto getInputsType(Integer botId, String uid, Long spaceId) {
-        log.info("Getting workflow input parameters: botId={}, uid={}, spaceId={}", botId, uid, spaceId);
+    public UnifiedPrepareDto getPrepareData(Integer botId, String type, String currentUid, Long spaceId) {
+        log.info("Getting prepare data: botId={}, type={}, uid={}, spaceId={}", botId, type, currentUid, spaceId);
 
-        // Delegate to WorkflowInputService
-        WorkflowInputsResponseDto result = workflowInputService.getInputsType(botId, uid, spaceId);
+        try {
+            // Validate publish type
+            ReleaseTypeEnum publishTypeEnum = ReleaseTypeEnum.getByName(type);
+            if (publishTypeEnum == null) {
+                return createErrorPrepareResponse("Invalid publish type: " + type);
+            }
 
-        log.info("Workflow input parameters retrieved successfully: botId={}, paramCount={}",
-                botId, result.getParameters().size());
+            // Get bot basic info first
+            BotDetailResponseDto botDetail = getBotDetail(botId, currentUid, spaceId);
+            if (botDetail == null) {
+                return createErrorPrepareResponse("Bot not found");
+            }
+
+            BasePrepareDto prepareData;
+            switch (publishTypeEnum) {
+                case MARKET:
+                    prepareData = getMarketPrepareData(botId, botDetail, currentUid, spaceId);
+                    break;
+                case MCP:
+                    prepareData = getMcpPrepareData(botId, botDetail, currentUid, spaceId);
+                    break;
+                case FEISHU:
+                    prepareData = getFeishuPrepareData(botId, botDetail, currentUid, spaceId);
+                    break;
+                case BOT_API:
+                    prepareData = getApiPrepareData(botId, botDetail, currentUid, spaceId);
+                    break;
+                case WECHAT:
+                    prepareData = getWechatPrepareData(botId, botDetail, currentUid, spaceId);
+                    break;
+                default:
+                    return createErrorPrepareResponse("Unsupported publish type: " + type);
+            }
+
+            if (prepareData == null) {
+                return createErrorPrepareResponse("Failed to prepare data for type: " + type);
+            }
+
+            UnifiedPrepareDto response = new UnifiedPrepareDto();
+            response.setSuccess(true);
+            response.setData(prepareData);
+
+            log.info("Prepare data retrieved successfully: botId={}, type={}", botId, type);
+            return response;
+
+        } catch (Exception e) {
+            log.error("Failed to get prepare data: botId={}, type={}, uid={}, spaceId={}",
+                    botId, type, currentUid, spaceId, e);
+            return createErrorPrepareResponse("Failed to get prepare data: " + e.getMessage());
+        }
+    }
+
+    private MarketPrepareDto getMarketPrepareData(Integer botId, BotDetailResponseDto botDetail, String currentUid, Long spaceId) {
+        log.info("Getting market prepare data: botId={}", botId);
+
+        MarketPrepareDto marketData = new MarketPrepareDto();
+        marketData.setPublishType(ReleaseTypeEnum.MARKET.name());
+
+        // Get workflow configuration JSON
+        try {
+            String flowId = userLangChainDataService.findFlowIdByBotId(botId);
+            if (flowId != null) {
+                // TODO: Get complete workflow configuration JSON
+                // This should call the workflow service to get the full configuration
+                marketData.setWorkflowConfigJson("{}");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get workflow config for market prepare: botId={}", botId, e);
+        }
+
+        // Set bot basic info
+        marketData.setBotName(botDetail.getBotName());
+        marketData.setBotDescription(botDetail.getBotDesc());
+        marketData.setBotAvatar(null);
+
+        // Set multi-file parameter support based on extraInputsConfig
+        boolean isMultiFileParam = false;
+        try {
+            UserLangChainInfo chainInfo = userLangChainDataService.findOneByBotId(botId);
+            if (chainInfo != null && chainInfo.getExtraInputsConfig() != null) {
+                List<JSONObject> extraInputsConfig = JSONArray.parseArray(chainInfo.getExtraInputsConfig(), JSONObject.class);
+                isMultiFileParam = BotFileParamUtil.isMultiFileParam(botId, extraInputsConfig);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to determine multi-file parameter support: botId={}", botId, e);
+        }
+        marketData.setBotMultiFileParam(isMultiFileParam);
+
+        // Set suggested tags and categories
+        marketData.setSuggestedTags(List.of("智能助手", "效率工具"));
+        marketData.setCategoryOptions(List.of("教育", "金融", "医疗", "客服"));
+
+        return marketData;
+    }
+
+    private McpPrepareDto getMcpPrepareData(Integer botId, BotDetailResponseDto botDetail, String currentUid, Long spaceId) {
+        log.info("Getting MCP prepare data: botId={}", botId);
+
+        McpPrepareDto result = new McpPrepareDto();
+        result.setPublishType(ReleaseTypeEnum.MCP.name());
+
+        // TODO: Implement MCP prepare data logic
+        // For now, return basic structure
+        result.setInputTypes(new ArrayList<>());
+        result.setSuggestedConfig(new McpPrepareDto.SuggestedConfig());
+        result.setContentInfo(new McpPrepareDto.McpContentInfo());
 
         return result;
+    }
+
+    private FeishuPrepareDto getFeishuPrepareData(Integer botId, BotDetailResponseDto botDetail, String currentUid, Long spaceId) {
+        log.info("Getting Feishu prepare data: botId={}", botId);
+
+        FeishuPrepareDto feishuData = new FeishuPrepareDto();
+        feishuData.setPublishType(ReleaseTypeEnum.FEISHU.name());
+
+        // TODO: Get actual Feishu app configuration
+        feishuData.setAppId("cli_xxx");
+        feishuData.setAppSecret("xxx");
+
+        // Set bot info
+        feishuData.setBotName(botDetail.getBotName());
+        feishuData.setBotDescription(botDetail.getBotDesc());
+        feishuData.setBotAvatar(null);
+
+        // Set suggested configuration
+        FeishuPrepareDto.SuggestedConfig suggestedConfig = new FeishuPrepareDto.SuggestedConfig();
+        suggestedConfig.setDisplayName("智能助手");
+        suggestedConfig.setDescription("基于工作流的智能助手");
+        feishuData.setSuggestedConfig(suggestedConfig);
+
+        return feishuData;
+    }
+
+    private ApiPrepareDto getApiPrepareData(Integer botId, BotDetailResponseDto botDetail, String currentUid, Long spaceId) {
+        log.info("Getting API prepare data: botId={}", botId);
+
+        ApiPrepareDto apiData = new ApiPrepareDto();
+        apiData.setPublishType(ReleaseTypeEnum.BOT_API.name());
+
+        // Set API endpoint
+        apiData.setApiEndpoint("/api/v1/chat/" + botId);
+        apiData.setDocumentation("API文档URL");
+        apiData.setApiKey("生成的API Key");
+        apiData.setAuthType("Bearer");
+
+        // Set suggested configuration
+        ApiPrepareDto.SuggestedConfig suggestedConfig = new ApiPrepareDto.SuggestedConfig();
+        suggestedConfig.setRateLimitPerMinute(100);
+        suggestedConfig.setEnableAuth(true);
+        apiData.setSuggestedConfig(suggestedConfig);
+
+        return apiData;
+    }
+
+    private WechatPrepareDto getWechatPrepareData(Integer botId, BotDetailResponseDto botDetail, String currentUid, Long spaceId) {
+        log.info("Getting WeChat prepare data: botId={}", botId);
+
+        WechatPrepareDto wechatData = new WechatPrepareDto();
+        wechatData.setPublishType(ReleaseTypeEnum.WECHAT.name());
+
+        // TODO: Get actual WeChat configuration
+        wechatData.setAppId("wx_xxx");
+        wechatData.setAppSecret("xxx");
+        wechatData.setToken("xxx");
+        wechatData.setEncodingAESKey("xxx");
+
+        return wechatData;
+    }
+
+    private UnifiedPrepareDto createErrorPrepareResponse(String errorMessage) {
+        UnifiedPrepareDto response = new UnifiedPrepareDto();
+        response.setSuccess(false);
+        response.setErrorMessage(errorMessage);
+        return response;
     }
 }

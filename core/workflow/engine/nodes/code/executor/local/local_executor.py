@@ -1,24 +1,28 @@
+import ast
 import asyncio
-import json
+import builtins
 import multiprocessing
 import traceback
-import warnings
 from typing import Any, Dict
 
-from RestrictedPython import PrintCollector  # type: ignore
-from RestrictedPython import (
-    compile_restricted,
-    limited_builtins,
-    safe_builtins,
-    utility_builtins,
-)
-from RestrictedPython.Eval import default_guarded_getattr  # type: ignore
-from RestrictedPython.Eval import default_guarded_getitem
+from pydantic import BaseModel
 
 from workflow.engine.nodes.code.executor.base_executor import BaseExecutor
 from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.otlp.trace.span import Span
+
+
+class Modules(BaseModel):
+    """
+    Modules that are allowed to be imported for security reasons
+    """
+
+    imports: list[str]
+    from_imports: list[ast.ImportFrom]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class LocalExecutor(BaseExecutor):
@@ -28,9 +32,6 @@ class LocalExecutor(BaseExecutor):
     Executes Python code in a restricted environment with limited built-ins
     and forbidden modules to ensure security. Uses multiprocessing for isolation.
     """
-
-    # Modules that are not allowed to be imported for security reasons
-    NOT_ALLOWED_MODULES = {"requests", "os", "httpx"}
 
     async def execute(
         self, language: str, code: str, timeout: int, span: Span, **kwargs: Any
@@ -84,63 +85,44 @@ class LocalExecutor(BaseExecutor):
         :param result_dict: Shared dictionary to store execution results
         """
         try:
-            # Suppress syntax warnings from RestrictedPython
-            warnings.filterwarnings(
-                "ignore", category=SyntaxWarning, module="RestrictedPython.compile"
-            )
-
             locals_dict: Dict[str, Any] = {}
-            restricted_globals = self._build_restricted_globals()
-            code_bytes = compile_restricted(code, "<user_code>", "exec")
-            exec(code_bytes, restricted_globals, locals_dict)
+
+            modules = self._find_imports(code)
+            import_code_lines = []
+
+            for module in modules.imports:
+                import_code_lines.append(f"import {module}")
+
+            for from_module in modules.from_imports:
+                imported_names = ", ".join(alias.name for alias in from_module.names)
+                import_code_lines.append(
+                    f"from {from_module.module} import {imported_names}"
+                )
+
+            import_code = "\n".join(import_code_lines)
+
+            sandbox_globals = {"__builtins__": builtins}
+
+            exec(import_code, sandbox_globals)
+            exec(code, sandbox_globals, locals_dict)
 
             result_dict["output"] = locals_dict.get("output", "")
         except Exception:
             result_dict["error"] = traceback.format_exc()
 
-    def limited_import(self, name: str, *args: Any) -> Any:
+    def _find_imports(self, code: str) -> Modules:
         """
-        Restricted import function that blocks dangerous modules.
+        Find imports and from imports in the code.
 
-        :param name: Module name to import
-        :param args: Additional import arguments
-        :return: Imported module
-        :raises ImportError: If module is in the forbidden list
+        :param code: Code string to find imports and from imports
+        :return: Modules object containing imports and from_imports
         """
-        if name in self.NOT_ALLOWED_MODULES:
-            raise ImportError(f"Import of module is forbidden: {name}")
-        return __import__(name, *args)
-
-    def _build_restricted_globals(self) -> dict:
-        """
-        Build restricted global namespace for code execution.
-
-        Creates a safe execution environment with limited built-ins and
-        custom functions to prevent security vulnerabilities.
-
-        :return: Dictionary containing restricted global variables
-        """
-        custom_builtins = safe_builtins.copy()
-        custom_builtins["__import__"] = self.limited_import
-
-        restricted_globals = {
-            "__builtins__": custom_builtins,
-            "_utility_builtins": utility_builtins,
-            "_limited_builtins": limited_builtins,
-            "__name__": "__main__",
-            # Replacement functions to prevent NameError
-            "_print_": PrintCollector,
-            "_apply_": lambda func, *args, **kwargs: func(*args, **kwargs),
-            "_getattr_": default_guarded_getattr,
-            "_getitem_": default_guarded_getitem,
-            "_getiter_": lambda obj: iter(obj),
-            "dict": dict,
-            "list": list,
-            "print": print,
-            "set": set,
-            "map": map,
-            "type": type,
-            "sum": sum,
-            "json": json,
-        }
-        return restricted_globals
+        imports: list[str] = []
+        from_imports: list[ast.ImportFrom] = []
+        parsed_code = ast.parse(code)
+        for node in parsed_code.body:
+            if isinstance(node, ast.Import):
+                imports.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                from_imports.append(node)
+        return Modules(imports=imports, from_imports=from_imports)

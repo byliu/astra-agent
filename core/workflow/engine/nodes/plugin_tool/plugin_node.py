@@ -124,8 +124,8 @@ class PluginNode(BaseNode):
             link = Link(
                 app_id=self.appId,
                 tool_ids=[self.pluginId],
-                get_url=os.getenv("PLUGIN_GET_URL", ""),
-                run_url=os.getenv("PLUGIN_RUN_URL", ""),
+                get_url=f"{os.getenv('PLUGIN_BASE_URL')}/api/v1/tools/versions",
+                run_url=f"{os.getenv('PLUGIN_BASE_URL')}/api/v1/tools/http_run",
                 version=self.version,
             )
             action_inputs = {}

@@ -32,7 +32,6 @@ const MessageList = (props: {
     isCompleted,
     stopAnswer,
   } = props;
-  const languageCode = getLanguageCode();
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const { user } = useUserStore();
   const lastClickedQA: MutableRefObject<MessageListType | null> =
@@ -68,12 +67,12 @@ const MessageList = (props: {
           </div>
         </div>
         {inputExample?.some((ex: string) => ex) && (
-          <div className="m-3 p-5 rounded-18px bg-[#f2f5fe] flex justify-between items-center">
+          <div className="m-3 p-5 rounded-18px bg-[#ffffff] flex justify-between items-center">
             <div className="flex flex-wrap gap-2">
               {inputExample?.map((ex: string) => {
                 return ex ? (
                   <div
-                    className="bg-[#ffffff] rounded-10px border border-[#4671f5] p-2 cursor-pointer"
+                    className="bg-[#eef1fd] rounded-md px-3 py-1 cursor-pointer text-[#9295bf] hover:text-[#257eff] text-xs h-8 leading-6"
                     onClick={() => {
                       handleSendMessage(ex);
                     }}
@@ -137,7 +136,7 @@ const MessageList = (props: {
                   }}
                 />
                 <span className="text-sm text-gray-500">
-                  {languageCode === 'zh' ? '正在回答中...' : 'Processing...'}
+                  {t('configBase.promptTry.answerInProgress')}
                 </span>
               </div>
             )}

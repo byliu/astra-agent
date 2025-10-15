@@ -112,7 +112,7 @@ class TestAuthMiddleware:
         mock_call_next: AsyncMock,
     ) -> None:
         """Test dispatch skips authentication for excluded paths."""
-        auth_middleware.exclude_paths = ["/health", "/metrics"]
+        auth_middleware.need_auth_paths = ["/health", "/metrics"]
         mock_request.url.path = "/health/check"
 
         with patch("workflow.extensions.otlp.trace.span.Span") as mock_span_class:
@@ -246,26 +246,6 @@ class TestAuthMiddleware:
         result = auth_middleware._gen_app_auth_header("https://api.test.com/endpoint")
 
         assert result == {}
-
-    @patch.dict(
-        os.environ, {"APP_MANAGE_PLAT_APP_DETAILS_WITH_API_KEY": ""}, clear=False
-    )
-    async def test_get_app_source_detail_missing_url(
-        self, auth_middleware: AuthMiddleware
-    ) -> None:
-        """Test _get_app_source_detail_with_api_key with missing URL environment variable."""
-        mock_span = Mock()
-
-        with pytest.raises(CustomException) as exc_info:
-            await auth_middleware._get_app_source_detail_with_api_key(
-                "Bearer test_key:value", mock_span
-            )
-
-        assert exc_info.value.code == CodeEnum.APP_GET_WITH_REMOTE_FAILED_ERROR.code
-        assert (
-            "APP_MANAGE_PLAT_APP_DETAILS_WITH_API_KEY not configured"
-            in exc_info.value.message
-        )
 
     async def test_get_app_id_with_cache(self, auth_middleware: AuthMiddleware) -> None:
         """Test _get_app_id_with_cache method."""
@@ -747,7 +727,7 @@ class TestAuthMiddleware:
 
     @patch.dict(
         os.environ,
-        {"APP_MANAGE_PLAT_APP_DETAILS_WITH_API_KEY": "https://api.example.com/app"},
+        {"APP_MANAGE_PLAT_BASE_URL": "https://api.example.com"},
         clear=False,
     )
     async def test_get_app_source_detail_auth_header_generation(
@@ -780,9 +760,9 @@ class TestAuthMiddleware:
                         )
 
                         mock_gen_auth.assert_called_once_with(
-                            "https://api.example.com/app/test_key"
+                            "https://api.example.com/v2/app/key/api_key/test_key"
                         )
                         mock_get.assert_called_once_with(
-                            "https://api.example.com/app/test_key",
+                            "https://api.example.com/v2/app/key/api_key/test_key",
                             headers={"Authorization": "test_header"},
                         )

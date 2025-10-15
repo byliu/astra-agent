@@ -70,6 +70,7 @@ function KnowledgePreviewModal(): React.ReactElement {
                 zIndex: 1002,
               }}
               onClick={e => e?.stopPropagation()}
+              onKeyDown={e => e?.stopPropagation()}
             >
               <div className="p-6 pr-0 absolute bg-[#fff] rounded-2xl top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 text-second font-medium text-md min-w-[820px] h-[80vh] flex flex-col w-3/4">
                 {currentTab === 'knowledge' && (

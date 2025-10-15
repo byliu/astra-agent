@@ -21,6 +21,7 @@ import { useEnterprise } from '@/hooks/use-enterprise';
 import { useTranslation } from 'react-i18next';
 import { visitSpace } from '@/services/space';
 import { handleLogout } from '@/utils/auth';
+import LanguageSwitcher from '@/components/language-switcher';
 
 const spaceRole = {
   '1': '超级管理者',
@@ -285,6 +286,11 @@ const ControlModal = ({
           <img src={feedbackIcon} alt="" />
           <div>{t('sidebar.feedback')}</div>
         </div> */}
+
+        <div className={styles.content_item}>
+          <LanguageSwitcher />
+        </div>
+
         <div
           className={classNames(styles.content_item, styles.logout)}
           onClick={handleLogout}

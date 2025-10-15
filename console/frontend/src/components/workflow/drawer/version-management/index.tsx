@@ -362,8 +362,10 @@ const useVersionManagement = ({
   const handleSetNodesAndEdges = useMemoizedFn((originData: string): void => {
     const data = JSON.parse(originData);
     setNodes(
-      data.nodes?.map((node: ReactFlowNode) => ({
+      data.nodes?.map((node: unknown) => ({
         ...node,
+        type: 'custom',
+        nodeType: node?.id?.split('::')?.[0],
         selected: false,
         data: {
           ...node.data,
@@ -371,7 +373,6 @@ const useVersionManagement = ({
         },
       }))
     );
-
     setEdges(data.edges);
     setEdgeType(data.edges?.[0]?.data?.edgeType || 'curve');
   });

@@ -364,16 +364,23 @@ interface IteratorChildNodeProps {
 // 迭代器子节点组件
 export const IteratorChildNode = memo<IteratorChildNodeProps>(
   ({ id, data }) => {
-    const { isConnectable } = useNodeCommon({ id, data });
+    const { isConnectable, isIteratorStart, isIteratorEnd } = useNodeCommon({
+      id,
+      data,
+    });
+    const hasTargetHandle = !isIteratorStart;
+    const hasSourceHandle = !isIteratorEnd;
     return (
       <div className="px-4 py-2 iterator-child-node">
         <span>{data?.label}</span>
-        <TargetHandle isConnectable={isConnectable} />
-        <SourceHandle
-          nodeId={id}
-          isConnectable={isConnectable}
-          id={data?.nodeParam?.handlingEdge}
-        />
+        {hasTargetHandle && <TargetHandle isConnectable={isConnectable} />}
+        {hasSourceHandle && (
+          <SourceHandle
+            nodeId={id}
+            isConnectable={isConnectable}
+            id={data?.nodeParam?.handlingEdge}
+          />
+        )}
       </div>
     );
   }
@@ -556,6 +563,12 @@ const UploadedFile = ({
   );
 };
 
+const getMaxSize = (fileType: string): number => {
+  if (fileType === 'image') return 3;
+  if (fileType === 'video') return 500;
+  return 50;
+};
+
 const renderFileUpload = (
   params,
   index,
@@ -574,7 +587,7 @@ const renderFileUpload = (
             uploadComplete(event, index, fileId),
           handleFileUpload: (file, fileId) =>
             handleFileUpload(file, index, multiple, fileId),
-          maxSize: params?.fileType === 'image' ? 3 : 50,
+          maxSize: getMaxSize(params?.fileType),
         } as unknown)}
       />
       {params?.default?.map(file => (

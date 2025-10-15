@@ -14,7 +14,7 @@ from workflow.exception.errors.code_convert import CodeConvert
 def generate_agent_output_optimize(
     type: str,
     reason: str,
-    response: Union[str, List[Any]],
+    response: Union[str, List[Any], Dict],
     function_name: str,
     function_arguments: str,
 ) -> str:

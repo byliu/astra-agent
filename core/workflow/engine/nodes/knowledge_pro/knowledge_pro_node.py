@@ -8,10 +8,11 @@ operations using various knowledge repositories and LLM providers.
 import asyncio
 import json
 import os
-from typing import Any, List, Literal
+from typing import Any, List, Literal, Tuple
 
 import aiohttp
-from aiohttp import ClientTimeout
+import httpx
+from aiohttp import ClientResponse, ClientTimeout
 from pydantic import Field
 
 from workflow.engine.entities.node_entities import NodeType
@@ -110,11 +111,6 @@ class KnowledgeProNode(BaseNode):
         :return: NodeRunResult containing execution status and outputs
         """
         msg_or_end_node_deps = kwargs.get("msg_or_end_node_deps", {})
-        status = self.run_s
-        # Collection of knowledge base content frames
-        content_list = []
-        # Knowledge base metadata
-        knowledge_metadata = []
 
         query = variable_pool.get_variable(
             node_id=self.node_id, key_name=self.input_identifier[0], span=span
@@ -122,12 +118,14 @@ class KnowledgeProNode(BaseNode):
         inputs, outputs = {self.input_identifier[0]: query}, {}
         query = str(query) if not isinstance(query, str) else query
 
+        # Set timeout based on retry configuration
+        interval_timeout = (
+            self.retry_config.timeout if self.retry_config.should_retry else None
+        )
+
         try:
             # Get the Knowledge Pro API endpoint URL from environment or use default
-            url = os.getenv(
-                "KNOWLEDGE_PRO_URL",
-                "https://xingchen-api.xf-yun.com/knowledge/v1/agent/achat",
-            )
+            url = f"{os.getenv('KNOWLEDGE_PRO_BASE_URL')}/knowledge/v1/agent/achat"
 
             # Validate CBG RAG parameters before proceeding
             await self._check_cbg_rag_param()
@@ -135,10 +133,6 @@ class KnowledgeProNode(BaseNode):
             # Generate request payload for the Knowledge Pro API
             payload = self.gen_req_payload(query, span)
             span.add_info_event(f"request body: {payload}")
-            # Set timeout based on retry configuration
-            interval_timeout = (
-                self.retry_config.timeout if self.retry_config.should_retry else None
-            )
             # Create HTTP session with appropriate timeout configuration
             async with aiohttp.ClientSession(
                 timeout=ClientTimeout(
@@ -147,63 +141,15 @@ class KnowledgeProNode(BaseNode):
             ) as session:
                 # Send POST request to Knowledge Pro API
                 async with session.post(url=url, json=payload) as response:
-                    # Process streaming response line by line
-                    async for line in response.content:
-                        line_str = line.decode("utf-8")
-                        # Skip empty lines
-                        if line_str == "\n":
-                            continue
-                        span.add_info_event(f"recv: {line_str}")
-                        # Remove SSE data prefix
-                        line_str = line_str.removeprefix("data: ")
-                        # Handle stream completion signal
-                        if line_str.startswith("[DONE]"):
-                            await self.put_stream_content(
-                                self.node_id,
-                                variable_pool,
-                                msg_or_end_node_deps,
-                                NodeType.KNOWLEDGE_PRO.value,
-                                self.get_stream_done_content(),
-                            )
-                            break
-                        # Parse JSON message from stream
-                        msg = json.loads(line_str)
-                        content_type = msg.get("data", {}).get("content_type", "answer")
-
-                        # Handle error responses from the API
-                        if msg.get("code", 0) != 0:
-                            await self.put_stream_content(
-                                self.node_id,
-                                variable_pool,
-                                msg_or_end_node_deps,
-                                NodeType.KNOWLEDGE_PRO.value,
-                                self.get_stream_done_content(),
-                            )
-                            raise CustomException(
-                                err_code=CodeEnum.KNOWLEDGE_REQUEST_ERROR,
-                                err_msg=msg.get("message", ""),
-                                cause_error=json.dumps(msg, ensure_ascii=False),
-                            )
-
-                        # Process answer content type
-                        if content_type == "answer":
-                            content = msg.get("data", {}).get("content", "")
-                            content_list += [content] if content else []
-                            # Put stream content frame into msg_or_end_node_deps
-                            await self.put_stream_content(
-                                self.node_id,
-                                variable_pool,
-                                msg_or_end_node_deps,
-                                NodeType.KNOWLEDGE_PRO.value,
-                                msg,
-                            )
-
-                        # Extract knowledge metadata if present
-                        knowledge_metadata = (
-                            msg.get("data", {}).get("content", [])
-                            if content_type == "knowledge_metadata"
-                            else []
+                    if response.status != httpx.codes.OK:
+                        raise CustomException(
+                            err_code=CodeEnum.KNOWLEDGE_REQUEST_ERROR,
+                            cause_error=f"Knowledge Pro node response status: {response.status}",
                         )
+
+                    content_list, knowledge_metadata = await self._handle_response(
+                        response, span, variable_pool, msg_or_end_node_deps
+                    )
 
             # Prepare final outputs with combined content and metadata
             outputs = {"output": "".join(content_list), "result": knowledge_metadata}
@@ -212,13 +158,10 @@ class KnowledgeProNode(BaseNode):
             log_err = CustomException(
                 err_code=CodeEnum.KNOWLEDGE_NODE_EXECUTION_ERROR,
                 err_msg=f"Knowledge Pro node response timeout ({interval_timeout}s)",
-                cause_error=f"Knowledge Pro node response timeout ({interval_timeout}s)",
             )
-            status = self.run_f
-            span.add_error_event(str(log_err))
             span.record_exception(log_err)
             return NodeRunResult(
-                status=status,
+                status=self.run_f,
                 error=log_err,
                 node_id=self.node_id,
                 alias_name=self.alias_name,
@@ -226,11 +169,9 @@ class KnowledgeProNode(BaseNode):
             )
         except CustomException as err:
             # Handle custom application errors
-            status = self.run_f
-            span.add_error_event(str(err))
             span.record_exception(err)
             return NodeRunResult(
-                status=status,
+                status=self.run_f,
                 error=err,
                 node_id=self.node_id,
                 alias_name=self.alias_name,
@@ -239,9 +180,8 @@ class KnowledgeProNode(BaseNode):
         except Exception as e:
             # Handle unexpected errors
             span.record_exception(e)
-            status = self.run_f
             return NodeRunResult(
-                status=status,
+                status=self.run_f,
                 error=CustomException(
                     CodeEnum.KNOWLEDGE_NODE_EXECUTION_ERROR,
                     cause_error=e,
@@ -252,7 +192,7 @@ class KnowledgeProNode(BaseNode):
             )
 
         return NodeRunResult(
-            status=status,
+            status=self.run_s,
             inputs=inputs,
             outputs=outputs,
             raw_output="".join(content_list),
@@ -260,6 +200,89 @@ class KnowledgeProNode(BaseNode):
             alias_name=self.alias_name,
             node_type=self.node_type,
         )
+
+    async def _handle_response(
+        self,
+        response: ClientResponse,
+        span: Span,
+        variable_pool: VariablePool,
+        msg_or_end_node_deps: dict,
+    ) -> Tuple[list, list]:
+        """
+        Handle response from Knowledge Pro API.
+
+        :param response: Response from Knowledge Pro API
+        :param span: Tracing span for observability
+        :param variable_pool: Pool of variables for the workflow execution
+        :param msg_or_end_node_deps: Message or end node dependencies
+        :return: Tuple of content list and knowledge metadata
+        """
+
+        # Collection of knowledge base content frames
+        content_list: list = []
+        # Knowledge base metadata
+        knowledge_metadata: list = []
+
+        # Process streaming response line by line
+        async for line in response.content:
+            line_str = line.decode("utf-8")
+            # Skip empty lines
+            if line_str == "\n":
+                continue
+            span.add_info_event(f"recv: {line_str}")
+            # Remove SSE data prefix
+            line_str = line_str.removeprefix("data: ")
+            # Handle stream completion signal
+            if line_str.startswith("[DONE]"):
+                await self.put_stream_content(
+                    self.node_id,
+                    variable_pool,
+                    msg_or_end_node_deps,
+                    NodeType.KNOWLEDGE_PRO.value,
+                    self.get_stream_done_content(),
+                )
+                break
+
+            # Parse JSON message from stream
+            msg = json.loads(line_str)
+            content_type = msg.get("data", {}).get("content_type", "answer")
+
+            # Handle error responses from the API
+            if msg.get("code", 0) != 0:
+                await self.put_stream_content(
+                    self.node_id,
+                    variable_pool,
+                    msg_or_end_node_deps,
+                    NodeType.KNOWLEDGE_PRO.value,
+                    self.get_stream_done_content(),
+                )
+                raise CustomException(
+                    err_code=CodeEnum.KNOWLEDGE_REQUEST_ERROR,
+                    err_msg=msg.get("message", ""),
+                    cause_error=json.dumps(msg, ensure_ascii=False),
+                )
+
+            # Process answer content type
+            if content_type == "answer":
+                content = msg.get("data", {}).get("content", "")
+                content_list += [content] if content else []
+                # Put stream content frame into msg_or_end_node_deps
+                await self.put_stream_content(
+                    self.node_id,
+                    variable_pool,
+                    msg_or_end_node_deps,
+                    NodeType.KNOWLEDGE_PRO.value,
+                    msg,
+                )
+
+            # Extract knowledge metadata if present
+            knowledge_metadata = (
+                msg.get("data", {}).get("content", [])
+                if content_type == "knowledge_metadata"
+                else []
+            )
+
+        return content_list, knowledge_metadata
 
     async def async_execute(
         self,

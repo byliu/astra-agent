@@ -384,7 +384,7 @@ function index({ id, data, fields, children }): React.ReactElement {
             })}
           </div>
           <Select
-            value={undefined}
+            value={null}
             disabled={!addDataOptions.length}
             style={{ width: 220 }}
             className={cn('flow-select nodrag w-full')}

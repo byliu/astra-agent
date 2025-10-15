@@ -5,6 +5,6 @@ package com.iflytek.astron.console.commons.constant;
  */
 public class RedisKeyConstant {
 
-    public static final String MASS_WORKFLOW_EVENT_VALUE_TYPE = "mass_workflow_event_value_type_uid_{}_chatId{}";
-    public static final String MASS_WORKFLOW_EVENT_ID = "mass_workflow_eventId_uid_{}_chatId{}";
+    public static final String MAAS_WORKFLOW_EVENT_VALUE_TYPE = "maas_workflow_event_value_type_uid_{}_chatId{}";
+    public static final String MAAS_WORKFLOW_EVENT_ID = "maas_workflow_eventId_uid_{}_chatId{}";
 }

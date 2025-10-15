@@ -1,4 +1,4 @@
-import {
+import React, {
   memo,
   useState,
   useEffect,
@@ -103,7 +103,8 @@ const DetailListPage = () => {
             >
               {t('releaseDetail.releaseVersion')}
             </div>
-            <div
+            {/* NOTE: Temporarily hide trce module -- 25.10 */}
+            {/* <div
               className={`${styles.changeBox} ${
                 location.pathname.includes('trace') && styles.activeBox
               }`}
@@ -112,7 +113,7 @@ const DetailListPage = () => {
               }}
             >
               {t('releaseDetail.traceLog')}
-            </div>
+            </div> */}
           </div>
 
           {/* 插槽区域 - 用于显示子组件注册的配置展示元素 */}

@@ -16,6 +16,7 @@ import ChatInput from './components/chat-input';
 import { getPublicResult } from '@/services/common';
 import useChatStore from '@/components/workflow/store/use-chat-store';
 import { UseChatDebuggerContentProps } from '@/components/workflow/types';
+import useChat from '@/hooks/use-chat';
 
 // 类型导入
 import {
@@ -331,6 +332,7 @@ export function ChatDebuggerContent({
   open,
   setOpen,
 }: ChatDebuggerContentProps): React.ReactElement {
+  const { handleFlowToChat } = useChat();
   const { t } = useTranslation();
   const currentFlow = useFlowsManager(state => state.currentFlow);
   const userInput = useChatStore(state => state.userInput);
@@ -430,7 +432,7 @@ export function ChatDebuggerContent({
                 } else {
                   params.version = 'debugger';
                 }
-                // handleFlowToChat(params);
+                handleFlowToChat(params);
               }}
             >
               <img

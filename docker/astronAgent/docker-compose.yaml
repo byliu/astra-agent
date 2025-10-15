@@ -14,8 +14,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-spark}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spark123}
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "${EXPOSE_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./pgsql/:/docker-entrypoint-initdb.d/
@@ -34,8 +32,6 @@ services:
     container_name: astron-agent-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
-    ports:
-      - "${EXPOSE_MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql/:/docker-entrypoint-initdb.d/
@@ -52,8 +48,6 @@ services:
   redis:
     image: redis:7
     container_name: astron-agent-redis
-    ports:
-      - "${EXPOSE_REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -75,9 +69,6 @@ services:
       - "ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}"
       - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
       - cluster.name=astron-agent-cluster
-    ports:
-      - "${EXPOSE_ELASTICSEARCH_PORT:-9200}:9200"
-      - "${EXPOSE_ELASTICSEARCH_TRANSPORT_PORT:-9300}:9300"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
@@ -151,7 +142,7 @@ services:
     container_name: astron-agent-core-tenant
     environment:
       SERVICE_PORT: "${CORE_TENANT_PORT:-5052}"
-      SERVICE_LOCATION: "${SERVICE_LOCATION:-localhost}"
+      SERVICE_LOCATION: "${SERVICE_LOCATION:-hf}"
       DATABASE_DB_TYPE: "${DATABASE_DB_TYPE:-mysql}"
       DATABASE_USERNAME: "${DATABASE_USERNAME:-root}"
       DATABASE_PASSWORD: "${DATABASE_PASSWORD:-root123}"
@@ -159,8 +150,6 @@ services:
       DATABASE_MAX_OPEN_CONNS: "${DATABASE_MAX_OPEN_CONNS:-5}"
       DATABASE_MAX_IDLE_CONNS: "${DATABASE_MAX_IDLE_CONNS:-5}"
       LOG_PATH: "${LOG_PATH:-log.txt}"
-    ports:
-      - "${CORE_TENANT_PORT:-5052}:${CORE_TENANT_PORT:-5052}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -184,19 +173,18 @@ services:
 
   # Memory Database Service
 
-  core-memory:
-    image: ghcr.io/iflytek/astron-agent/core-memory:latest
-    container_name: astron-agent-core-memory
+  core-database:
+    image: ghcr.io/iflytek/astron-agent/core-database:latest
+    container_name: astron-agent-core-database
     environment:
-      SERVICE_PORT: "${CORE_MEMORY_PORT:-7990}"
+      SERVICE_PORT: "${CORE_DATABASE_PORT:-7990}"
       PGSQL_HOST: "${POSTGRES_HOST:-postgres}"
       PGSQL_PORT: "${POSTGRES_PORT:-5432}"
       PGSQL_USER: "${POSTGRES_USER:-spark}"
       PGSQL_PASSWORD: "${POSTGRES_PASSWORD:-spark123}"
-      PGSQL_DATABASE: "${MEMORY_POSTGRES_DATABASE:-sparkdb_manager}"
+      PGSQL_DATABASE: "${DATABASE_POSTGRES_DATABASE:-sparkdb_manager}"
       OTLP_ENDPOINT: "${OTLP_ENDPOINT:-127.0.0.1:4317}"
-    ports:
-      - "${CORE_MEMORY_PORT:-7990}:${CORE_MEMORY_PORT:-7990}"
+      OTLP_ENABLE: "${OTLP_ENABLE:-0}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -211,34 +199,40 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./config/memory/config.env:/opt/database/memory/database/config.env
-      - ./config/memory/logs/:/opt/database/memory/database/logs
+      - ./config/database/config.env:/opt/core/memory/database/config.env
+      - ./config/database/logs/:/opt/core/memory/database/logs
     networks:
       - astron-agent-network
     restart: always
 
   # RPA Plugin Service
-#  core-rpa:
-#    image: ghcr.io/iflytek/astron-agent/astron-agent-core-rpa:latest
-#    container_name: astron-agent-core-rpa
-#    ports:
-#      - "${CORE_RPA_PORT:-8003}:8000"
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      mysql:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#      elasticsearch:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#      minio:
-#        condition: service_healthy
-#    networks:
-#      - astron-agent-network
-#    restart: always
+  core-rpa:
+    image: ghcr.io/iflytek/astron-agent/core-rpa:latest
+    container_name: astron-agent-core-rpa
+    environment:
+      OTLP_ENDPOINT: "${OTLP_ENDPOINT:-127.0.0.1:4317}"
+      KAFKA_SERVERS: "${KAFKA_SERVERS:-kafka:29092}"
+      XIAOWU_RPA_TASK_CREATE_URL: "${XIAOWU_RPA_TASK_CREATE_URL:-}"
+      XIAOWU_RPA_TASK_QUERY_URL: "${XIAOWU_RPA_TASK_QUERY_URL:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./config/rpa/config.env:/opt/core/plugin/rpa/config.env
+      - ./config/rpa/logs/:/opt/core/logs/
+    networks:
+      - astron-agent-network
+    restart: always
 
   # Link Plugin Service
   core-link:
@@ -256,8 +250,6 @@ services:
       REDIS_PASSWORD: "${REDIS_PASSWORD}"
       OTLP_ENDPOINT: "${OTLP_ENDPOINT:-127.0.0.1:4317}"
       KAFKA_SERVERS: "${KAFKA_SERVERS:-kafka:29092}"
-    ports:
-      - "${CORE_LINK_PORT:-18888}:18888"
     depends_on:
       postgres:
         condition: service_healthy
@@ -272,8 +264,8 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./config/link/config.env:/opt/link/config.env
-      - ./config/link/logs/:/opt/link/logs/
+      - ./config/link/config.env:/opt/core/plugin/link/config.env
+      - ./config/link/logs/:/opt/core/plugin/link/logs/
     networks:
       - astron-agent-network
     restart: always
@@ -290,11 +282,9 @@ services:
       OSS_BUCKET_NAME: "${OSS_BUCKET_NAME}"
       OSS_TTL: "${OSS_TTL:-157788000}"
       KAFKA_SERVERS: "${KAFKA_SERVERS:-kafka:29092}"
-      AI_APP_ID: "${AI_APP_ID}"
-      AI_API_KEY: "${AI_API_KEY}"
-      AI_API_SECRET: "${AI_API_SECRET}"
-    ports:
-      - "${CORE_AITOOLS_PORT:-18668}:${CORE_AITOOLS_PORT:-18668}"
+      AI_APP_ID: "${PLATFORM_APP_ID}"
+      AI_API_KEY: "${PLATFORM_API_KEY}"
+      AI_API_SECRET: "${PLATFORM_API_SECRET}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -309,8 +299,8 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./config/aitools/config.env:/opt/aitools/config.env
-      - ./config/aitools/logs/:/opt/aitools/logs/
+      - ./config/aitools/config.env:/opt/core/plugin/aitools/config.env
+      - ./config/aitools/logs/:/opt/core/plugin/aitools/logs/
     networks:
       - astron-agent-network
     restart: always
@@ -320,13 +310,7 @@ services:
     image: ghcr.io/iflytek/astron-agent/core-agent:latest
     container_name: astron-agent-core-agent
     environment:
-      PYTHONUNBUFFERED: "${PYTHONUNBUFFERED:-1}"
-      RUN_ENVIRON: "${RUN_ENVIRON:-dev}"
-      USE_POLARIS: "${USE_POLARIS:-false}"
-      SERVICE_NAME: "${SERVICE_NAME:-Agent}"
-      SERVICE_SUB: "${SERVICE_SUB:-sag}"
       SERVICE_LOCATION: "${SERVICE_LOCATION:-hf}"
-      SERVICE_APP: "${SERVICE_APP:-app:app}"
       SERVICE_HOST: "${SERVICE_HOST:-0.0.0.0}"
       SERVICE_PORT: "${CORE_AGENT_PORT:-17870}"
       SERVICE_WORKERS: "${SERVICE_WORKERS:-1}"
@@ -365,12 +349,9 @@ services:
       LIST_MCP_PLUGIN_URL: "${LIST_MCP_PLUGIN_URL:-http://core-link:18888/api/v1/mcp/tool_list}"
       RUN_MCP_PLUGIN_URL: "${RUN_MCP_PLUGIN_URL:-http://core-link:18888/api/v1/mcp/call_tool}"
       APP_AUTH_HOST: "${APP_AUTH_HOST:-core-tenant}"
-      APP_AUTH_ROUTER: "${APP_AUTH_ROUTER:-/api-services/v2/app/details}"
       APP_AUTH_PROT: "${APP_AUTH_PROT:-http}"
       APP_AUTH_API_KEY: "${APP_AUTH_API_KEY:-YOUR_APP_AUTH_API_KEY}"
       APP_AUTH_SECRET: "${APP_AUTH_SECRET:-YOUR_APP_AUTH_SECRET}"
-    ports:
-      - "${CORE_AGENT_PORT:-17870}:${CORE_AGENT_PORT:-17870}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -385,7 +366,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./config/agent/config.env:/opt/agent/config.env
+      - ./config/agent/config.env:/opt/core/agent/config.env
     networks:
       - astron-agent-network
     restart: always
@@ -396,12 +377,12 @@ services:
     container_name: astron-agent-core-knowledge
     environment:
       SERVICE_PORT: "${CORE_KNOWLEDGE_PORT:-20010}"
+      OTLP_ENABLE: "${OTLP_ENABLE:-0}"
       RAGFLOW_BASE_URL: "${RAGFLOW_BASE_URL}"
       RAGFLOW_API_TOKEN: "${RAGFLOW_API_TOKEN}"
       RAGFLOW_TIMEOUT: "${RAGFLOW_TIMEOUT:-60}"
       RAGFLOW_DEFAULT_GROUP: "${RAGFLOW_DEFAULT_GROUP}"
-    ports:
-      - "${CORE_KNOWLEDGE_PORT:-20010}:${CORE_KNOWLEDGE_PORT:-20010}"
+      XINGHUO_DATASET_ID: "${XINGHUO_DATASET_ID:-}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -458,8 +439,6 @@ services:
       KAFKA_SERVERS: "${KAFKA_SERVERS:-kafka:29092}"
       KAFKA_TIMEOUT: "${KAFKA_TIMEOUT:-60}"
       KAFKA_TOPIC: "${WORKFLOW_KAFKA_TOPIC:-spark-agent-builder}"
-    ports:
-      - "${CORE_WORKFLOW_PORT:-7880}:${CORE_WORKFLOW_PORT:-7880}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -474,7 +453,8 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./config/workflow/config.env:/opt/openstellar/workflow/config.env
+      - ./config/workflow/config.env:/opt/core/workflow/config.env
+      - ./config/workflow/logs/:/opt/core/logs
     networks:
       - astron-agent-network
     restart: always
@@ -543,32 +523,61 @@ services:
       OAUTH2_ISSUER_URI: "${OAUTH2_ISSUER_URI:-http://auth-server:8000}"
       OAUTH2_JWK_SET_URI: "${OAUTH2_JWK_SET_URI:-http://auth-server:8000/.well-known/jwks}"
       OAUTH2_AUDIENCE: "${OAUTH2_AUDIENCE:-your-oauth2-client-id}"
+      PLATFORM_APP_ID: "${PLATFORM_APP_ID:-your-app-id}"
+      PLATFORM_API_KEY: "${PLATFORM_API_KEY:-your-api-key}"
+      PLATFORM_API_SECRET: "${PLATFORM_API_SECRET:-your-api-secret}"
       SPARK_APP_ID: "${SPARK_APP_ID:-your-spark-app-id}"
       SPARK_API_KEY: "${SPARK_API_KEY:-your-spark-api-key}"
       SPARK_API_SECRET: "${SPARK_API_SECRET:-your-spark-api-secret}"
       SPARK_API_PASSWORD: "${SPARK_API_PASSWORD:-your-spark-api-password}"
       SPARK_LFASR_KEY: "${SPARK_LFASR_KEY:-your-spark-lfasr-key}"
       SPARK_LFASR_APPID: "${SPARK_LFASR_APPID:-your-spark-lfasr-appid}"
+      SPARK_IMAGE_APP_ID: "${SPARK_IMAGE_APP_ID:-your-image-appid}"
+      SPARK_IMAGE_API_KEY: "${SPARK_IMAGE_API_KEY:-your-image-api-key}"
+      SPARK_IMAGE_API_SECRET: "${SPARK_IMAGE_API_SECRET:-your-image-api-secret}"
       WECHAT_COMPONENT_APPID: "${WECHAT_COMPONENT_APPID:-your-wechat-component-appid}"
       WECHAT_COMPONENT_SECRET: "${WECHAT_COMPONENT_SECRET:-your-wechat-component-secret}"
       WECHAT_TOKEN: "${WECHAT_TOKEN:-your-wechat-token}"
       WECHAT_ENCODING_AES_KEY: "${WECHAT_ENCODING_AES_KEY:-your-wechat-encoding-aes-key}"
-      API_AUTH_SECRET: "${API_AUTH_SECRET:-secret}"
+      WORKFLOW_CHAT_URL: "${WORKFLOW_CHAT_URL:-http://core-workflow:7880/workflow/v1/chat/completions}"
+      WORKFLOW_DEBUG_URL: "${WORKFLOW_DEBUG_URL:-http://core-workflow:7880/workflow/v1/debug/chat/completions}"
+      WORKFLOW_RESUME_URL: "${WORKFLOW_RESUME_URL:-http://core-workflow:7880/workflow/v1/resume}"
       COMMON_APPID: "${COMMON_APPID:-appid}"
       COMMON_APIKEY: "${COMMON_APIKEY:-apiKey}"
       COMMON_API_SECRET: "${COMMON_API_SECRET:-apiSecret}"
       TENANT_ID: "${TENANT_ID:-tenantId}"
       TENANT_KEY: "${TENANT_KEY:-tenantKey}"
       TENANT_SECRET: "${TENANT_SECRET:-tenantSecret}"
-      APP_APIKEY: "${APP_APIKEY:-apikey}"
-      APP_API_SECRET: "${APP_API_SECRET:-apiSecret}"
       ADMIN_UID: "${ADMIN_UID:-9999}"
+      APP_URL: "${APP_URL:-}"
+      KNOWLEDGE_URL: "${KNOWLEDGE_URL:-}"
+      TOOL_URL: "${TOOL_URL:-}"
+      WORKFLOW_URL: "${WORKFLOW_URL:-}"
+      SPARK_DB_URL: "${SPARK_DB_URL:-}"
+      LOCAL_MODEL_URL: "${LOCAL_MODEL_URL:-}"
       MAAS_APP_ID: "${MAAS_APP_ID:-your-maas-app-id}"
       MAAS_API_KEY: "${MAAS_API_KEY:-your-maas-api-key}"
       MAAS_API_SECRET: "${MAAS_API_SECRET:-your-maas-api-secret}"
       MAAS_CONSUMER_ID: "${MAAS_CONSUMER_ID:-your-maas-consumer-id}"
       MAAS_CONSUMER_SECRET: "${MAAS_CONSUMER_SECRET:-your-maas-consumer-secret}"
       MAAS_CONSUMER_KEY: "${MAAS_CONSUMER_KEY:-your-maas-consumer-key}"
+      MAAS_WORKFLOW_VERSION: "${MAAS_WORKFLOW_VERSION:-}"
+      MAAS_SYNCHRONIZE_WORK_FLOW: "${MAAS_SYNCHRONIZE_WORK_FLOW:-}"
+      MAAS_PUBLISH: "${MAAS_PUBLISH:-}"
+      MAAS_CLONE_WORK_FLOW: "${MAAS_CLONE_WORK_FLOW:-}"
+      MAAS_GET_INPUTS: "${MAAS_GET_INPUTS:-}"
+      MAAS_CAN_PUBLISH_URL: "${MAAS_CAN_PUBLISH_URL:-}"
+      MAAS_PUBLISH_API: "${MAAS_PUBLISH_API:-}"
+      MAAS_AUTH_API: "${MAAS_AUTH_API:-}"
+      MAAS_MCP_REGISTER: "${MAAS_MCP_REGISTER:-}"
+      MAAS_WORKFLOW_CONFIG: "${MAAS_WORKFLOW_CONFIG:-}"
+      BOT_API_CBM_BASE_URL: "${BOT_API_CBM_BASE_URL:-}"
+      BOT_API_MAAS_BASE_URL: "${BOT_API_MAAS_BASE_URL:-}"
+      TENANT_CREATE_APP: "${TENANT_CREATE_APP:-}"
+      TENANT_GET_APP_DETAIL: "${TENANT_GET_APP_DETAIL:-}"
+      DEEPSEEK_URL: "${DEEPSEEK_URL:-https://api.deepseek.com/chat/completions}"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
+      
     expose:
       - "8080"
     depends_on:

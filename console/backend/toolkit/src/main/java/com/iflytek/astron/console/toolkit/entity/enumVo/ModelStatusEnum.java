@@ -44,7 +44,7 @@ public enum ModelStatusEnum {
     }
 
     public static Integer getCodeByValue(String value) {
-        for (DBTableEnvEnum item : DBTableEnvEnum.values()) {
+        for (ModelStatusEnum item : ModelStatusEnum.values()) {
             if (Objects.equals(item.getValue(), value)) {
                 return item.getCode();
             }

@@ -23,14 +23,14 @@
         </root>
 
         <!-- Debug SQL during development -->
-        <logger name="com.iflytek.astron.console.hub.mapper" level="DEBUG" additivity="false">
-            <appender-ref ref="STDOUT"/>
-        </logger>
+<!--        <logger name="com.iflytek.astron.console.hub.mapper" level="DEBUG" additivity="false">-->
+<!--            <appender-ref ref="STDOUT"/>-->
+<!--        </logger>-->
 
-        <!-- MyBatis Plus SQL logging -->
-        <logger name="com.baomidou.mybatisplus" level="DEBUG" additivity="false">
-            <appender-ref ref="STDOUT"/>
-        </logger>
+<!--        &lt;!&ndash; MyBatis Plus SQL logging &ndash;&gt;-->
+<!--        <logger name="com.baomidou.mybatisplus" level="DEBUG" additivity="false">-->
+<!--            <appender-ref ref="STDOUT"/>-->
+<!--        </logger>-->
 
         <!-- Redis operation logging -->
         <logger name="org.springframework.data.redis" level="DEBUG" additivity="false">

@@ -104,12 +104,7 @@ const ModelItem = ({ model, nodeParam, t }): React.ReactElement => (
     <div className="w-full flex items-start justify-between overflow-hidden">
       <div className="flex items-start gap-2 flex-1 overflow-hidden">
         <div className="flex items-center gap-2">
-          <img
-            src={
-              model?.llmSource === 0 ? model?.address + model?.icon : model.icon
-            }
-            className="w-[20px] h-[20px] flex-shrink-0"
-          />
+          <img src={model.icon} className="w-[20px] h-[20px] flex-shrink-0" />
           <span
             className="text-xs"
             style={{
@@ -140,6 +135,9 @@ const useModelSelect = (
   const { t } = useTranslation();
   const user = useUserStore(state => state.user);
   const currentStore = useFlowsManager(state => state.getCurrentStore());
+  const autoSaveCurrentFlow = useFlowsManager(
+    state => state.autoSaveCurrentFlow
+  );
   const updateNodeRef = currentStore(state => state.updateNodeRef);
   const setNode = currentStore(state => state.setNode);
   const handleResetModelParams = useMemoizedFn(currentSelectModel => {
@@ -164,6 +162,7 @@ const useModelSelect = (
             ...cloneDeep(old),
           };
         });
+        autoSaveCurrentFlow();
       });
     } else {
       getModelConfigDetail(
@@ -196,6 +195,7 @@ const useModelSelect = (
             ...cloneDeep(old),
           };
         });
+        autoSaveCurrentFlow();
       });
     }
   });

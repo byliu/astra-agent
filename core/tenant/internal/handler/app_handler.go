@@ -2,12 +2,14 @@ package handler
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
 	"tenant/internal/models"
 	"tenant/internal/service"
 	"tenant/tools/generator"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AppHandler struct {
@@ -61,7 +63,6 @@ func (handler *AppHandler) SaveApp(c *gin.Context) {
 	}
 	resp := newSuccessResp(result, sid)
 	c.JSON(http.StatusOK, resp)
-
 }
 
 func (handler *AppHandler) ModifyApp(c *gin.Context) {
@@ -97,7 +98,6 @@ func (handler *AppHandler) ModifyApp(c *gin.Context) {
 	}
 	resp := newSuccessResp(nil, sid)
 	c.JSON(http.StatusOK, resp)
-
 }
 
 func (handler *AppHandler) DeleteApp(c *gin.Context) {
@@ -219,7 +219,6 @@ func (handler *AppHandler) DetailApp(c *gin.Context) {
 		DevId:   req.DevId,
 		CloudId: req.CloudId,
 	})
-
 	if err != nil {
 		var appErr service.BizErr
 		if errors.As(err, &appErr) {
@@ -234,5 +233,4 @@ func (handler *AppHandler) DetailApp(c *gin.Context) {
 	}
 	resp := newSuccessResp(details, sid)
 	c.JSON(http.StatusOK, resp)
-
 }

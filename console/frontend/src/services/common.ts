@@ -54,7 +54,7 @@ export async function getPublicResult(params: {
   flowId: string;
   name: string;
 }): Promise<unknown> {
-  return await http.get('/workflow/version/publishResult', {
+  return await http.get('/workflow/version/publish-result', {
     params,
   });
 }

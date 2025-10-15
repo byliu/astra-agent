@@ -1,22 +1,26 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
+
 	"tenant/config"
 	"tenant/internal/dao"
 	"tenant/internal/service"
 	"tenant/tools/database"
 	"tenant/tools/generator"
+
+	"github.com/gin-gonic/gin"
 )
 
-var sidGenerator2 = &generator.SidGenerator2{}
-var appHandler *AppHandler
-var authHandler *AuthHandler
-var keySid = "sid"
-var keySource = "source"
+var (
+	sidGenerator2 = &generator.SidGenerator2{}
+	appHandler    *AppHandler
+	authHandler   *AuthHandler
+	keySid        = "sid"
+	keySource     = "source"
+)
 
 func InitRouter(e *gin.Engine, conf *config.Config) error {
 	err := initHandler(conf)

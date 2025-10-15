@@ -17,7 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -73,11 +72,6 @@ public class JwtClaimsFilter extends OncePerRequestFilter {
             throw new IllegalArgumentException("JWT info or user ID cannot be null");
         }
 
-        Optional<UserInfo> existUserInfo = userInfoDataService.findByUid(jwtInfoDto.uid());
-        if (existUserInfo.isPresent()) {
-            return existUserInfo.get();
-        }
-
         UserInfo userInfo = new UserInfo();
         userInfo.setUid(jwtInfoDto.uid());
         userInfo.setUsername(jwtInfoDto.username());
@@ -90,7 +84,7 @@ public class JwtClaimsFilter extends OncePerRequestFilter {
         userInfo.setUpdateTime(LocalDateTime.now());
         userInfo.setDeleted(DEFAULT_DELETED);
 
-        // DistributedLock ensures creating a new user or returning the existing user info
+        // Let createOrGetUser handle all existence checks and creation logic with distributed lock
         return userInfoDataService.createOrGetUser(userInfo);
     }
 }

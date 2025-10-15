@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-import redis  # type: ignore[import-untyped]
+import redis
 from pydantic import BaseModel, ConfigDict, Field
 from rediscluster import ClusterConnectionPool, RedisCluster
 

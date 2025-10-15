@@ -1292,6 +1292,8 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
         model.setAcceleratorCount(dto.getAcceleratorCount());
         model.setReplicaCount(dto.getReplicaCount());
         model.setEnable(false);
+        // Placeholder, in order to use pysdk
+        model.setApiKey("sk-personal");
         model.setConfig(
                 Optional.ofNullable(dto.getConfig()).map(JSON::toJSONString).orElse(null));
     }

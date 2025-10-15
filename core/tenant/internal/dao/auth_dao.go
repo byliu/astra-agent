@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
+
 	"tenant/internal/models"
 	"tenant/tools/database"
-	"time"
 )
 
 type AuthDao struct {

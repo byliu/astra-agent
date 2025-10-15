@@ -8,43 +8,15 @@ import {
 } from '@/services/spark-common';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-// import { Bot, BotMarketPage } from '@/types/agent-square';
+import {
+  HeaderFeedbackModalProps,
+  BotMarketItem,
+  QuickCreateBotResponse,
+} from '@/types/agent-create';
 import { AxiosResponse } from 'axios';
+import { getRandom3 } from '@/utils/agent-create-utils';
 
 import styles from './index.module.scss';
-
-interface HeaderFeedbackModalProps {
-  visible: boolean;
-  onCancel: () => void;
-}
-
-interface BotMarketItem {
-  id: number;
-  botName: string;
-  botDesc: string;
-  botTemplate: string;
-  botType: number;
-  botTypeName: string;
-  inputExample: string;
-  prompt: string;
-  promptStructList: Array<{
-    id: number;
-    promptKey: string;
-    promptValue: string;
-  }>;
-  promptType: number;
-  supportContext: number;
-  botStatus: number;
-  language: string;
-  createTime: string;
-  updateTime: string;
-  inputExampleList: string[];
-  [key: string]: unknown; // 为其他可能存在的属性保留灵活性
-}
-
-interface QuickCreateBotResponse {
-  [key: string]: unknown;
-}
 
 const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
   visible,
@@ -100,36 +72,6 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
         message.error(err?.msg || t('createAgent1.aiGeneratedFailed'));
       });
     return;
-  };
-
-  const getRandom3 = (arr: (BotMarketItem | undefined)[]): BotMarketItem[] => {
-    // 过滤掉 undefined 值
-    const validItems = arr.filter(
-      (item): item is BotMarketItem => item !== undefined
-    );
-
-    // 如果数组长度不足3，直接返回过滤后的数组
-    if (validItems.length <= 3) {
-      return validItems.slice().sort(() => Math.random() - 0.5);
-    }
-
-    // 创建副本避免修改原数组
-    const copy = [...validItems];
-
-    // Fisher-Yates 洗牌算法的前3步
-    for (let i = 0; i < 3; i++) {
-      const randomIndex = Math.floor(Math.random() * (copy.length - i)) + i;
-
-      // 使用非空断言操作符明确告诉TypeScript这些值不会是undefined
-      const temp = copy[i] as BotMarketItem;
-      const randomItem = copy[randomIndex] as BotMarketItem;
-
-      copy[i] = randomItem;
-      copy[randomIndex] = temp;
-    }
-
-    // 返回前3个元素
-    return copy.slice(0, 3);
   };
 
   useEffect(() => {

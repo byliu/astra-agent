@@ -70,7 +70,10 @@ const ConnectionLineComponent = ({
   );
 };
 
-const useKeyboardHandlers = ({ lastSelection }): void => {
+const useKeyboardHandlers = ({
+  lastSelection,
+  startWorkflowKeydownEvent,
+}): void => {
   const position = useRef({ x: 0, y: 0 });
   const takeSnapshot = useIteratorFlowStore(state => state.takeSnapshot);
   const currentStore = useFlowsManager(state => state.getCurrentStore());
@@ -81,10 +84,6 @@ const useKeyboardHandlers = ({ lastSelection }): void => {
   const undo = currentStore(state => state.undo);
   const paste = currentStore(state => state.paste);
   const canPublishSetNot = useFlowsManager(state => state.canPublishSetNot);
-  const showToolModal = useFlowsManager(state => state.toolModalInfo)?.open;
-  const knowledgeModalInfoOpen = useFlowsManager(
-    state => state.knowledgeModalInfo
-  )?.open;
   const handleDelete = useMemoizedFn((): void => {
     takeSnapshot();
     lastSelection.nodes = lastSelection?.nodes?.filter(
@@ -150,29 +149,23 @@ const useKeyboardHandlers = ({ lastSelection }): void => {
       position.current = { x: event.clientX, y: event.clientY };
     };
 
-    !showToolModal &&
-      !knowledgeModalInfoOpen &&
+    startWorkflowKeydownEvent &&
       window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousemove', handleMouseMove);
 
     return (): void => {
-      window.removeEventListener('keydown', handleKeyDown);
+      startWorkflowKeydownEvent &&
+        window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [
-    lastSelection,
-    lastSelection,
-    showToolModal,
-    knowledgeModalInfoOpen,
-    edges,
-  ]);
+  }, [lastSelection, startWorkflowKeydownEvent, edges]);
 };
 
 const useIterativeAmplification = ({
   lastSelection,
   setLastSelection,
+  handleAddNode,
 }): useIterativeAmplificationProps => {
-  const { handleAddNode } = useFlowCommon();
   const dropZoneRef = useRef<HTMLDivElement | null>(null);
   const setFlowNodes = useFlowStore(state => state.setNodes);
   const setFlowEdges = useFlowStore(state => state.setEdges);
@@ -335,7 +328,7 @@ const useIterativeAmplification = ({
           })),
         ...edges.map(edge => ({
           ...edge,
-          zIndex: 100,
+          zIndex: 1001,
           data: {
             edgeType: edgeType,
           },
@@ -363,7 +356,7 @@ function FlowContainer({
   zoom,
   setZoom,
 }: FlowContainerProps): React.ReactElement {
-  //迭代画布修改前的节点数组
+  const { handleAddNode, startWorkflowKeydownEvent } = useFlowCommon();
   const reactFlowInstance = useIteratorFlowStore(
     state => state.reactFlowInstance
   );
@@ -387,6 +380,7 @@ function FlowContainer({
     useState<OnSelectionChangeParams | null>(null);
   useKeyboardHandlers({
     lastSelection,
+    startWorkflowKeydownEvent,
   });
   const {
     beforeNodes,
@@ -401,6 +395,7 @@ function FlowContainer({
   } = useIterativeAmplification({
     lastSelection,
     setLastSelection,
+    handleAddNode,
   });
 
   useEffect(() => {

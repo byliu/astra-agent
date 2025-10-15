@@ -45,8 +45,8 @@ public class CoreSystemService {
 
     public static final String UPLOAD_FILE_PATH = "/workflow/v1/upload_file";
     public static final String BATCH_UPLOAD_FILE_PATH = "/workflow/v1/upload_files";
-    public static final String ADD_COMPARISONS_PATH = "/sparkflow/v1/protocol/compare/save";
-    public static final String DELETE_COMPARISONS_PATH = "/sparkflow/v1/protocol/compare/delete";
+    public static final String ADD_COMPARISONS_PATH = "/workflow/v1/protocol/compare/save";
+    public static final String DELETE_COMPARISONS_PATH = "/workflow/v1/protocol/compare/delete";
     public static final String CREATE_DATABASE_PATH = "/xingchen-db/v1/create_database";
     public static final String EXEC_DDL_PATH = "/xingchen-db/v1/exec_ddl";
     public static final String EXEC_DML_PATH = "/xingchen-db/v1/exec_dml";

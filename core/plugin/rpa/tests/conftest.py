@@ -25,7 +25,7 @@ def mock_env_vars() -> Generator[dict[str, str], None, None]:
     """Fixture providing mocked environment variables for testing."""
     env_vars = {
         "SERVICE_NAME": "test-rpa-service",
-        "SERVICE_PORT": "19999",
+        "SERVICE_PORT": "17198",
         "LOG_LEVEL": "DEBUG",
         "LOG_PATH": "/tmp/test-logs",
         "XIAOWU_RPA_PING_INTERVAL": "3",
@@ -125,7 +125,7 @@ def config_file_content() -> str:
     """Fixture providing sample configuration file content."""
     return """# RPA Service Configuration
 SERVICE_NAME=rpa-test-service
-SERVICE_PORT=19999
+SERVICE_PORT=17198
 LOG_LEVEL=DEBUG
 LOG_PATH=/var/log/rpa
 

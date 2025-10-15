@@ -11,23 +11,23 @@ api:
     aiuiTenantId: xxxxxxxxxxxxxxxx
     aiuiTenantKey: xxxxxxxxxxxxxxxx
     aiuiTenantSecret: xxxxxxxxxxxxxxxx
-    appUrl: http://10.1.87.65:5052/v2/app
+    appUrl: ${APP_URL:http://127.0.0.1:5052/v2/app}
     apiKey: ${APP_APIKEY:apikey}
     apiSecret: ${APP_API_SECRET:apiSecret}
     defaultAddRepo: sparkbot_repo_01
-    knowledgeUrl: http://10.1.87.65:30007/knowledge
+    knowledgeUrl: ${KNOWLEDGE_URL:http://127.0.0.1:30007/knowledge}
     mcpToolServer: http://127.0.0.1:port/api/v1
     mcpAuthServer: http://127.0.0.1:port
     openPlatform: https://127.0.0.1:8080
     tenantId: ${TENANT_ID:tenantId}
     tenantKey: ${TENANT_KEY:tenantKey}
     tenantSecret: ${TENANT_SECRET:tenantSecret}
-    toolUrl: http://10.1.87.65:18888
-    workflow: http://10.1.87.65:7880
-    sparkDB: http://10.1.87.65:7990
+    toolUrl: ${TOOL_URL:http://127.0.0.1:18888}
+    workflow: ${WORKFLOW_URL:http://127.0.0.1:7880}
+    sparkDB: ${SPARK_DB_URL:http://127.0.0.1:7990}
     sparkDocUrl: https://chatdoc.xfyun.cn
     mcpUrlServer: http://127.0.0.1:port
-    localModel: http://10.103.240.12:33777
+    localModel: ${LOCAL_MODEL_URL:http://127.0.0.1:33778}
     datasetUrl: http://127.0.0.1:8080/dataset/getDataset
     datasetFileUrl: http://127.0.0.1:8080/dataset/getDatasetFiles
     xinghuoDatasetFileUrl: http://127.0.0.1:8080/dataset/addXinghuoDatasetFile

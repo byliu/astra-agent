@@ -12,7 +12,7 @@ import { useNodeCommon } from '@/components/workflow/hooks/use-node-common';
 
 export const EndDetail = memo(props => {
   const { id, data } = props;
-  const { handleChangeNodeParam, nodeParam, isIteratorEnd } = useNodeCommon({
+  const { handleChangeNodeParam, nodeParam, isEndNode } = useNodeCommon({
     id,
     data,
   });
@@ -26,47 +26,40 @@ export const EndDetail = memo(props => {
     <div id={id}>
       <div className="p-[14px] pb-[6px]">
         <div className="bg-[#fff] rounded-lg flex flex-col gap-[18px]">
-          <FLowCollapse
-            label={
-              <div className="flex items-center justify-between text-base font-medium">
-                {t('workflow.nodes.endNode.answerMode')}
-              </div>
-            }
-            content={
-              <div className="px-[14px]">
-                <FlowSelect
-                  placeholder={t('workflow.nodes.endNode.selectPlaceholder')}
-                  value={nodeParam?.outputMode}
-                  options={[
-                    {
-                      label: t('workflow.nodes.endNode.returnParams'),
-                      value: 0,
-                    },
-                    {
-                      label: t('workflow.nodes.endNode.returnFormat'),
-                      value: 1,
-                    },
-                  ]}
-                  onChange={value =>
-                    handleChangeNodeParam(
-                      (data, value) => (data.nodeParam.outputMode = value),
-                      value
-                    )
-                  }
-                />
-              </div>
-            }
-          />
-          <Inputs
-            id={id}
-            data={data}
-            allowAdd={!isIteratorEnd}
-            disabled={isIteratorEnd}
-          >
-            <div className="text-base font-medium">
-              {t('workflow.nodes.common.output')}
-            </div>
-          </Inputs>
+          {isEndNode && (
+            <FLowCollapse
+              label={
+                <div className="flex items-center justify-between text-base font-medium">
+                  {t('workflow.nodes.endNode.answerMode')}
+                </div>
+              }
+              content={
+                <div className="px-[14px]">
+                  <FlowSelect
+                    placeholder={t('workflow.nodes.endNode.selectPlaceholder')}
+                    value={nodeParam?.outputMode}
+                    options={[
+                      {
+                        label: t('workflow.nodes.endNode.returnParams'),
+                        value: 0,
+                      },
+                      {
+                        label: t('workflow.nodes.endNode.returnFormat'),
+                        value: 1,
+                      },
+                    ]}
+                    onChange={value =>
+                      handleChangeNodeParam(
+                        (data, value) => (data.nodeParam.outputMode = value),
+                        value
+                      )
+                    }
+                  />
+                </div>
+              }
+            />
+          )}
+          <Inputs id={id} data={data} />
           {nodeParam?.outputMode === 1 && (
             <FLowCollapse
               label={

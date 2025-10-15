@@ -88,7 +88,7 @@ public class VersionController {
      * @throws IllegalArgumentException if the version does not exist
      */
     @PostMapping("/restore")
-    public Object restore(@RequestBody WorkflowVersion createDto) {
+    public ApiResult<JSONObject> restore(@RequestBody WorkflowVersion createDto) {
         return versionService.restore(createDto);
     }
 
@@ -100,7 +100,7 @@ public class VersionController {
      * @throws IllegalArgumentException if {@code id} is null
      */
     @PostMapping("/update-channel-result")
-    public Object update_channel_result(@RequestBody WorkflowVersion createDto) {
+    public ApiResult<JSONObject> update_channel_result(@RequestBody WorkflowVersion createDto) {
         return versionService.update_channel_result(createDto);
     }
 

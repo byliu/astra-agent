@@ -1,5 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
   - name: 💬 Discussions
-    url: https://github.com/iflytek/astra-agent/discussions
+    url: https://github.com/iflytek/astron-agent/discussions
     about: Ask questions and discuss ideas with the community

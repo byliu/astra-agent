@@ -139,8 +139,8 @@ public class ChatBotBase {
     @Schema(description = "Selected model for assistant")
     private String model;
 
-    @Schema(description = "mass_bot_id")
-    private String massBotId;
+    @Schema(description = "maas_bot_id")
+    private String maasBotId;
 
     @Schema(description = "Opening statement - English")
     private String prologueEn;

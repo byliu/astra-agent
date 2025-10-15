@@ -9,7 +9,7 @@ from typing import cast
 from loguru import logger
 
 # def init_logger():
-LOG_FILE = "logs/SparkLinkThirdApi.log"
+LOG_FILE = "logs/aitools.log"
 ROTATION = "5 MB"
 RETENTION = "30 days"
 ENCODING = "UTF-8"

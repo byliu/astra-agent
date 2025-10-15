@@ -30,7 +30,7 @@ export const RpaDetail = () => {
               className="w-[28px] h-[28px] rounded-lg"
               alt=""
             />
-            <div className="flex-1 pl-[6px] truncate max-w-[166px]">
+            <div className="flex-1 pl-[12px] truncate max-w-[166px]">
               {record.name}
             </div>
           </div>

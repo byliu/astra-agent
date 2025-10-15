@@ -31,5 +31,6 @@ public record RpaAssistantResp(
         Integer status,
         Map<String, String> fields,
         JSONArray robots,
-        LocalDateTime createTime
+        LocalDateTime createTime,
+        LocalDateTime updateTime
 ) {}

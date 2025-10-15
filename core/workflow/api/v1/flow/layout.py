@@ -73,7 +73,7 @@ def add(
                     if isinstance(sparkflow_protocol, str):
                         sparkflow_protocol = json.loads(sparkflow_protocol)
                     WorkflowEngineFactory.create_engine(
-                        WorkflowDSL.parse_obj(flow.data.get("data")), current_span
+                        WorkflowDSL.model_validate(flow.data.get("data")), current_span
                     )
                     current_span.add_info_event("Protocol validation end")
                 except CustomException as err:
@@ -157,7 +157,8 @@ def update(
                 if isinstance(sparkflow_protocol, str):
                     sparkflow_protocol = json.loads(sparkflow_protocol)
                 WorkflowEngineFactory.create_engine(
-                    WorkflowDSL.parse_obj((flow.data or {}).get("data")), current_span
+                    WorkflowDSL.model_validate((flow.data or {}).get("data")),
+                    current_span,
                 )
             db_flow = session.query(Flow).filter_by(id=int(flow_id)).first()
             if not db_flow:

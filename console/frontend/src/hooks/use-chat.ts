@@ -92,7 +92,7 @@ const useChat = () => {
     controllerRef.current = controller;
     setControllerRef(controllerRef.current);
     const headerConfig = {
-      'Lang-Code': getLanguageCode(),
+      'Accept-Language': getLanguageCode(),
       authorization: `Bearer ${localStorage.getItem('accessToken')}`,
     };
     if (isnewchat) {
@@ -248,7 +248,7 @@ const useChat = () => {
     setIsWorkflowOption(false);
     setWorkflowOption({ option: [], content: '' });
     const { msg, workflowOperation, version, fileUrl, onSendCallback } = params;
-    const esURL = `${baseURL}chat-message/chat`;
+    const esURL = `${baseURL}/chat-message/chat`;
     const form = new FormData();
     form.append('text', msg || '');
     form.append('chatId', `${currentChatId}`);
@@ -263,7 +263,7 @@ const useChat = () => {
   //重新回答
   const handleReAnswer = async (params: { requestId: number }) => {
     const { requestId } = params;
-    const esURL = `${baseURL}chat-message/re-answer`;
+    const esURL = `${baseURL}/chat-message/re-answer`;
     const form = new FormData();
     form.append('requestId', requestId.toString());
     form.append('chatId', `${currentChatId}`);
@@ -275,9 +275,21 @@ const useChat = () => {
     navigate(`/chat/${botId}`);
   };
 
+  const handleFlowToChat = (item: any) => {
+    let url = `${location.origin}/chat?botId=${item?.botId}`;
+    if (item?.version) {
+      url += `&version=${item?.version}`;
+    }
+    window.open(url, '_blank');
+    if (item?.chatId || item?.id) {
+      setCurrentChatId(item?.chatId || item?.id);
+    }
+  };
+
   return {
     onSendMsg,
     handleToChat,
+    handleFlowToChat,
     fetchSSE,
     handleReAnswer,
   };

@@ -4,7 +4,6 @@ API data type definitions module containing request and response data structures
 
 import base64
 import re
-
 from typing import Any, Optional
 
 from fastapi import HTTPException

@@ -12,13 +12,14 @@ import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.mapper.user.UserInfoMapper;
 import com.iflytek.astron.console.commons.util.RequestContextUtil;
 import com.iflytek.astron.console.commons.util.I18nUtil;
+import com.iflytek.astron.console.commons.event.UserNicknameUpdatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -54,6 +55,8 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
     private UserInfoMapper userInfoMapper;
     @Autowired
     private RedissonClient redissonClient;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Override
     public Optional<UserInfo> findByUid(String uid) {
@@ -111,6 +114,16 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
     }
 
     @Override
+    public List<UserInfo> findUsersByUsernames(Collection<String> usernames) {
+        if (usernames.isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<UserInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(UserInfo::getUsername, usernames);
+        return userInfoMapper.selectList(wrapper);
+    }
+
+    @Override
     public List<UserInfo> findByNicknameLike(String nickname) {
         if (StringUtils.isBlank(nickname)) {
             return List.of();
@@ -138,7 +151,6 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public UserInfo createOrGetUser(UserInfo userInfo) {
         if (userInfo == null) {
             throw new IllegalArgumentException("User information cannot be null");
@@ -253,7 +265,7 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
     }
 
     @Override
-    public List<UserInfo> findByUids(List<String> uids) {
+    public List<UserInfo> findByUids(Collection<String> uids) {
         if (uids == null || uids.isEmpty()) {
             return List.of();
         }
@@ -365,6 +377,7 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
         }
 
         UserInfo userInfo = userInfoOpt.get();
+        String oldNickname = userInfo.getNickname();
 
         if (StringUtils.isNotBlank(username)) {
             userInfo.setUsername(username);
@@ -380,6 +393,14 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
         }
         userInfo.setUpdateTime(LocalDateTime.now());
         userInfoMapper.updateById(userInfo);
+
+        // If the nickname has changed, publish an event
+        if (StringUtils.isNotBlank(nickname) && !nickname.equals(oldNickname)) {
+            eventPublisher.publishEvent(new UserNicknameUpdatedEvent(this, uid, oldNickname, nickname));
+            log.info("Published nickname update event for uid: {}, oldNickname: {}, newNickname: {}",
+                    uid, oldNickname, nickname);
+        }
+
         return userInfo;
     }
 
@@ -393,6 +414,7 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
         }
 
         UserInfo userInfo = userInfoOpt.get();
+        String oldNickname = userInfo.getNickname();
 
         if (StringUtils.isNotBlank(nickname)) {
             userInfo.setNickname(nickname);
@@ -402,6 +424,14 @@ public class UserInfoDataServiceImpl implements UserInfoDataService {
         }
         userInfo.setUpdateTime(LocalDateTime.now());
         userInfoMapper.updateById(userInfo);
+
+        // If the nickname has changed, publish an event
+        if (StringUtils.isNotBlank(nickname) && !nickname.equals(oldNickname)) {
+            eventPublisher.publishEvent(new UserNicknameUpdatedEvent(this, currentUid, oldNickname, nickname));
+            log.info("Published nickname update event for uid: {}, oldNickname: {}, newNickname: {}",
+                    currentUid, oldNickname, nickname);
+        }
+
         return userInfo;
     }
 

@@ -143,8 +143,7 @@ const DetailOverview = () => {
                         setOpenWxmol(true);
                       })
                       .catch(err => {
-                        console.log(err, 'err');
-                        message.error(err?.msg);
+                        message.error(err?.message);
                       });
                   });
                 }
@@ -214,8 +213,7 @@ const DetailOverview = () => {
         });
       })
       .catch(err => {
-        console.error(err);
-        return err?.msg && message.error(err.msg);
+        return err?.message && message.error(err.message);
       });
   };
 
@@ -233,7 +231,8 @@ const DetailOverview = () => {
       })
       .catch(err => {
         message.error(
-          err?.msg || t('releaseDetail.DetailOverviewPage.getVersionListFail')
+          err?.message ||
+            t('releaseDetail.DetailOverviewPage.getVersionListFail')
         );
       })
       .finally(() => {

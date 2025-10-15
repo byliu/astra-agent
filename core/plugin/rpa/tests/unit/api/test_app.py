@@ -308,7 +308,12 @@ class TestRPAServer:
 
         # Assert
         mock_config.assert_called_once_with(
-            app=mock_app_instance, host="0.0.0.0", port=8080, workers=20, reload=False
+            app=mock_app_instance,
+            host="0.0.0.0",
+            port=8080,
+            workers=20,
+            reload=False,
+            log_config=None,
         )
         mock_server_instance.run.assert_called_once()
 

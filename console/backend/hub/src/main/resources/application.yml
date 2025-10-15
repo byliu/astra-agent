@@ -82,19 +82,14 @@ spark:
     password: ${SPARK_API_PASSWORD:xxx}
   lfasr-key: ${SPARK_LFASR_KEY:xxx}
   lfasr-appId: ${SPARK_LFASR_APPID:xxx}
+  image-appId: ${SPARK_IMAGE_APP_ID:xxx}
+  image-apiKey: ${SPARK_IMAGE_API_KEY:xxx}
+  image-apiSecret: ${SPARK_IMAGE_API_SECRET:xxx}
 
 # DeepSeek configuration example
 deepseek:
-  # DeepSeek API key (required)
-  api-key: sk-your-deepseek-api-key-here
-  # API base URL (optional, default is https://api.deepseek.com)
-  base-url: https://api.deepseek.com
-  # Chat completion API path (optional, default is /chat/completions)
-  chat-completion-path: /chat/completions
-  # HTTP client configuration
-  connect-timeout: PT30S  # Connection timeout (ISO 8601 format)
-  read-timeout: PT60S     # Read timeout
-  write-timeout: PT60S    # Write timeout
+  url: ${DEEPSEEK_URL:https://api.deepseek.com}
+  api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}    # Write timeout
 
 # Workflow configuration
 workflow:
@@ -119,23 +114,27 @@ workflow:
     storage-path: ${WORKFLOW_STORAGE_PATH:/tmp/workflow/uploads}
 
 
+
 maas:
   appId: ${MAAS_APP_ID:your-maas-app-id}
   apiKey: ${MAAS_API_KEY:your-maas-api-key}
   apiSecret: ${MAAS_API_SECRET:your-maas-api-secret}
-  synchronizeWorkFlow: http://127.0.0.1:8080/workflow
-  publish: http://127.0.0.1:8080/workflow/publish
-  cloneWorkFlow: http://127.0.0.1:8080/workflow/internal-clone
-  getInputs: http://127.0.0.1:8080/workflow/get-inputs-info
-  canPublishUrl: http://127.0.0.1:8080/workflow/can-publish
+  workflowVersion: ${MAAS_WORKFLOW_VERSION:http://127.0.0.1:8080/workflow/version}
+  synchronizeWorkFlow: ${MAAS_SYNCHRONIZE_WORK_FLOW:http://127.0.0.1:8080/workflow}
+  publish: ${MAAS_PUBLISH:http://127.0.0.1:8080/workflow/publish}
+  cloneWorkFlow: ${MAAS_CLONE_WORK_FLOW:http://127.0.0.1:8080/workflow/internal-clone}
+  getInputs: ${MAAS_GET_INPUTS:http://127.0.0.1:8080/workflow/get-inputs-info}
+  canPublishUrl: ${MAAS_CAN_PUBLISH_URL:http://127.0.0.1:8080/workflow/can-publish}
   consumerId: ${MAAS_CONSUMER_ID:your-maas-consumer-id}
   consumerSecret: ${MAAS_CONSUMER_SECRET:your-maas-consumer-secret}
   consumerKey: ${MAAS_CONSUMER_KEY:your-maas-consumer-key}
-  publishApi: http://10.1.87.65:7880/v1/publish
-  authApi: http://10.1.87.65:7880/v1/auth
-  mcpHost: https://xingchen-api.xf-yun.com/mcp/xingchen/flow/%s/sse
-  mcpRegister: http://127.0.0.1:8080/workflow/release
-  workflowConfig: http://127.0.0.1:8080/workflow/get-flow-advanced-config
+  publishApi: ${MAAS_PUBLISH_API:http://localhost:7880/workflow/v1/publish}
+  authApi: ${MAAS_AUTH_API:http://localhost:7880/workflow/v1/auth}
+  mcpHost: ${MAAS_MCP_HOST:https://xingchen-api.xf-yun.com/mcp/xingchen/flow/%s/sse}
+  mcpRegister: ${MAAS_MCP_REGISTER:http://127.0.0.1:8080/workflow/release}
+  workflowConfig: ${MAAS_WORKFLOW_CONFIG:http://127.0.0.1:8080/workflow/get-flow-advanced-config}
+  botApiCbmBaseUrl: ${BOT_API_CBM_BASE_URL:ws(s)://spark-openapi.cn-huabei-1.xf-yun.com}
+  botApiMaasBaseUrl: ${BOT_API_MAAS_BASE_URL:http(s)://xingchen-api.xf-yun.com}
 
 bot:
   default:
@@ -156,15 +155,7 @@ space:
       space-count: 10000
       user-count: 500
   invite-message-template:
-    url: https://${CONSOLE_DOMAIN:localhost:3000}/sharepage?param=
-    space-title: Space Invitation Reminder
-    space-content: >
-      <h3>Space Invitation Reminder</h3>[%s] invited you to join space "%s",
-      <a href="%s" target="_blank" style="color: blue;">Click to view</a>
-    enterprise-title: Team Invitation Reminder
-    enterprise-content: >
-      <h3>Team Invitation Reminder</h3>[%s] invited you to join team "%s",
-      <a href="%s" target="_blank" style="color: blue;">Click to view</a>
+    url: ${CONSOLE_DOMAIN:localhost:3000}/sharepage?param=
 
 # WeChat third-party platform configuration
 wechat:
@@ -177,3 +168,7 @@ wechat:
     token: ${WECHAT_TOKEN:your_token}
     # Message encryption/decryption key
     encoding-aes-key: ${WECHAT_ENCODING_AES_KEY:your_encoding_aes_key}
+
+tenant:
+  create-app: ${TENANT_CREATE_APP:http://localhost:5052/v2/app}
+  get-app-detail: ${TENANT_GET_APP_DETAIL:http://localhost:5052/v2/app/details}

@@ -48,6 +48,7 @@ type DatabaseAction =
       type: 'SET_TEST_DATA';
       payload: { data: Record<string, unknown>[]; loading: boolean };
     }
+  | { type: 'SET_TEST_TABLE_LOADING'; payload: boolean }
   | {
       type: 'SET_PAGINATION';
       payload: { pageNum: number; pageSize: number; total: number };
@@ -104,6 +105,12 @@ function databaseReducer(
         ...state,
         testDataSource: action.payload.data,
         testTableLoading: action.payload.loading,
+      };
+
+    case 'SET_TEST_TABLE_LOADING':
+      return {
+        ...state,
+        testTableLoading: action.payload,
       };
 
     case 'SET_PAGINATION':
@@ -164,6 +171,7 @@ interface DatabaseContextType {
     setTables: (tables: DatabaseItem[], loading?: boolean) => void;
     setCurrentSheet: (sheet: DatabaseItem | null) => void;
     setTestData: (data: Record<string, unknown>[], loading?: boolean) => void;
+    setTestTableLoading: (loading: boolean) => void;
     setPagination: (pagination: {
       pageNum: number;
       pageSize: number;
@@ -189,6 +197,7 @@ const DatabaseContext = createContext<DatabaseContextType>({
     setTables: () => {},
     setCurrentSheet: () => {},
     setTestData: () => {},
+    setTestTableLoading: () => {},
     setPagination: () => {},
     setDataType: () => {},
     setExportLoading: () => {},
@@ -231,6 +240,10 @@ export const DatabaseProvider: React.FC<DatabaseProviderProps> = ({
 
       setTestData: (data: Record<string, unknown>[], loading = false): void => {
         dispatch({ type: 'SET_TEST_DATA', payload: { data, loading } });
+      },
+
+      setTestTableLoading: (loading: boolean): void => {
+        dispatch({ type: 'SET_TEST_TABLE_LOADING', payload: loading });
       },
 
       setPagination: (pagination: {

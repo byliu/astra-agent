@@ -1,9 +1,10 @@
 package com.iflytek.astron.console.hub.controller.bot;
 
 import com.iflytek.astron.console.commons.dto.bot.BotFavoritePageDto;
-import com.iflytek.astron.console.commons.entity.bot.BotMarketForm;
+import com.iflytek.astron.console.commons.dto.bot.BotMarketForm;
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.commons.service.bot.BotFavoriteService;
+import com.iflytek.astron.console.commons.util.I18nUtil;
 import com.iflytek.astron.console.commons.util.RequestContextUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +22,7 @@ public class BotFavoriteController {
     @PostMapping(value = "/list")
     public ApiResult<BotFavoritePageDto> list(HttpServletRequest request, @RequestBody BotMarketForm botMarketForm) {
         String uid = RequestContextUtil.getUID();
-        String langCode = request.getHeader("Lang-Code") == null ? "" : request.getHeader("Lang-Code");
+        String langCode = I18nUtil.getLanguage();
         BotFavoritePageDto pageDto = botFavoriteService.selectPage(botMarketForm, uid, langCode);
         return ApiResult.success(pageDto);
     }

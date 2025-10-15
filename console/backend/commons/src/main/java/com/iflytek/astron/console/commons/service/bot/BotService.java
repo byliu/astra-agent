@@ -1,8 +1,8 @@
 package com.iflytek.astron.console.commons.service.bot;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.iflytek.astron.console.commons.entity.bot.BotCreateForm;
-import com.iflytek.astron.console.commons.entity.bot.BotInfoDto;
+import com.iflytek.astron.console.commons.dto.bot.BotCreateForm;
+import com.iflytek.astron.console.commons.dto.bot.BotInfoDto;
 import com.iflytek.astron.console.commons.entity.bot.BotTypeList;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +32,7 @@ public interface BotService {
 
     Boolean updateBotBasicInfo(String uid, BotCreateForm bot, Long spaceId);
 
-    void addMaasInfo(String uid, JSONObject mass, Integer botId, Long spaceId);
+    void addMaasInfo(String uid, JSONObject maas, Integer botId, Long spaceId);
 
     void addV2Bot(String uid, Integer botId);
 }

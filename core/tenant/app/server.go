@@ -4,17 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
 	"tenant/config"
 	"tenant/internal/handler"
 	"tenant/tools/generator"
-	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Run() error {
@@ -75,7 +77,7 @@ func initLog(cfg *config.Config) error {
 	if len(cfg.Log.LogFile) == 0 {
 		cfg.Log.LogFile = "./logs/app.log"
 	}
-	file, err := os.OpenFile(cfg.Log.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	file, err := os.OpenFile(cfg.Log.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		log.Fatalf("open log file failed: %v", err)
 		return err

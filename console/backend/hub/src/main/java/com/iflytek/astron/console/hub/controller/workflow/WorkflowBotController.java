@@ -3,10 +3,10 @@ package com.iflytek.astron.console.hub.controller.workflow;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
-import com.iflytek.astron.console.commons.entity.bot.BotCreateForm;
-import com.iflytek.astron.console.commons.entity.bot.BotInfoDto;
+import com.iflytek.astron.console.commons.dto.bot.BotCreateForm;
+import com.iflytek.astron.console.commons.dto.bot.BotInfoDto;
+import com.iflytek.astron.console.commons.dto.workflow.WorkflowInputTypeDto;
 import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
-import com.iflytek.astron.console.commons.entity.workflow.WorkflowInputTypeDto;
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.commons.service.data.UserLangChainDataService;
 import com.iflytek.astron.console.commons.util.MaasUtil;
@@ -64,15 +64,16 @@ public class WorkflowBotController {
     @Operation(summary = "work flow template", description = "Create workflow assistant from template")
     @PostMapping("/createFromTemplate")
     @Transactional(rollbackFor = Exception.class)
-    public ApiResult<BotInfoDto> createFromTemplate(@RequestBody MaasDuplicate maasDuplicate) {
+    public ApiResult<BotInfoDto> createFromTemplate(HttpServletRequest request,
+                                                    @RequestBody MaasDuplicate maasDuplicate) {
         String uid = RequestContextUtil.getUID();
-        return ApiResult.success(botMaasService.createFromTemplate(uid, maasDuplicate));
+        return ApiResult.success(botMaasService.createFromTemplate(uid, maasDuplicate, request));
     }
 
     @PostMapping("/templateList")
     @Operation(summary = "work flow template", description = "Get workflow templates")
     public ApiResult<List<MaasTemplate>> templateList(HttpServletRequest request,
-            @RequestBody WorkflowTemplateQueryDto queryDto) {
+                                                      @RequestBody WorkflowTemplateQueryDto queryDto) {
         return ApiResult.success(botMaasService.templateList(queryDto));
     }
 

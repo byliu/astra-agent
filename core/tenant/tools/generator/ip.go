@@ -20,8 +20,8 @@ func init() {
 	IP = ip
 }
 
-// GetLocalIP 根据本机 hostname
-// 需要判断其是否为 IPv4 后再返回
+// GetLocalIP gets local IP based on machine hostname
+// Need to check if it is IPv4 before returning
 func GetLocalIP() (string, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -30,7 +30,6 @@ func GetLocalIP() (string, error) {
 	}()
 	if runtime.GOOS == "windows" {
 		ip, err := getWinIP()
-
 		if err != nil {
 			return "", err
 		}
@@ -48,7 +47,6 @@ func GetLocalIP() (string, error) {
 	}
 
 	addrs, err := net.LookupHost(hostname)
-
 	if err != nil {
 		return "", err
 	}

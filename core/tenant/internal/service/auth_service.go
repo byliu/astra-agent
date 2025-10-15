@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+
 	"tenant/internal/dao"
 	"tenant/internal/models"
 	"tenant/tools/generator"
@@ -28,7 +29,7 @@ func NewAuthService(appDao *dao.AppDao, authDao *dao.AuthDao) (*AuthService, err
 func (biz *AuthService) AddAuth(auth *models.Auth) (result *AddAuthResult, err error) {
 	tx, err := biz.authDao.BeginTx()
 	if err != nil {
-		return
+		return result, err
 	}
 	defer func() {
 		biz.rollback(tx, err)
@@ -36,11 +37,11 @@ func (biz *AuthService) AddAuth(auth *models.Auth) (result *AddAuthResult, err e
 	appCount, err := biz.appDao.Count(true, tx, biz.appDao.WithAppId(auth.AppId), biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error: %v", err)
-		return
+		return result, err
 	}
 	if appCount <= 0 {
 		err = NewBizErr(AppIdNotExist, "request app_id not found")
-		return
+		return result, err
 	}
 	if len(auth.ApiKey) == 0 {
 		auth.ApiKey = generator.GenKey(auth.AppId)
@@ -53,27 +54,27 @@ func (biz *AuthService) AddAuth(auth *models.Auth) (result *AddAuthResult, err e
 		biz.authDao.WithApiKey(auth.ApiKey), biz.authDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call authDao.count error: %v", err)
-		return
+		return result, err
 	}
 	if authCount > 0 {
 		err = NewBizErr(ApiKeyHasExist, "api key has been exist")
-		return
+		return result, err
 	}
 	_, err = biz.authDao.Insert(auth, tx)
 	if err != nil {
-		return
+		return result, err
 	}
 	result = &AddAuthResult{
 		ApiKey:    auth.ApiKey,
 		ApiSecret: auth.ApiSecret,
 	}
-	return
+	return result, err
 }
 
 func (biz *AuthService) DeleteApiKey(appId string, apiKey string) (err error) {
 	tx, err := biz.authDao.BeginTx()
 	if err != nil {
-		return
+		return err
 	}
 	defer func() {
 		biz.rollback(tx, err)
@@ -82,21 +83,21 @@ func (biz *AuthService) DeleteApiKey(appId string, apiKey string) (err error) {
 		biz.appDao.WithIsDelete(false))
 	if err != nil {
 		log.Printf("call appDao.count error: %v", err)
-		return
+		return err
 	}
 	if appCount <= 0 {
 		err = NewBizErr(AppIdNotExist, "request app_id not found")
-		return
+		return err
 	}
 	rowNum, err := biz.authDao.Delete(tx, biz.authDao.WithApiKey(apiKey), biz.authDao.WithIsDelete(false))
 	if err != nil {
-		return
+		return err
 	}
 	if rowNum == 0 {
 		err = NewBizErr(ApiKeyNotExist, "api key not exist")
-		return
+		return err
 	}
-	return
+	return err
 }
 
 func (biz *AuthService) Query(appId string) ([]*models.Auth, error) {

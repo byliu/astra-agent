@@ -124,7 +124,7 @@ public class WorkflowController {
      */
     @PostMapping
     @SpacePreAuth(
-            key = "WorkflowController_getDimension_POST",
+            key = "WorkflowController_create_POST",
             module = "Workflow",
             point = "Workflow Creation",
             description = "Workflow Creation")
@@ -205,7 +205,7 @@ public class WorkflowController {
     }
 
     @GetMapping("/dialog/list")
-    public Object listDialog(@RequestParam @NotNull Long workflowId, @RequestParam(required = false) Integer type) {
+    public List<WorkflowDialog> listDialog(@RequestParam @NotNull Long workflowId, @RequestParam(required = false) Integer type) {
         return workflowService.listDialog(workflowId, type);
     }
 

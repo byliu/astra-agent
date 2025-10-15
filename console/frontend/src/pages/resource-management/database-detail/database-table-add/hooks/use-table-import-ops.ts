@@ -48,7 +48,10 @@ export const useTableImportOps = (): {
             id: maxId,
             type: typeof item2.type === 'string' ? item2.type : 'String',
             isSystem: false,
-            isRequired: false,
+            isRequired:
+              'isRequired' in item2
+                ? (item2 as unknown as TableField).isRequired
+                : false,
           } as TableField);
         } else {
           hasDuplicate = true;
@@ -84,7 +87,6 @@ export const useTableImportOps = (): {
       actions.setDataSource,
       mergeAndDiscardDuplicates,
       databaseRef,
-      t,
     ]
   );
 

@@ -182,7 +182,7 @@ const useAICodeInputBox = ({
       if (prompt) setRePrompt(prompt);
       setPrompt('');
       handleChangeNodeParam((data, value) => (data.nodeParam.code = value), '');
-      fetchEventSource(getFixedUrl('/prompt/ai-generate'), {
+      fetchEventSource(getFixedUrl('/prompt/ai-code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

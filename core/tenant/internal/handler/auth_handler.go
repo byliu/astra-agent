@@ -2,12 +2,14 @@ package handler
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
 	"tenant/internal/models"
 	"tenant/internal/service"
 	"tenant/tools/generator"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
@@ -61,7 +63,6 @@ func (handler *AuthHandler) ListAuth(c *gin.Context) {
 	}
 	resp := newSuccessResp(authDatas, sid)
 	c.JSON(http.StatusOK, resp)
-
 }
 
 func (handler *AuthHandler) SaveAuth(c *gin.Context) {
@@ -81,7 +82,6 @@ func (handler *AuthHandler) SaveAuth(c *gin.Context) {
 		CreateTime: generator.GenCurrTime(""),
 		UpdateTime: generator.GenCurrTime(""),
 	})
-
 	if err != nil {
 		var appErr service.BizErr
 		if errors.As(err, &appErr) {
@@ -98,7 +98,6 @@ func (handler *AuthHandler) SaveAuth(c *gin.Context) {
 	}
 	resp := newSuccessResp(result, sid)
 	c.JSON(http.StatusOK, resp)
-
 }
 
 func (handler *AuthHandler) DeleteAuth(c *gin.Context) {
@@ -127,7 +126,6 @@ func (handler *AuthHandler) DeleteAuth(c *gin.Context) {
 	}
 	resp := newSuccessResp(nil, sid)
 	c.JSON(http.StatusOK, resp)
-
 }
 
 func (h *AuthHandler) GetAppByAPIKey(c *gin.Context) {

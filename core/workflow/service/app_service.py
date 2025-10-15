@@ -47,12 +47,7 @@ def get_app_source_id(app_id: str, span: Span) -> str:
     :raises CustomException: If the API request fails or returns an error
     """
     # Get the application list API endpoint from environment variables
-    url = os.getenv("APP_MANAGE_PLAT_APP_LIST")
-    if not url:
-        raise CustomException(
-            CodeEnum.APP_GET_WITH_REMOTE_FAILED_ERROR,
-            err_msg="APP_MANAGE_PLAT_APP_LIST not configured",
-        )
+    url = f"{os.getenv('APP_MANAGE_PLAT_BASE_URL')}/v2/app/list"
 
     # Make authenticated request to get application list
     resp = requests.get(
@@ -94,12 +89,7 @@ def get_app_source_detail(app_id: str, span: Span) -> tuple[str, str, str, str]:
     :raises CustomException: If the API request fails or required data is missing
     """
     # Get the application details API endpoint from environment variables
-    url = os.getenv("APP_MANAGE_PLAT_APP_DETAILS")
-    if not url:
-        raise CustomException(
-            CodeEnum.APP_GET_WITH_REMOTE_FAILED_ERROR,
-            err_msg="APP_MANAGE_PLAT_APP_DETAILS not configured",
-        )
+    url = f"{os.getenv('APP_MANAGE_PLAT_BASE_URL')}/v2/app/details"
 
     # Make authenticated request to get application details
     resp = requests.get(

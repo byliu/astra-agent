@@ -216,7 +216,8 @@ async def resume_open(request: ResumeVo) -> Union[StreamingResponse, JSONRespons
                     event_id=event_id,
                     audit_policy=app_info.audit_policy,
                     is_release=True,
-                )
+                ),
+                StreamingResponse if event.is_stream else JSONResponse,
             )
 
         except CustomException as err:

@@ -176,7 +176,7 @@ jobs:
           if [[ "${{ steps.detect.outputs.has-core-services }}" == "true" ]]; then
             echo "### 🏗️ Core服务组件" >> "$CHANGELOG_FILE"
             echo "- 🏢 Core Tenant: ghcr.io/${{ github.repository }}/core-tenant:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🧠 Core Memory: ghcr.io/${{ github.repository }}/core-memory:$CURRENT_TAG" >> "$CHANGELOG_FILE"
+            echo "- 🧠 Core Database: ghcr.io/${{ github.repository }}/core-database:$CURRENT_TAG" >> "$CHANGELOG_FILE"
             echo "- 🤖 Core RPA: ghcr.io/${{ github.repository }}/core-rpa:$CURRENT_TAG" >> "$CHANGELOG_FILE"
             echo "- 🔗 Core Link: ghcr.io/${{ github.repository }}/core-link:$CURRENT_TAG" >> "$CHANGELOG_FILE"
             echo "- 🛠️ Core AI Tools: ghcr.io/${{ github.repository }}/core-aitools:$CURRENT_TAG" >> "$CHANGELOG_FILE"
@@ -241,7 +241,7 @@ jobs:
       matrix:
         service:
           - { name: "tenant", path: "core/tenant", emoji: "🏢" }
-          - { name: "memory", path: "core/memory/database", emoji: "🧠" }
+          - { name: "database", path: "core/memory/database", emoji: "🧠" }
           - { name: "rpa", path: "core/plugin/rpa", emoji: "🤖" }
           - { name: "link", path: "core/plugin/link", emoji: "🔗" }
           - { name: "aitools", path: "core/plugin/aitools", emoji: "🛠️" }
@@ -415,93 +415,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================================
-  # Stage 3: 生成发布产物
-  # ============================================================================
-  create-artifacts:
-    name: 📦 生成发布产物
-    runs-on: ubuntu-latest
-    needs: prepare-release
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: 创建发布包
-        run: |
-          echo "📦 创建发布包..."
-          VERSION="${{ needs.prepare-release.outputs.version }}"
-          
-          # 创建发布目录
-          mkdir -p release-artifacts
-          
-          # 打包源代码 (排除不必要的文件)
-          echo "📁 打包源代码..."
-          tar -czf release-artifacts/astron-agent-${VERSION}-source.tar.gz \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='target' \
-            --exclude='*.log' \
-            --exclude='.DS_Store' \
-            --exclude='release-artifacts' \
-            .
-
-          # 打包Docker Compose配置
-          echo "🐳 打包Docker Compose配置..."
-          if [[ -f "docker-compose.yml" ]]; then
-            tar -czf release-artifacts/astron-agent-${VERSION}-docker.tar.gz \
-              docker-compose*.yml \
-              .env.example \
-              README*.md
-          fi
-
-          # 生成安装脚本
-          echo "📝 生成安装脚本..."
-          cat > release-artifacts/install.sh << 'INSTALL_EOF'
-          #!/bin/bash
-          set -e
-
-          VERSION="${{ needs.prepare-release.outputs.version }}"
-          REPO="${{ github.repository }}"
-
-          echo "🚀 安装 Astron Agent $VERSION"
-          echo ""
-
-          # 检查必要工具
-          command -v git >/dev/null 2>&1 || { echo "❌ Git 未安装"; exit 1; }
-          command -v docker >/dev/null 2>&1 || { echo "❌ Docker 未安装"; exit 1; }
-          command -v docker-compose >/dev/null 2>&1 || { echo "❌ Docker Compose 未安装"; exit 1; }
-
-          # 下载并解压
-          echo "📥 下载项目..."
-          curl -L "https://github.com/$REPO/releases/download/$VERSION/astron-agent-$VERSION-source.tar.gz" | tar -xz
-
-          echo "✅ 安装完成!"
-          echo ""
-          echo "🎯 快速开始:"
-          echo "  docker-compose up -d    # 启动所有服务"
-          echo "  docker-compose ps       # 查看服务状态"
-          echo "  docker-compose logs     # 查看日志"
-          echo "  docker-compose down     # 停止服务"
-          INSTALL_EOF
-          
-          chmod +x release-artifacts/install.sh
-          
-          # 生成checksums
-          echo "🔐 生成校验文件..."
-          cd release-artifacts
-          sha256sum *.tar.gz *.sh > checksums.txt
-          
-          echo "📊 发布产物列表:"
-          ls -la
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts
-          path: release-artifacts/
-          retention-days: 90
-
-  # ============================================================================
-  # Stage 4: 创建GitHub Release
+  # Stage 3: 创建GitHub Release
   # ============================================================================
   create-release:
     name: 🎉 创建GitHub Release
@@ -511,15 +425,8 @@ jobs:
       - build-core-services
       - build-console-hub
       - build-console-frontend
-      - create-artifacts
-    if: always() && needs.prepare-release.result == 'success' && needs.create-artifacts.result == 'success'
+    if: always() && needs.prepare-release.result == 'success'
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts
-          path: ./artifacts
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -527,8 +434,6 @@ jobs:
           name: "Astron Agent ${{ needs.prepare-release.outputs.version }}"
           body: ${{ needs.prepare-release.outputs.changelog }}
           prerelease: ${{ needs.prepare-release.outputs.is-prerelease }}
-          files: |
-            ./artifacts/*
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 发布总结
@@ -546,12 +451,11 @@ jobs:
           echo "  🌐 Console Frontend: ${{ needs.build-console-frontend.result }}"
           echo ""
 
-          echo "📦 发布产物:"
-          ls -la ./artifacts/
-          echo ""
-
-          echo "🎯 快速安装:"
-          echo "curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare-release.outputs.version }}/install.sh | bash"
+          echo "🎯 快速开始:"
+          echo "git clone https://github.com/${{ github.repository }}.git"
+          echo "cd astron-agent"
+          echo "git checkout ${{ needs.prepare-release.outputs.version }}"
+          echo "docker-compose up -d"
           echo ""
 
           echo "✅ 🚀 Astron Agent 发布完成!"

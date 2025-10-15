@@ -172,15 +172,11 @@ const ToolItem = ({
             style={{
               background: item?.avatarColor
                 ? item?.avatarColor
-                : `url(${item?.address + item?.icon}) no-repeat center / cover`,
+                : `url(${item?.icon}) no-repeat center / cover`,
             }}
           >
             {item?.avatarColor && (
-              <img
-                src={item?.address + item?.icon}
-                className="w-[28px] h-[28px]"
-                alt=""
-              />
+              <img src={item?.icon} className="w-[28px] h-[28px]" alt="" />
             )}
           </span>
           <div className="flex flex-col gap-1 overflow-hidden">

@@ -44,7 +44,7 @@ interface MultiModeCpnProps {
   agentType?: any;
   moreParams?: any;
   workflowId?: number;
-  agentMassId?: string | null;
+  agentMaasId?: string | null;
 }
 
 const WxModal: React.FC<MultiModeCpnProps> = ({
@@ -64,7 +64,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
   agentType,
   moreParams,
   workflowId,
-  agentMassId,
+  agentMaasId,
 }) => {
   const i = 0;
   const flag = false;
@@ -117,7 +117,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
     // });
 
     const redirectUrl =
-      'https://' + window.location.host + `/work_flow/${agentMassId}/overview`;
+      'https://' + window.location.host + `/work_flow/${agentMaasId}/overview`;
     const params = {
       publishType: 'WECHAT' as const,
       action: 'PUBLISH' as const,
@@ -136,24 +136,6 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
         message.error(error.msg);
       })
       .finally(() => setSpinning(false));
-
-    // NOTE: origin logic
-    // getChainInfo(botInfo.botId).then(res => {
-    //   const redirectUrl =
-    //     'https://' + window.location.host + `/work_flow/${res.massId}/overview`;
-    //   setSpinning(true);
-    //   getWechatAuthUrl(botInfo.botId, appid, redirectUrl)
-    //     .then(res => {
-    //       const url = res.data;
-    //       if (url.includes('https://')) window.open(url, '_blank');
-    //       else window.open('https://' + url, '_blank');
-    //       onCancel();
-    //     })
-    //     .catch(error => {
-    //       message.error(error.msg);
-    //     })
-    //     .finally(() => setSpinning(false));
-    // });
   };
 
   // 解绑微信

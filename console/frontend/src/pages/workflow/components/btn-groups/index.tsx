@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Tooltip, Button } from 'antd';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Tooltip, Button, message } from 'antd';
 import { useMemoizedFn } from 'ahooks';
 import useFlowsManager from '@/components/workflow/store/use-flows-manager';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,8 @@ import { getFixedUrl } from '@/components/workflow/utils';
 import WxModal from '@/components/wx-modal';
 import useToggle from '@/hooks/use-toggle';
 import { isCanPublish } from '@/services/flow';
-import { getChainInfo, publish } from '@/services/spark-common';
+import { getAgentDetail } from '@/services/release-management';
+import { useBotStateStore } from '@/store/spark-store/bot-state';
 
 import publishModalIcon from '@/assets/imgs/workflow/publish-modal-icon.png';
 
@@ -60,6 +61,7 @@ const usePublishHeader = ({
   );
   const currentStore = useFlowsManager(state => state.getCurrentStore());
   const nodes = currentStore(state => state.nodes);
+  const setBotDetailInfo = useBotStateStore(state => state.setBotDetailInfo);
   const handleVersionSettings = useMemoizedFn(() => {
     setVersionManagement((prev: boolean) => !prev);
     setAdvancedConfiguration(false);
@@ -97,7 +99,7 @@ const usePublishHeader = ({
   });
 
   const multiParams = useMemo(() => {
-    const startNode = nodes?.find(node => node?.type === '开始节点');
+    const startNode = nodes?.find(node => node?.nodeType === 'node-start');
     const outputs = startNode?.data?.outputs;
     let multiParams = true;
     if (outputs?.length === 1) {
@@ -115,23 +117,8 @@ const usePublishHeader = ({
 
   const handlePublish = useMemoizedFn(() => {
     setVersionManagement(false);
-    // const botId = JSON.parse(currentFlow?.ext)?.botId;
     isCanPublish(currentFlow?.id).then(flag => {
       if (flag) {
-        // getChainInfo(botId).then(res => {
-        //   setBotMultiFileParam(res.botMultiFileParam);
-        //   publish({
-        //     id: res.massId,
-        //     botId: `${botId}`,
-        //     flowId: res.flowId,
-        //     name: currentFlow?.name || '',
-        //     description: currentFlow?.description || '',
-        //     data: { nodes: [] },
-        //   }).then(() => {
-        //     setFabuFlag(true);
-        //     setOpenWxmol(true);
-        //   });
-        // });
         setFabuFlag(true);
         setOpenWxmol(true);
       } else {
@@ -139,12 +126,31 @@ const usePublishHeader = ({
       }
     });
   });
+  const newBotId = useMemo(() => {
+    return currentFlow?.ext ? JSON.parse(currentFlow.ext)?.botId : null;
+  }, [currentFlow]);
+
+  const getBotBaseInfo = (newBotId?: string | number): void => {
+    const botId = newBotId;
+    getAgentDetail(botId as unknown as number)
+      .then(data => {
+        setBotDetailInfo({
+          ...data,
+          name: data?.botName,
+        });
+      })
+      .catch(err => {
+        return err?.msg && message.error(err.msg);
+      });
+  };
   return {
     handlePublish,
     showComparativeDebugging,
     handleVersionSettings,
     handleAdvancedSettings,
     multiParams,
+    newBotId,
+    getBotBaseInfo,
   };
 };
 
@@ -155,7 +161,7 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
   const { t } = useTranslation();
   const { handleDebugger } = useFlowCommon();
   const navigate = useNavigate();
-  const { id: agentMassId } = useParams<{ id: string }>();
+  const { id: agentMaasId } = useParams<{ id: string }>();
   // Flow store
   const currentFlow: FlowType = useFlowsManager(
     (state: unknown) => state.currentFlow
@@ -180,12 +186,19 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
     handleVersionSettings,
     handleAdvancedSettings,
     multiParams,
+    newBotId,
+    getBotBaseInfo,
   } = usePublishHeader({
     setBotMultiFileParam,
     setOpenWxmol,
     setFabuFlag,
     setPublishModal,
   });
+
+  useEffect(() => {
+    console.log('newBotId@@', newBotId);
+    newBotId && getBotBaseInfo(newBotId);
+  }, [newBotId]);
 
   return (
     <div className="relative flex items-center gap-6 flow-header-operation-container">
@@ -204,7 +217,7 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
         workflowId={
           currentFlow?.ext ? JSON.parse(currentFlow.ext)?.botId : null
         }
-        agentMassId={agentMassId || null}
+        agentMaasId={agentMaasId || null}
       />
       <Tooltip
         title={t('workflow.nodes.header.export')}

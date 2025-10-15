@@ -15,12 +15,17 @@ import JsonMonacoEditor from '@/components/monaco-editor/JsonMonacoEditor';
 import { v4 as uuid } from 'uuid';
 import { isJSON } from '@/utils';
 import { useTranslation } from 'react-i18next';
+import { useMemoizedFn } from 'ahooks';
 import { useNodeCommon } from '@/components/workflow/hooks/use-node-common';
 import { UseExceptionHandlingReturn } from '@/components/workflow/types';
 
 import questionMark from '@/assets/imgs/common/questionmark.png';
 
-const useExceptionHandling = ({ id, data }): UseExceptionHandlingReturn => {
+const useExceptionHandling = ({
+  id,
+  data,
+  currentNode,
+}): UseExceptionHandlingReturn => {
   const { t } = useTranslation();
   // 使用国际化翻译的选项
   const getCurrentStore = useFlowsManager(state => state.getCurrentStore);
@@ -164,6 +169,26 @@ const useExceptionHandling = ({ id, data }): UseExceptionHandlingReturn => {
       });
     }
   }, []);
+  const handleCustomOutput = useMemoizedFn(data => {
+    if (!checkedNodeOutputData(data?.outputs, currentNode)) {
+      data.retryConfig.customOutput = JSON.stringify({ output: '' }, null, 2);
+      data.nodeParam.setAnswerContentErrMsg = t(
+        'workflow.exceptionHandling.validationMessages.outputVariableNameValidationFailed'
+      );
+    } else {
+      data.retryConfig.customOutput = JSON.stringify(
+        generateOrUpdateObject(
+          data?.outputs,
+          isJSON(data?.retryConfig.customOutput)
+            ? JSON.parse(data?.retryConfig.customOutput)
+            : null
+        ),
+        null,
+        2
+      );
+      data.nodeParam.setAnswerContentErrMsg = '';
+    }
+  });
 
   const handleRemoveExceptionHandlingEdge = useCallback(() => {
     const edge = edges?.find(
@@ -187,6 +212,7 @@ const useExceptionHandling = ({ id, data }): UseExceptionHandlingReturn => {
     handleChangeNodeParam,
     handleAddExceptionHandlingEdge,
     handleRemoveExceptionHandlingEdge,
+    handleCustomOutput,
   };
 };
 
@@ -196,12 +222,14 @@ const ExceptionHandlingSwitch = ({
   handleChangeNodeParam,
   handleAddExceptionHandlingEdge,
   handleRemoveExceptionHandlingEdge,
+  handleCustomOutput,
 }): React.ReactElement => {
   const { t } = useTranslation();
   const currentStore = useFlowsManager(state => state.getCurrentStore());
   const updateNodeRef = currentStore(state => state.updateNodeRef);
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
       <div className="flex items-center gap-2 justify-between w-full">
         <h4 className="text-base font-medium">
           {t('workflow.exceptionHandling.title')}
@@ -217,12 +245,18 @@ const ExceptionHandlingSwitch = ({
         className="list-switch config-switch"
         checked={data?.retryConfig?.shouldRetry}
         onChange={value => {
-          handleChangeNodeParam('shouldRetry', value, () => {
+          handleChangeNodeParam('shouldRetry', value, oldData => {
             if (value) {
               handleAddExceptionHandlingEdge(data);
             }
             if (!value && data?.retryConfig?.errorStrategy === 2) {
               handleRemoveExceptionHandlingEdge();
+            }
+            if (!value) {
+              Reflect.deleteProperty(oldData?.retryConfig, 'customOutput');
+            }
+            if (value && oldData?.retryConfig?.errorStrategy === 1) {
+              handleCustomOutput(oldData);
             }
             updateNodeRef(id);
           });
@@ -240,6 +274,7 @@ const ExceptionHandlingForm = ({
   exceptionHandlingMethodOptions,
   handleChangeNodeParam,
   handleRemoveExceptionHandlingEdge,
+  handleCustomOutput,
 }): React.ReactElement => {
   const { t } = useTranslation();
   const currentStore = useFlowsManager(state => state.getCurrentStore());
@@ -298,29 +333,11 @@ const ExceptionHandlingForm = ({
                 if (value === 1 || value === 0) {
                   handleRemoveExceptionHandlingEdge();
                 }
+                if (value === 0 || value === 2) {
+                  Reflect.deleteProperty(data?.retryConfig, 'customOutput');
+                }
                 if (value === 1) {
-                  if (!checkedNodeOutputData(data?.outputs, currentNode)) {
-                    data.retryConfig.customOutput = JSON.stringify(
-                      { output: '' },
-                      null,
-                      2
-                    );
-                    data.nodeParam.setAnswerContentErrMsg = t(
-                      'workflow.exceptionHandling.validationMessages.outputVariableNameValidationFailed'
-                    );
-                  } else {
-                    data.retryConfig.customOutput = JSON.stringify(
-                      generateOrUpdateObject(
-                        data?.outputs,
-                        isJSON(data?.retryConfig.customOutput)
-                          ? JSON.parse(data?.retryConfig.customOutput)
-                          : null
-                      ),
-                      null,
-                      2
-                    );
-                    data.nodeParam.setAnswerContentErrMsg = '';
-                  }
+                  handleCustomOutput(data);
                 }
                 updateNodeRef(id);
               })
@@ -420,7 +437,8 @@ function index({ id, data }): React.ReactElement {
     handleChangeNodeParam,
     handleAddExceptionHandlingEdge,
     handleRemoveExceptionHandlingEdge,
-  } = useExceptionHandling({ id, data });
+    handleCustomOutput,
+  } = useExceptionHandling({ id, data, currentNode });
 
   return (
     <FLowCollapse
@@ -431,6 +449,7 @@ function index({ id, data }): React.ReactElement {
           handleChangeNodeParam={handleChangeNodeParam}
           handleAddExceptionHandlingEdge={handleAddExceptionHandlingEdge}
           handleRemoveExceptionHandlingEdge={handleRemoveExceptionHandlingEdge}
+          handleCustomOutput={handleCustomOutput}
         />
       }
       content={
@@ -447,6 +466,7 @@ function index({ id, data }): React.ReactElement {
                 handleRemoveExceptionHandlingEdge={
                   handleRemoveExceptionHandlingEdge
                 }
+                handleCustomOutput={handleCustomOutput}
               />
               <ExceptionHandlingCustomOutput
                 data={data}
