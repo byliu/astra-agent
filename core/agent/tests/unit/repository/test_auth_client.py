@@ -1,4 +1,5 @@
 """Unit tests for AuthClient"""
+
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 import httpx
@@ -21,7 +22,9 @@ def mock_span():
     # Create context manager that doesn't swallow exceptions
     mock_context = MagicMock()
     mock_context.__enter__ = MagicMock(return_value=mock_sub_span)
-    mock_context.__exit__ = MagicMock(return_value=False)  # Don't suppress exceptions
+    mock_context.__exit__ = MagicMock(
+        return_value=False
+    )  # Don't suppress exceptions
 
     span.start = MagicMock(return_value=mock_context)
 
@@ -68,13 +71,13 @@ class TestAuthClient:
             mock_response = MagicMock()
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
-            mock_http_client.post = AsyncMock(return_value=mock_response)
+            mock_http_client.get = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_http_client
 
             result = await auth_client.verify_permission("test_bot")
 
             assert result is True
-            mock_http_client.post.assert_called_once()
+            mock_http_client.get.assert_called_once()
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
@@ -103,7 +106,7 @@ class TestAuthClient:
             mock_response = MagicMock()
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
-            mock_http_client.post = AsyncMock(return_value=mock_response)
+            mock_http_client.get = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_http_client
 
             result = await auth_client.verify_permission("test_bot")
@@ -112,7 +115,9 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_no_matching_permission(self, mock_config, auth_client):
+    async def test_verify_permission_no_matching_permission(
+        self, mock_config, auth_client
+    ):
         """Test no matching permission found"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -128,7 +133,7 @@ class TestAuthClient:
             mock_response = MagicMock()
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
-            mock_http_client.post = AsyncMock(return_value=mock_response)
+            mock_http_client.get = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_http_client
 
             result = await auth_client.verify_permission("test_bot")
@@ -137,17 +142,23 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_url_not_configured(self, mock_config, auth_client):
-        """Test permission check skipped when URL not configured"""
+    async def test_verify_permission_url_not_configured(
+        self, mock_config, auth_client
+    ):
+        """Test permission check fails when URL not configured"""
         mock_config.AUTH_API_URL = ""
 
-        result = await auth_client.verify_permission("test_bot")
+        with pytest.raises(AgentExc) as exc_info:
+            await auth_client.verify_permission("test_bot")
 
-        assert result is True  # Should skip check and return True
+        assert exc_info.value.c == 50004
+        assert "Auth service not configured" in exc_info.value.m
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_http_error(self, mock_config, auth_client):
+    async def test_verify_permission_http_error(
+        self, mock_config, auth_client
+    ):
         """Test HTTP error during permission check"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -156,7 +167,7 @@ class TestAuthClient:
             mock_response = MagicMock()
             mock_response.status_code = 500
             mock_response.text = "Internal Server Error"
-            mock_http_client.post = AsyncMock(
+            mock_http_client.get = AsyncMock(
                 side_effect=httpx.HTTPStatusError(
                     "Error", request=MagicMock(), response=mock_response
                 )
@@ -170,14 +181,18 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_connection_error(self, mock_config, auth_client):
+    async def test_verify_permission_connection_error(
+        self, mock_config, auth_client
+    ):
         """Test connection error during permission check"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
-            mock_http_client.post = AsyncMock(
-                side_effect=httpx.RequestError("Connection failed", request=MagicMock())
+            mock_http_client.get = AsyncMock(
+                side_effect=httpx.RequestError(
+                    "Connection failed", request=MagicMock()
+                )
             )
             mock_client.return_value.__aenter__.return_value = mock_http_client
 
@@ -221,7 +236,7 @@ class TestAuthClient:
             mock_response = MagicMock()
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
-            mock_http_client.post = AsyncMock(return_value=mock_response)
+            mock_http_client.get = AsyncMock(return_value=mock_response)
             mock_client.return_value.__aenter__.return_value = mock_http_client
 
             permissions = await auth_client.get_permissions()
@@ -232,13 +247,17 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_get_permissions_url_not_configured(self, mock_config, auth_client):
-        """Test get permissions when URL not configured"""
+    async def test_get_permissions_url_not_configured(
+        self, mock_config, auth_client
+    ):
+        """Test get permissions fails when URL not configured"""
         mock_config.AUTH_API_URL = ""
 
-        permissions = await auth_client.get_permissions()
+        with pytest.raises(AgentExc) as exc_info:
+            await auth_client.get_permissions()
 
-        assert permissions == []
+        assert exc_info.value.c == 50004
+        assert "Auth service not configured" in exc_info.value.m
 
 
 class TestAuthPermission:

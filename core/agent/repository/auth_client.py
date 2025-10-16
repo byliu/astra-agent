@@ -70,9 +70,13 @@ class AuthClient(BaseModel):
                 auth_url = agent_config.AUTH_API_URL
                 if not auth_url:
                     sp.add_info_event(
-                        "AUTH_API_URL not configured, skipping permission check"
+                        "AUTH_API_URL not configured"
                     )
-                    return True
+                    raise AgentExc(
+                        50004,
+                        "Auth service not configured",
+                        on=f"app_id:{self.app_id} bot_id:{bot_id}",
+                    )
 
                 # Build query parameters
                 params: dict[str, Any] = {"app_id": self.app_id}
@@ -132,6 +136,9 @@ class AuthClient(BaseModel):
                     )
                     return False
 
+            except AgentExc:  # pylint: disable=try-except-raise
+                # Re-raise AgentExc without wrapping
+                raise
             except httpx.HTTPStatusError as e:
                 sp.add_info_event(
                     f"Auth service HTTP error: status={e.response.status_code}, "
@@ -182,9 +189,13 @@ class AuthClient(BaseModel):
                 auth_url = agent_config.AUTH_API_URL
                 if not auth_url:
                     sp.add_info_event(
-                        "AUTH_API_URL not configured, returning empty permissions"
+                        "AUTH_API_URL not configured"
                     )
-                    return []
+                    raise AgentExc(
+                        50004,
+                        "Auth service not configured",
+                        on=f"app_id:{self.app_id}",
+                    )
 
                 params: dict[str, Any] = {"app_id": self.app_id}
                 if self.type:
@@ -225,6 +236,9 @@ class AuthClient(BaseModel):
 
                     return auth_response.data
 
+            except AgentExc:  # pylint: disable=try-except-raise
+                # Re-raise AgentExc without wrapping
+                raise
             except httpx.HTTPStatusError as e:
                 sp.add_info_event(
                     f"Auth service HTTP error: status={e.response.status_code}"
