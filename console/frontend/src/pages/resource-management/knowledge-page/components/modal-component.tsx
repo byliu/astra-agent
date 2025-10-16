@@ -50,9 +50,6 @@ export const DeleteModal: FC<{
         setDeleteModal(false);
         getKnowledges();
       })
-      .catch(error => {
-        message.error(error.message);
-      })
       .finally(() => {
         setLoading(false);
       });

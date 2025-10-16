@@ -21,10 +21,12 @@ import knowledgeListEmpty from '@/assets/imgs/workflow/knowledge-list-empty.png'
 import { RpaInfo, RpaNode, RpaRobot } from '@/types/rpa';
 import { SearchOutlined } from '@ant-design/icons';
 import { ModalDetail } from '../modal-detail';
+import { useNavigate } from 'react-router-dom';
 
 export default function index(): React.ReactElement {
   const { handleAddRpaNode, resetBeforeAndWillNode } = useFlowCommon();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const getCurrentStore = useFlowsManager(state => state.getCurrentStore);
   const currentStore = getCurrentStore();
   const currentFlow = useFlowsManager(state => state.currentFlow);
@@ -230,6 +232,16 @@ export default function index(): React.ReactElement {
                               alt=""
                             />
                             <p>{t('workflow.nodes.rpaNode.noRobot')}</p>
+                            <Button
+                              type="primary"
+                              className="!h-[32px]"
+                              size="small"
+                              onClick={() => {
+                                navigate('/resource/rpa');
+                              }}
+                            >
+                              {t('workflow.nodes.rpaNode.createRpa')}
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -242,6 +254,16 @@ export default function index(): React.ReactElement {
                         alt=""
                       />
                       <p>{t('workflow.nodes.rpaNode.noRpaTool')}</p>
+                      <Button
+                        className="!h-[32px]"
+                        type="primary"
+                        size="small"
+                        onClick={() => {
+                          navigate('/resource/rpa');
+                        }}
+                      >
+                        {t('workflow.nodes.rpaNode.createRpa')}
+                      </Button>
                     </div>
                   )}
                 </div>

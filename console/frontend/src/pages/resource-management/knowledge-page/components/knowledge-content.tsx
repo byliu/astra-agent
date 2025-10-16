@@ -107,7 +107,7 @@ export const KnowledgeContent: FC<{
               >
                 <img
                   src={k?.corner}
-                  className="w-[54px] h-[28px] absolute right-[1px] top-[1px]"
+                  className="h-[28px] absolute right-[1px] top-[1px]"
                   alt=""
                 />
                 <div className="flex-1 flex flex-col">

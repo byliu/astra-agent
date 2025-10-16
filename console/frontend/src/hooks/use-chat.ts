@@ -276,9 +276,9 @@ const useChat = () => {
   };
 
   const handleFlowToChat = (item: any) => {
-    let url = `${location.origin}/chat?botId=${item?.botId}`;
+    let url = `${location.origin}/chat/${item?.botId}`;
     if (item?.version) {
-      url += `&version=${item?.version}`;
+      url += `?version=${item?.version}`;
     }
     window.open(url, '_blank');
     if (item?.chatId || item?.id) {

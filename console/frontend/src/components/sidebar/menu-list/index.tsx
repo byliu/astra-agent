@@ -205,7 +205,7 @@ const RecentList: FC<RecentListProps> = ({
   if (isCollapsed) return null;
 
   return (
-    <div className="flex flex-col ml-3 flex-1 h-full overflow-hidden">
+    <div className="flex flex-col ml-3 flex-shrink-0 overflow-hidden">
       {/* 最近使用标题 */}
       <div
         className="flex items-center justify-between cursor-pointer pl-[3px] pb-[5px] pr-2.5 flex-shrink-0"
@@ -229,7 +229,7 @@ const RecentList: FC<RecentListProps> = ({
         <div
           className={`flex flex-col w-full overflow-x-hidden transition-[height,max-height] duration-300 ease-out  ${
             showRecent
-              ? 'min-h-[50px] max-h-[calc(50vh-135px)] overflow-y-auto scrollbar-hide'
+              ? 'min-h-[50px] max-h-[300px] overflow-y-auto scrollbar-hide'
               : 'h-0 max-h-0 overflow-hidden'
           }`}
           style={{
@@ -686,8 +686,8 @@ const MenuList: FC<MenuListProps> = ({
 
   return (
     <div
-      className={`flex flex-col flex-1 mt-6 gap-4 ${
-        isShowSpacePopover ? 'overflow-hidden' : 'overflow-auto'
+      className={`flex flex-col flex-1 min-h-0 mt-6 gap-4 ${
+        isShowSpacePopover ? 'overflow-hidden' : 'overflow-y-auto'
       } scrollbar-none`}
     >
       {getDynamicMenuList.map((item, index) => (

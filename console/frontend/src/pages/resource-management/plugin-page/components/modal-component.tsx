@@ -19,9 +19,6 @@ export const DeleteModal: FC<{
         setDeleteModal(false);
         getTools();
       })
-      .catch(error => {
-        message.error(error.message);
-      })
       .finally(() => {
         setLoading(false);
       });

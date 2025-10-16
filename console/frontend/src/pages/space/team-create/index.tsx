@@ -3,7 +3,7 @@ import { Button, Input, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './index.module.scss';
 import { checkEnterpriseName, createEnterprise } from '@/services/enterprise';
-import UploadAvatar from './upload-avatar';
+import UploadImage from '@/pages/space/enterprise/page-components/team-settings/components/upload-image';
 import useUserStore from '@/store/user-store';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
 import { useSpaceType } from '@/hooks/use-space-type';
@@ -11,6 +11,7 @@ import { useEnterprise } from '@/hooks/use-enterprise';
 import { defaultEnterpriseAvatar } from '@/constants/config';
 import agentLogoText from '@/assets/imgs/sidebar/agentLogoText.svg';
 import creatorImg from '@/assets/imgs/space/creator.svg';
+import defaultUploadIcon from '@/assets/imgs/space/upload.png';
 
 const TeamCreate: React.FC = () => {
   const user = useUserStore((state: any) => state.user);
@@ -22,6 +23,8 @@ const TeamCreate: React.FC = () => {
   const [teamDescription, setTeamDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(defaultEnterpriseAvatar);
+  const [reUploadImg, setReUploadImg] = useState(false);
+  const [triggerChild, setTriggerChild] = useState(false);
   const { type } = useParams();
 
   const roleText = useMemo(() => {
@@ -42,6 +45,12 @@ const TeamCreate: React.FC = () => {
     }),
     [enterpriseType]
   );
+
+  // 触发上传
+  const triggerFileSelectPopup = (callback: () => void) => {
+    setTriggerChild(false);
+    callback();
+  };
 
   const handleCreateTeam = async () => {
     const name = teamName.trim();
@@ -111,11 +120,24 @@ const TeamCreate: React.FC = () => {
           {/* 团队图标 */}
           <div className={styles.teamIcon}>
             <div className={styles.iconPlaceholder}>
-              <UploadAvatar
-                name={teamName}
-                botDesc={teamDescription}
-                coverUrl={logoUrl}
-                setCoverUrl={setLogoUrl}
+              {reUploadImg && (
+                <div
+                  className={styles.upHoverBtn}
+                  onMouseLeave={() => setReUploadImg(false)}
+                  onClick={() => setTriggerChild(true)}
+                >
+                  <img
+                    className={styles.upHoverIcon}
+                    src={defaultUploadIcon}
+                    alt="上传"
+                  />
+                </div>
+              )}
+              <img
+                src={logoUrl}
+                alt="头像"
+                className={styles.avatarImg}
+                onMouseEnter={() => setReUploadImg(true)}
               />
             </div>
           </div>
@@ -149,6 +171,17 @@ const TeamCreate: React.FC = () => {
           </Button>
         </div>
       </div>
+      <UploadImage
+        onSuccess={res => {
+          setTriggerChild(false);
+          setLogoUrl(res);
+          message.success('头像已上传!');
+        }}
+        onClose={() => {
+          setTriggerChild(false);
+        }}
+        onAction={triggerChild ? triggerFileSelectPopup : null}
+      />
     </div>
   );
 };

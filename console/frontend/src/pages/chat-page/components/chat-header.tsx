@@ -38,12 +38,12 @@ const ChatHeader = (props: {
 
   // 收藏/取消收藏
   const handleFavoriteOperation = (): void => {
-    const form = new URLSearchParams();
-    form.append('botId', botInfo.botId.toString());
     const isCurrentlyFavorite = botInfo.isFavorite === 1;
     if (!isCurrentlyFavorite) {
       // 添加收藏
-      collectBot(form)
+      collectBot({
+        botId: botInfo.botId,
+      })
         .then(() => {
           message.success(t('home.collectionSuccess'));
           setBotInfo({
@@ -56,7 +56,9 @@ const ChatHeader = (props: {
         });
     } else {
       // 取消收藏
-      cancelFavorite(form)
+      cancelFavorite({
+        botId: botInfo.botId,
+      })
         .then(() => {
           message.success(t('home.cancelCollectionSuccess'));
           setBotInfo({

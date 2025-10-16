@@ -26,7 +26,7 @@ class CustomCompletionPluginKnowledgeInputs(BaseModel):
     match: CustomCompletionPluginKnowledgeMatchInputs = Field(
         default_factory=CustomCompletionPluginKnowledgeMatchInputs
     )
-    repo_type: int = Field(..., ge=1, le=2)
+    repo_type: int = Field(..., ge=1, le=3)
 
 
 class CustomCompletionPluginInputs(BaseModel):

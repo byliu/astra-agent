@@ -175,7 +175,7 @@ const Sidebar = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col h-full">
         {/* Logo Section */}
         <SidebarLogo
           isCollapsed={isCollapsed}
@@ -196,7 +196,6 @@ const Sidebar = ({
         <MenuList
           isCollapsed={isCollapsed}
           mixedChatList={mixedChatList}
-          favoriteBotList={favoriteBotList}
           onRefreshData={() => {
             getChatList();
             getFavoriteBotListLocal();

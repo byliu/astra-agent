@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @Schema(description = "Stop SSE stream response")
 public class StopStreamResponse {
 
+    private Integer code;
+
     @Schema(description = "Whether the operation was successful", example = "true")
     private Boolean success;
 
@@ -38,6 +40,7 @@ public class StopStreamResponse {
      */
     public static StopStreamResponse success(String streamId) {
         return StopStreamResponse.builder()
+                .code(0)
                 .success(true)
                 .message("Stream stopped")
                 .streamId(streamId)

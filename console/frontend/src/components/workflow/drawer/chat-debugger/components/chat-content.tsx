@@ -605,7 +605,7 @@ const useChatContent = ({ chatList, setChatList }): UseChatContentProps => {
               <div className="flex gap-1 mt-2 item-center">
                 <div className="flex items-center justify-center w-[22px] h-[22px] bg-[#fff] rounded">
                   <img
-                    src={typeList.get(input?.allowedFileType)}
+                    src={typeList.get(input?.fileType)}
                     className="w-[16px] h-[13px]"
                     alt=""
                   />

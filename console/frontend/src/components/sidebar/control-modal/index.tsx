@@ -53,14 +53,21 @@ const ControlModal = ({
   // 根据spaceType统一获取当前空间列表和配置
   const spaceConfig = useMemo(() => {
     const isPersonal = spaceType === 'personal';
+    console.log('song serviceType', info?.serviceType);
     return {
       icon: isPersonal ? personalIcon : teamIcon,
       displayType: isPersonal
         ? '个人版'
         : info?.serviceType === 3
           ? '定制版'
-          : '团队/企业版',
-      oppositeType: isPersonal ? '团队/企业版' : '个人版',
+          : info?.serviceType === 2
+            ? '企业版'
+            : '团队版',
+      oppositeType: isPersonal
+        ? info?.serviceType === 2
+          ? '企业版'
+          : '团队版'
+        : '个人版',
       oppositeIcon: isPersonal ? teamIcon : personalIcon,
       oppositeSpaceType: isPersonal ? 'team' : 'personal', // 相反的spaceType值
       chooseSpaceId: isPersonal ? spaceId : enterpriseId,
@@ -168,7 +175,11 @@ const ControlModal = ({
                   </div>
                 </div>
                 <div className={styles.text_sub}>
-                  {item.serviceType === 3 ? '定制版' : '团队/企业版'}
+                  {item.serviceType === 3
+                    ? '定制版'
+                    : item.serviceType === 2
+                      ? '企业版'
+                      : '团队版'}
                 </div>
               </div>
               {/* {item.id === Number(spaceConfig.chooseSpaceId) && (

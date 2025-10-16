@@ -105,12 +105,12 @@ const renderDropdown = (
           onClick={changeType}
         >
           {messageType?.map((item: any) => (
-            <Menu.Item key={item.id}>{item.typeInfo}</Menu.Item>
+            <Menu.Item key={item.id}>{item.typeInfoText}</Menu.Item>
           ))}
         </Menu>
       }
       trigger={['click']}
-      placement="bottomCenter"
+      placement="bottom"
       getPopupContainer={(trigger: HTMLElement) =>
         trigger.parentNode as HTMLElement
       }
@@ -119,7 +119,7 @@ const renderDropdown = (
         <span>
           {messageType?.length &&
             messageType.filter(item => item.id === parseInt(selectType))[0]
-              .typeInfo}
+              .typeInfoText}
         </span>
         <CaretDownOutlined />
       </div>
@@ -127,11 +127,34 @@ const renderDropdown = (
   );
 };
 
+const messageTypeList = [
+  {
+    id: 0,
+    typeInfo: 'PERSONAL',
+    typeInfoText: '私信',
+  },
+  {
+    id: 1,
+    typeInfo: 'BROADCAST',
+    typeInfoText: '公告',
+  },
+  {
+    id: 2,
+    typeInfo: 'SYSTEM',
+    typeInfoText: '系统通知',
+  },
+  {
+    id: 3,
+    typeInfo: 'PROMOTION',
+    typeInfoText: '活动',
+  },
+];
+
 const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
   const [selectType, setSelectType] = useState<string>('0');
   const myMessage = useSparkCommonStore(state => state.myMessage);
   const setMyMessage = useSparkCommonStore(state => state.setMyMessage);
-  const [messageType, setMessageType] = useState<any[]>([]);
+  const [messageType, setMessageType] = useState<any[]>(messageTypeList);
   const [messageDetail, setMessageDetail] = useState<string>('');
   const [selectedId, setSelectedId] = useState<number>(0);
   const [notificationData, setNotificationData] =
@@ -154,14 +177,14 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
     };
     const messageResult = await getAllMessage(queryParam);
     setNotificationData(messageResult);
-    setMessageType(
-      Object.keys(messageResult.notificationsByType).map(
-        (item: string, index) => ({
-          id: index,
-          typeInfo: item,
-        })
-      )
-    );
+    // setMessageType(
+    //   Object.keys(messageResult.notificationsByType).map(
+    //     (item: string, index) => ({
+    //       id: index,
+    //       typeInfo: item,
+    //     })
+    //   )
+    // );
   };
   const readMessage = async (messageItem: Notification) => {
     const readStatus = await changeMessageStatus({

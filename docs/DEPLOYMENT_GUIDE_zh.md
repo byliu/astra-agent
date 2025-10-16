@@ -69,6 +69,9 @@ RagFlow 是一个开源的RAG（检索增强生成）引擎，使用深度文档
 # 进入 RagFlow 目录
 cd docker/ragflow
 
+# 给所有 sh 文件添加可执行权限
+chmod +x *.sh
+
 # 启动 RagFlow 服务（包含所有依赖）
 docker compose up -d
 
@@ -81,6 +84,11 @@ docker compose logs -f ragflow
 
 **访问地址：**
 - RagFlow Web界面：http://localhost:10080
+
+**模型配置步骤：**  
+1. 点击头像进入 **Model Providers（模型提供商）** 页面，选择 **Add Model（添加模型）**，填写对应的 **API 地址** 和 **API Key**，分别添加 **Chat 模型** 和 **Embedding 模型**。  
+2. 在同一页面右上角点击 **Set Default Models（设置默认模型）**，将第一步中添加的 **Chat 模型** 和 **Embedding 模型** 设为默认。
+
 
 **重要配置说明：**
 - 默认使用 Elasticsearch，如需使用 opensearch、infinity，请修改 .env 中的 DOC_ENGINE 配置
@@ -141,12 +149,36 @@ CONSOLE_CASDOOR_ORG=your-casdoor-org-name
 ```
 
 **获取 Casdoor 配置信息：**
-1. 访问 Casdoor Web界面：http://localhost:8000
-2. 默认账号: admin/123 登陆进入管理页面
-3. 进入 http://localhost:8000/organizations 页创建组织
-4. 进入http://localhost:8000/applications页 创建应用，并绑定组织
-5. 设置应用的重定向URL为：http://localhost:80/callback (项目nginx容器端口,默认80)
-6. 将Casdoor地址，应用的客户端ID，应用名称，组织名称等信息更新到配置文件中
+1. 访问 Casdoor 管理控制台： [http://localhost:8000](http://localhost:8000)  
+2. 使用默认管理员账号登录：`admin / 123`  
+3. **创建组织**  
+   进入 [http://localhost:8000/organizations](http://localhost:8000/organizations) 页面，点击“添加”，填写组织名称后保存并退出。
+4. **创建应用并绑定组织**  
+   进入 [http://localhost:8000/applications](http://localhost:8000/applications) 页面，点击“添加”。
+
+   创建应用时填写以下信息：
+   - **Name**：自定义应用名称，例如 `agent`
+   - **Redirect URL**：设置为项目的回调地址，例如 `http://your-local-ip:80/callback`  
+     （该地址为项目中 Nginx 容器的回调端口，默认 `80`）
+   - **Organization**：选择刚创建的组织名称
+5. 保存应用后，记录以下信息并与项目配置项一一对应：  
+
+| Casdoor 信息项 | 示例值 | `.env` 中对应配置项 |
+|----------------|--------|----------------------|
+| Casdoor 服务地址（URL） | `http://localhost:8000` | `CONSOLE_CASDOOR_URL=http://localhost:8000` |
+| 客户端 ID（Client ID） | `your-casdoor-client-id` | `CONSOLE_CASDOOR_ID=your-casdoor-client-id` |
+| 应用名称（Name） | `your-casdoor-app-name` | `CONSOLE_CASDOOR_APP=your-casdoor-app-name` |
+| 组织名称（Organization） | `your-casdoor-org-name` | `CONSOLE_CASDOOR_ORG=your-casdoor-org-name` |
+
+6. 将以上配置信息填写到项目的环境变量文件中： docker/astronAgent/.env
+```bash
+# 进入 astronAgent 目录
+cd docker/astronAgent
+
+# 编辑环境变量配置
+vim .env
+```
+
 
 ### 第四步：启动 astronAgent 核心服务（必要部署步骤）
 
@@ -214,7 +246,7 @@ vim .env
 ```
 
 ```env
-CONSOLE_DOMAIN=http://localhost:80 (项目nginx容器端口,默认80)
+HOST_BASE_ADDRESS=http://localhost (主机地址)
 ```
 
 启动 astronAgent 服务请运行我们的 [docker-compose.yaml](/docker/astronAgent/docker-compose.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
@@ -224,13 +256,13 @@ CONSOLE_DOMAIN=http://localhost:80 (项目nginx容器端口,默认80)
 cd docker/astronAgent
 
 # 启动所有服务
-docker-compose up -d
+docker compose up -d
 
 # 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 查看服务日志
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## 📊 服务访问地址

@@ -17,9 +17,6 @@ function DeleteModal({
         setDeleteModal(false);
         getPersonTools();
       })
-      .catch(error => {
-        message.error(error.message);
-      })
       .finally(() => {
         setLoading(false);
       });

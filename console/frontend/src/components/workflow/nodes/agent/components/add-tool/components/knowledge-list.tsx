@@ -122,13 +122,7 @@ const KnowledgeList = ({
                   <div className="font-semibold flex items-center gap-2">
                     <span>{item?.name}</span>
                     <img
-                      src={
-                        item?.tag === 'CBG-RAG'
-                          ? xingchenIcon
-                          : item?.tag === 'AIUI-RAG2'
-                            ? xingPuIcon
-                            : baseVersionIcon
-                      }
+                      src={item?.corner}
                       className="w-[54px] h-[28px]"
                       alt=""
                     />

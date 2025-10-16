@@ -165,6 +165,16 @@ public class ChatBotDataServiceImpl implements ChatBotDataService {
 
     @Override
     public ChatBotBase updateBot(ChatBotBase chatBotBase) {
+        // If modelId is null, need to explicitly set it to null in database
+        if (chatBotBase.getModelId() == null) {
+            LambdaUpdateWrapper<ChatBotBase> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.eq(ChatBotBase::getId, chatBotBase.getId())
+                    .set(ChatBotBase::getModelId, null);
+
+            // Update other fields using updateById (it will skip null fields by default)
+            chatBotBaseMapper.update(null, updateWrapper);
+        }
+        // Then update other non-null fields
         chatBotBaseMapper.updateById(chatBotBase);
         return chatBotBase;
     }

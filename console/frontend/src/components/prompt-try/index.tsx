@@ -221,11 +221,12 @@ const PromptTry = forwardRef<
         },
         onmessage(event: { data: string }): void {
           const data: SSEData = JSON.parse(event.data);
-          const { id, type, choices, end, content, message, code } = data;
+          const { error, id, type, choices, end, content, message, code } =
+            data;
           id && (currentSid.current = id.toString());
           if (type === 'start') return;
           setIsLoading(false);
-          if (code) {
+          if (code || error) {
             const errorMsg = (message as string) || '发生未知错误';
             setMessageList(prev => {
               const updated = [...prev];

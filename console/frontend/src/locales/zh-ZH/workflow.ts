@@ -72,6 +72,7 @@ const translation = {
       noRobot: '暂无机器人',
       noRpaTool: '暂无RPA工具',
       noMore: '没有更多了',
+      createRpa: '新建RPA',
     },
     toolNode: {
       type: '工具',
@@ -578,7 +579,7 @@ const translation = {
     },
     codeIDEA: {
       language: '语言',
-      pythonPackages: '当前支持300+python包',
+      pythonPackages: '当前支持100+python包',
       viewDetails: '查看详情',
       aiCode: 'AI代码',
       generating: '生成中',

@@ -112,13 +112,24 @@ class WorkflowAgentRunnerBuilder(BaseApiBuilder):
         repo_type_map = {
             "1": "AIUI-RAG2",
             "2": "CBG-RAG",
+            "3": "Ragflow-RAG",
         }
         tasks = []
 
         for knowledge in knowledge_list:
             repo_ids = knowledge.match.repo_ids or []
             doc_ids = knowledge.match.doc_ids or []
+
+            # 添加调试日志
+            span.add_info_events({
+                "knowledge_name": knowledge.name,
+                "repo_type": knowledge.repo_type,
+                "repo_ids": repo_ids,
+                "doc_ids": doc_ids
+            })
+
             if not (repo_ids or doc_ids):
+                span.add_info_events({"skip_reason": "no repo_ids or doc_ids"})
                 continue
 
             top_k = knowledge.top_k or 3
@@ -128,6 +139,11 @@ class WorkflowAgentRunnerBuilder(BaseApiBuilder):
                 if knowledge.repo_type
                 else "AIUI-RAG2"
             )
+
+            # 添加映射后的日志
+            span.add_info_events({
+                "mapped_rag_type": repo_type
+            })
 
             params = KnowledgeQueryParams(
                 repo_ids=repo_ids,

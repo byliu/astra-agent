@@ -269,11 +269,7 @@ function PluginStore(): ReactElement {
               >
                 <div className="flex">
                   <div className="w-12 h-12 flex items-center justify-center rounded-lg flex-shrink-0 mt-[3px] mr-4">
-                    <img
-                      src={tool.isMcp ? tool.address : tool.address + tool.icon}
-                      className="w-12 h-12 rounded"
-                      alt=""
-                    />
+                    <img src={tool.icon} className="w-12 h-12 rounded" alt="" />
                   </div>
                   <div className="flex-1">
                     <div className="flex display-row ">

@@ -467,7 +467,7 @@ function FlowToolbar({
               }
             >
               <Tooltip title={t('workflow.promptDebugger.helpDocument')}>
-                <div className="p-4 bg-[#fff] rounded-lg flex items-center gap-5 h-[52px] flex-shrink-0">
+                <div className="p-4 bg-[#fff] rounded-lg flex items-center gap-2 h-[52px] flex-shrink-0">
                   <img
                     src={Icons.panel.flowHelpDoc}
                     className="w-4 h-4 flex-shrink-0"

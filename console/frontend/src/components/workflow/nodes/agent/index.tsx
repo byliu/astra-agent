@@ -531,7 +531,7 @@ const useAgent = ({
               match: {
                 repoIds: [tool?.toolId],
               },
-              repoType: tool?.tag === 'AIUI-RAG2' ? 1 : 2,
+              repoType: tool?.tag === 'CBG-RAG' ? 2 : 3,
             });
           } else {
             old.data.nodeParam.plugin.knowledge = [
@@ -542,7 +542,7 @@ const useAgent = ({
                 match: {
                   repoIds: [tool?.toolId],
                 },
-                repoType: tool?.tag === 'AIUI-RAG2' ? 1 : 2,
+                repoType: tool?.tag === 'CBG-RAG' ? 2 : 3,
               },
             ];
           }

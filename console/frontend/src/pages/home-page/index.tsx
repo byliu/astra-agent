@@ -243,10 +243,10 @@ const HomePage: React.FC = () => {
     e: React.MouseEvent<HTMLDivElement>
   ): void => {
     e.stopPropagation();
-    const form: URLSearchParams = new URLSearchParams();
-    form.append('botId', item?.botId.toString());
     if (!item?.isFavorite) {
-      collectBot(form)
+      collectBot({
+        botId: item.botId,
+      })
         .then(() => {
           message.success(t('home.collectionSuccess'));
           eventBus.emit('getFavoriteBotList');
@@ -261,7 +261,9 @@ const HomePage: React.FC = () => {
           message.error(err?.msg || '网络出小差了，请稍后再试~');
         });
     } else {
-      cancelFavorite(form)
+      cancelFavorite({
+        botId: item.botId,
+      })
         .then(() => {
           message.success(t('home.cancelCollectionSuccess'));
           eventBus.emit('getFavoriteBotList');

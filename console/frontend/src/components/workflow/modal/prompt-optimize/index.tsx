@@ -57,7 +57,7 @@ function PromptModal(): React.ReactElement {
         if (e && e.data) {
           if (e.data && isJSON(e.data)) {
             const data: WebSocketMessage = JSON.parse(e.data);
-            const content = data?.payload?.choices?.text?.[0]?.content;
+            const content = data?.payload?.message?.content;
             if (content) {
               textQueue.current = [...textQueue.current, ...content.split('')];
             }

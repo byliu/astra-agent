@@ -28,7 +28,7 @@ const TeamSettings: React.FC = () => {
   // 离开团队/企业按钮配置
   const leaveTeamButtonConfig: ButtonConfig = {
     key: 'leave-team',
-    text: '离开团队/企业',
+    text: serviceType === 2 ? '离开企业' : '离开团队',
     type: 'primary',
     danger: true,
     permission: {

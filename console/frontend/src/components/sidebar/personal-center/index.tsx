@@ -340,6 +340,7 @@ const PersonalCenter: FC<PersonalCenterProps> = ({
       botId,
     }).then(res => {
       message.success('删除成功');
+      onRefreshFavoriteData?.();
     });
   }, []);
 
@@ -351,9 +352,7 @@ const PersonalCenter: FC<PersonalCenterProps> = ({
         setDeleteOpen(false);
         message.success(t('commonModal.agentDelete.success'));
         // Refresh data after successful deletion
-        if (onRefreshData) {
-          onRefreshData();
-        }
+        onRefreshRecentData?.();
       })
       .catch((err: any) => {
         console.log(err);
@@ -384,7 +383,6 @@ const PersonalCenter: FC<PersonalCenterProps> = ({
     }
     setDeleteOpen(false);
     setItemIdToDelete(null);
-    onRefreshData();
   }, [
     activeIndex,
     itemIdToDelete,

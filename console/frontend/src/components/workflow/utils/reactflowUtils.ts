@@ -1229,7 +1229,7 @@ function generateDefaultObject(schemaList: unknown[]): Record<string, unknown> {
 
   schemaList.forEach(item => {
     defaultValues[item.name] = getDefaultValueForType(
-      item.schema?.type,
+      item?.type || item?.schema?.type,
       item.schema
     );
   });
@@ -1282,26 +1282,25 @@ function mergeArraysByStructure(
 
 function getDefaultValueForType(type: string, schema: unknown): unknown {
   const typeHandlers: Record<string, () => unknown> = {
-    string: () => '',
-    integer: () => 0,
-    boolean: () => false,
-    number: () => 0,
+    'string': () => '',
+    'integer': () => 0,
+    'boolean': () => false,
+    'number': () => 0,
     'array-string': () => [],
     'array-integer': () => [],
     'array-boolean': () => [],
     'array-number': () => [],
-    object: () => handleObjectSchema(schema),
+    'object': () => handleObjectSchema(schema),
     'array-object': () => handleArrayObjectSchema(schema),
   };
-
-  return typeHandlers[type]?.() || '';
+  return typeHandlers[type]?.();
 }
 
 function handleObjectSchema(schema: unknown): Record<string, unknown> {
   const obj: Record<string, unknown> = {};
 
   (schema.properties || []).forEach((prop: unknown) => {
-    obj[prop.name] = getDefaultValueForType(prop.type, prop);
+    obj[prop.name] = getDefaultValueForType(prop.type || prop.schema?.type, prop);
   });
 
   return obj;

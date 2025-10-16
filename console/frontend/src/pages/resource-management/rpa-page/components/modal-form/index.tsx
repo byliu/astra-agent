@@ -60,9 +60,6 @@ export const ModalForm = forwardRef<
         );
         refresh?.();
       })
-      .catch(error => {
-        message.error(error.message);
-      })
       .finally(() => {
         handleReset();
         refresh?.();

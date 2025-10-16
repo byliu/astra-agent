@@ -161,10 +161,10 @@ const KnowledgeToolbar = ({
           old.data.nodeParam.repoIds.splice(findKnowledgeIndex, 1);
           old.data.nodeParam.repoList.splice(findKnowledgeIndex, 1);
         }
-        if (knowledge?.tag === 'AIUI-RAG2') {
-          old.data.nodeParam.repoType = 1;
-        } else {
+        if (knowledge?.tag === 'CBG-RAG') {
           old.data.nodeParam.repoType = 2;
+        } else {
+          old.data.nodeParam.repoType = 3;
         }
         return {
           ...cloneDeep(old),

@@ -154,7 +154,7 @@ const MessageList = (props: {
         </div>
         {!isLoading && !isCompleted && !item.sid && (
           <div
-            className="text-sm text-[#9194bf] bg-white cursor-pointer ml-10 hover:text-[#257eff]"
+            className="text-sm text-[#9194bf] bg-white cursor-pointer ml-10 hover:text-[#257eff] mb-3"
             onClick={() => {
               stopAnswer();
             }}

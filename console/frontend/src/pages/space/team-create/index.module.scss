@@ -85,14 +85,14 @@
       justify-content: center;
       padding: 0 8px;
       border-radius: 7px;
-      background: #E4EAFF;
+      background: #e4eaff;
       font-family: PingFang-Sim;
       font-size: 12px;
       font-weight: normal;
       line-height: normal;
       text-align: justify; /* 浏览器可能不支持 */
       letter-spacing: normal;
-      color: #275EFF;
+      color: #275eff;
     }
   }
 }
@@ -131,6 +131,35 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+
+      .avatarImg {
+        width: 108px;
+        height: 108px;
+        border-radius: 16px;
+        object-fit: cover;
+      }
+
+      .upHoverBtn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 108px;
+        height: 108px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(116, 135, 254, 0.37);
+        border-radius: 16px;
+        cursor: pointer;
+
+        .upHoverIcon {
+          width: 32px;
+          height: 32px;
+          border-radius: 0;
+        }
+      }
     }
   }
 
@@ -142,8 +171,8 @@
       display: flex;
       align-items: center;
       border-radius: 8px;
-      background: #FFFFFF;
-      border: 1px solid #E4EAFF;
+      background: #ffffff;
+      border: 1px solid #e4eaff;
       font-family: PingFang SC;
       font-size: 14px;
       font-weight: normal;
@@ -159,7 +188,7 @@
       .fieldLabel {
         flex-shrink: 0;
         padding: 0 15px;
-        border-right: 1px solid #D8D8D8;
+        border-right: 1px solid #d8d8d8;
       }
 
       .fieldInput {
@@ -167,7 +196,7 @@
         font-size: 14px;
 
         &::placeholder {
-          color: #B2B2B2;
+          color: #b2b2b2;
         }
       }
     }
@@ -176,7 +205,7 @@
   .createButton {
     height: 40px;
     border-radius: 8px;
-    background: #275EFF;
+    background: #275eff;
     border: none;
     font-size: 16px;
     font-weight: 500;
