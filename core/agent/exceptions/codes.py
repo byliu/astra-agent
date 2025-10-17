@@ -98,6 +98,11 @@ c_40051 = (40051, "Failed to delete bot config")
 c_40052 = (40052, "Failed to update bot config")
 c_40053 = (40053, "Bot config already exists, cannot create")
 
+c_40060 = (40060, "Bot configuration not published")
+c_40061 = (40061, "Authorization binding failed")
+c_40062 = (40062, "Auth service call failed")
+c_40063 = (40063, "Bot configuration not published to specified platform")
+
 c_40301 = (40301, "Model did not select valid function")
 c_40303 = (40303, "Model request failed")
 c_40350 = (40350, "Error occurred during WebSocket upgrade")

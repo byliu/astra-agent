@@ -10,6 +10,7 @@ from api.middleware import AuthMiddleware
 from api.schemas.completion_chunk import ReasonChatCompletionChunk
 from api.v1.bot_config_mgr_api import bot_config_mgr_router
 from api.v1.openapi import openapi_router
+from api.v1.publish_api import publish_router
 from api.v1.workflow_agent import workflow_agent_router
 
 # Use unified common package import module
@@ -90,6 +91,7 @@ async def validation_exception_handler(
 app.include_router(openapi_router)
 app.include_router(workflow_agent_router)
 app.include_router(bot_config_mgr_router)
+app.include_router(publish_router)
 
 if __name__ == "__main__":
 

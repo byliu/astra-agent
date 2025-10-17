@@ -47,6 +47,7 @@ logs/
 # AI Tools
 .serena/
 stubs/
+claudedocs/
 
 # Databases
 *.sqlite

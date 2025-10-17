@@ -22,6 +22,11 @@ class TbBotConfig(Base):  # type: ignore[valid-type,misc]
     mcp_server_urls = Column(JSON, nullable=False, comment="mcp server url")
     flow_ids = Column(JSON, nullable=False, comment="flow id")
 
+    # Publish management fields
+    group_id = Column(String(40), nullable=True, comment="bot group id for version management")
+    publish_status = Column(SMALLINT, nullable=False, default=0, comment="publish status bitmask")
+    publish_data = Column(JSON, nullable=True, comment="published configuration data")
+
     create_at = Column(DATETIME, default=datetime.now)
     update_at = Column(DATETIME, default=datetime.now, onupdate=datetime.now)
     is_deleted = Column(SMALLINT, nullable=False, default=0, comment="删除标志")
