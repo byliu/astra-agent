@@ -60,7 +60,7 @@ class AuthClient(BaseModel):
             )
         return auth_url
 
-    def _build_auth_params(self, bot_id: str = None) -> dict[str, Any]:
+    def _build_auth_params(self, bot_id: Optional[str] = None) -> dict[str, Any]:
         """Build query parameters for auth service"""
         params: dict[str, Any] = {"app_id": self.app_id}
         if self.type:

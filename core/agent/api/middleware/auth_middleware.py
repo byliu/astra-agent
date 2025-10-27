@@ -234,7 +234,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 f"appid not found in response: {response_text}"
             )
 
-        return app_id
+        return str(app_id)
 
     async def _get_app_id_from_api_key(
         self, authorization: str, span: Span

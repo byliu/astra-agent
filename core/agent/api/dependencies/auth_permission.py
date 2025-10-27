@@ -11,7 +11,7 @@ from repository.auth_client import AuthClient
 async def verify_bot_permission(
     app_id: Annotated[str, Query(min_length=1, max_length=64)],
     bot_id: Annotated[str, Query(min_length=1, max_length=64)],
-    x_consumer_username: Annotated[str, Header()] = None,
+    x_consumer_username: Annotated[Optional[str], Header()] = None,
 ) -> tuple[str, str]:
     """
     Dependency to verify bot permission before processing request

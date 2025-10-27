@@ -217,8 +217,7 @@ class BotConfigClient(BaseModel):
                 )
 
             if raw:
-                # type: ignore[no-any-return]
-                return bot_config.model_dump(by_alias=True)
+                return dict(bot_config.model_dump(by_alias=True))
 
             return bot_config
 

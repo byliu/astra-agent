@@ -157,7 +157,7 @@ async def create_bot_config(
             app_id=bot_config.app_id, bot_id=bot_config.bot_id, span=sp
         ).add(bot_config)
         # Convert BotConfig to dict for GeneralResponse
-        return result.model_dump(by_alias=True)
+        return dict(result.model_dump(by_alias=True))
 
     return await handle_bot_config_operation(
         operation_func=_create_operation,
@@ -220,7 +220,7 @@ async def update_bot_config(
             app_id=bot_config.app_id, bot_id=bot_config.bot_id, span=sp
         ).update(bot_config)
         # Convert BotConfig to dict for GeneralResponse
-        return result.model_dump(by_alias=True)
+        return dict(result.model_dump(by_alias=True))
 
     return await handle_bot_config_operation(
         operation_func=_update_operation,
@@ -289,7 +289,7 @@ async def get_bot_config(
                 }
             )
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     return await handle_bot_config_operation(
         operation_func=_get_operation,

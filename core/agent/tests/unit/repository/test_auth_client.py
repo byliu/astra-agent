@@ -1,6 +1,7 @@
 """Unit tests for AuthClient"""
 
 import pytest
+from typing import Any
 from unittest.mock import AsyncMock, patch, MagicMock
 import httpx
 
@@ -10,7 +11,7 @@ from repository.auth_client import AuthClient, AuthPermission, AuthResponse
 
 
 @pytest.fixture
-def mock_span():
+def mock_span() -> MagicMock:
     """Create mock Span"""
     span = MagicMock(spec=Span)
 
@@ -32,7 +33,7 @@ def mock_span():
 
 
 @pytest.fixture
-def auth_client(mock_span):
+def auth_client(mock_span: MagicMock) -> AuthClient:
     """Create AuthClient instance"""
     return AuthClient(
         app_id="test_app",
@@ -47,7 +48,7 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_success(self, mock_config, auth_client):
+    async def test_verify_permission_success(self, mock_config: MagicMock, auth_client: AuthClient) -> None:
         """Test successful permission verification"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -83,7 +84,7 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_verify_permission_denied(self, mock_config, auth_client):
+    async def test_verify_permission_denied(self, mock_config: MagicMock, auth_client: AuthClient) -> None:
         """Test permission denied"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -119,8 +120,8 @@ class TestAuthClient:
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
     async def test_verify_permission_no_matching_permission(
-        self, mock_config, auth_client
-    ):
+        self, mock_config: MagicMock, auth_client: AuthClient
+    ) -> None:
         """Test no matching permission found"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -147,8 +148,8 @@ class TestAuthClient:
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
     async def test_verify_permission_url_not_configured(
-        self, mock_config, auth_client
-    ):
+        self, mock_config: MagicMock, auth_client: AuthClient
+    ) -> None:
         """Test permission check fails when URL not configured"""
         mock_config.AUTH_API_URL = ""
 
@@ -161,8 +162,8 @@ class TestAuthClient:
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
     async def test_verify_permission_http_error(
-        self, mock_config, auth_client
-    ):
+        self, mock_config: MagicMock, auth_client: AuthClient
+    ) -> None:
         """Test HTTP error during permission check"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -186,8 +187,8 @@ class TestAuthClient:
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
     async def test_verify_permission_connection_error(
-        self, mock_config, auth_client
-    ):
+        self, mock_config: MagicMock, auth_client: AuthClient
+    ) -> None:
         """Test connection error during permission check"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -207,7 +208,7 @@ class TestAuthClient:
 
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
-    async def test_get_permissions_success(self, mock_config, auth_client):
+    async def test_get_permissions_success(self, mock_config: MagicMock, auth_client: AuthClient) -> None:
         """Test successful get permissions"""
         mock_config.AUTH_API_URL = "http://auth-service/auth/v1/get"
 
@@ -253,8 +254,8 @@ class TestAuthClient:
     @pytest.mark.asyncio
     @patch("repository.auth_client.agent_config")
     async def test_get_permissions_url_not_configured(
-        self, mock_config, auth_client
-    ):
+        self, mock_config: MagicMock, auth_client: AuthClient
+    ) -> None:
         """Test get permissions fails when URL not configured"""
         mock_config.AUTH_API_URL = ""
 
@@ -268,7 +269,7 @@ class TestAuthClient:
 class TestAuthPermission:
     """Test cases for AuthPermission model"""
 
-    def test_auth_permission_creation(self):
+    def test_auth_permission_creation(self) -> None:
         """Test AuthPermission model creation"""
         permission = AuthPermission(
             app_id="test_app",
@@ -288,7 +289,7 @@ class TestAuthPermission:
 class TestAuthResponse:
     """Test cases for AuthResponse model"""
 
-    def test_auth_response_creation(self):
+    def test_auth_response_creation(self) -> None:
         """Test AuthResponse model creation"""
         response = AuthResponse(
             code=0,
