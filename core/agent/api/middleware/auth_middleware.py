@@ -22,7 +22,7 @@ class LRUCache:
     def __init__(self, max_size: int = 3000):
         """
         Initialize LRU cache
-        
+
         :param max_size: Maximum number of items in cache
         """
         self._cache: OrderedDict[str, str] = OrderedDict()
@@ -31,7 +31,7 @@ class LRUCache:
     def get(self, key: str) -> Optional[str]:
         """
         Get value from cache and move to end (most recently used)
-        
+
         :param key: Cache key
         :return: Cached value or None if not found
         """
@@ -47,7 +47,7 @@ class LRUCache:
         Set value in cache
         If key exists, move to end
         If cache is full, remove least recently used item
-        
+
         :param key: Cache key
         :param value: Value to cache
         """
@@ -58,7 +58,7 @@ class LRUCache:
         else:
             # Add new key
             self._cache[key] = value
-            
+
             # Check if cache is full
             if len(self._cache) > self._max_size:
                 # Remove least recently used (first item)
@@ -72,7 +72,7 @@ class LRUCache:
 class AuthMiddleware(BaseHTTPMiddleware):
     """
     Authentication middleware for Agent service
-    
+
     This middleware checks if x-consumer-username header exists:
     - If present: skip authentication and continue
     - If missing: extract api_key from authorization header and query app_auth service
@@ -150,6 +150,92 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
+    def _extract_api_key(self, authorization: str) -> str:
+        """
+        Extract api_key from authorization header
+
+        :param authorization: The authorization header value (format: "Bearer api_key:secret")
+        :return: The api_key
+        :raises ValueError: If authorization header format is invalid
+        """
+        try:
+            auth_parts = authorization.split(" ")
+            if len(auth_parts) != 2 or auth_parts[0].lower() != "bearer":
+                raise ValueError("Invalid authorization header format")
+
+            # Extract api_key (before colon if present)
+            api_key = auth_parts[1].split(":")[0]
+            if not api_key:
+                raise ValueError("Empty api_key in authorization header")
+
+            return api_key
+        except (IndexError, ValueError) as e:
+            logger.error(f"Failed to parse authorization header: {str(e)}")
+            raise ValueError(f"Invalid authorization header format: {str(e)}")
+
+    async def _query_app_auth_service(
+        self, api_key: str, span: Span
+    ) -> str:
+        """
+        Query app_auth service to get app_id
+
+        :param api_key: The API key to query
+        :param span: The span object for tracing
+        :return: The app_id
+        :raises Exception: If auth service call fails
+        """
+        # Build app_auth service URL
+        app_auth_url = self._build_app_auth_url(api_key)
+        if not app_auth_url:
+            raise ValueError("APP_AUTH configuration is incomplete")
+
+        span.add_info_event(f"Querying app_auth service: {app_auth_url}")
+
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=5)
+            async with session.get(
+                app_auth_url,
+                headers=self._build_auth_headers(),
+                timeout=timeout,
+            ) as response:
+                response_text = await response.text()
+                span.add_info_event(
+                    f"App auth service response: status={response.status}, body={response_text}"
+                )
+
+                if response.status != 200:
+                    raise Exception(
+                        f"App auth service returned status {response.status}: {response_text}"
+                    )
+
+                return self._parse_auth_response(response_text)
+
+    def _parse_auth_response(self, response_text: str) -> str:
+        """
+        Parse app_auth service response and extract app_id
+
+        :param response_text: The response text from auth service
+        :return: The app_id
+        :raises Exception: If response parsing fails or app_id not found
+        """
+        result = json.loads(response_text)
+        code = result.get("code")
+        if code != 0:
+            error_msg = result.get("message", "Unknown error")
+            raise Exception(
+                f"App auth service returned error code {code}: {error_msg}"
+            )
+
+        # Extract appid
+        data = result.get("data", {})
+        app_id = data.get("appid")
+        if not app_id:
+            raise Exception(
+                f"appid not found in response: {response_text}"
+            )
+
+        return app_id
+
     async def _get_app_id_from_api_key(
         self, authorization: str, span: Span
     ) -> str:
@@ -164,19 +250,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         :return: The app_id (used as x-consumer-username)
         """
         # Extract api_key from authorization header
-        # Expected format: "Bearer api_key:secret" or "Bearer api_key"
-        try:
-            auth_parts = authorization.split(" ")
-            if len(auth_parts) != 2 or auth_parts[0].lower() != "bearer":
-                raise ValueError("Invalid authorization header format")
-
-            # Extract api_key (before colon if present)
-            api_key = auth_parts[1].split(":")[0]
-            if not api_key:
-                raise ValueError("Empty api_key in authorization header")
-        except (IndexError, ValueError) as e:
-            logger.error(f"Failed to parse authorization header: {str(e)}")
-            raise ValueError(f"Invalid authorization header format: {str(e)}")
+        api_key = self._extract_api_key(authorization)
 
         # Check cache first
         cache_key = f"agent:app:api_key:{api_key}"
@@ -185,61 +259,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
             span.add_info_event(f"Retrieved app_id from cache: {cached_app_id}")
             return cached_app_id
 
-        # Build app_auth service URL
-        app_auth_url = self._build_app_auth_url(api_key)
-        if not app_auth_url:
-            raise ValueError("APP_AUTH configuration is incomplete")
-
-        span.add_info_event(f"Querying app_auth service: {app_auth_url}")
-
         # Query app_auth service
         try:
-            async with aiohttp.ClientSession() as session:
-                timeout = aiohttp.ClientTimeout(total=5)
-                async with session.get(
-                    app_auth_url,
-                    headers=self._build_auth_headers(),
-                    timeout=timeout,
-                ) as response:
-                    response_text = await response.text()
-                    span.add_info_event(
-                        f"App auth service response: status={response.status}, body={response_text}"
-                    )
+            app_id = await self._query_app_auth_service(api_key, span)
 
-                    if response.status != 200:
-                        raise Exception(
-                            f"App auth service returned status {response.status}: {response_text}"
-                        )
-
-                    # Parse response
-                    result = json.loads(response_text)
-                    code = result.get("code")
-                    if code != 0:
-                        error_msg = result.get("message", "Unknown error")
-                        raise Exception(
-                            f"App auth service returned error code {code}: {error_msg}"
-                        )
-
-                    # Extract appid
-                    data = result.get("data", {})
-                    app_id = data.get("appid")
-                    if not app_id:
-                        raise Exception(
-                            f"appid not found in response: {response_text}"
-                        )
-
-                    # Cache the result
-                    self._cache.set(cache_key, app_id)
-                    
-                    span.add_info_event(f"Successfully retrieved app_id: {app_id}")
-                    return app_id
+            # Cache the result
+            self._cache.set(cache_key, app_id)
+            span.add_info_event(f"Successfully retrieved app_id: {app_id}")
+            return app_id
 
         except aiohttp.ClientError as e:
             logger.error(f"Failed to connect to app_auth service: {str(e)}")
             raise Exception(f"Failed to connect to app_auth service: {str(e)}")
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse app_auth response: {str(e)}")
-            raise Exception(f"Invalid JSON response from app_auth service")
+            raise Exception("Invalid JSON response from app_auth service")
 
     def _build_app_auth_url(self, api_key: str) -> str:
         """
