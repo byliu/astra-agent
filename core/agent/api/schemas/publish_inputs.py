@@ -8,10 +8,27 @@ from consts.publish_status import Platform, PublishOperation
 class PublishInput(BaseModel):
     """Input model for bot publish/unpublish operations."""
 
-    app_id: str = Field(..., min_length=1, max_length=64, description="Application ID")
-    bot_id: str = Field(..., min_length=1, max_length=64, description="Bot configuration ID")
-    operation: PublishOperation = Field(..., description="Publish operation: 1=publish, 0=unpublish")
-    platform: Platform = Field(..., description="Target platform: 1=XINGCHEN, 4=KAIFANG, 16=AIUI")
+    app_id: str = Field(
+        ..., min_length=1, max_length=64, description="Application ID"
+    )
+    bot_id: str = Field(
+        ..., min_length=1, max_length=64, description="Bot configuration ID"
+    )
+    operation: PublishOperation = Field(
+        ..., description="Publish operation: 1=publish, 0=unpublish"
+    )
+    platform: Platform = Field(
+        ..., description="Target platform: 1=XINGCHEN, 4=KAIFANG, 16=AIUI"
+    )
+    version: str | None = Field(
+        default=None,
+        max_length=32,
+        description=(
+            "Version identifier for creating version snapshots. "
+            "If provided, creates a new versioned record with the same bot_id. "
+            "Format: v1.0, v1.1, v2.0. If not provided, updates the main version."
+        ),
+    )
 
 
 class AuthBindInput(BaseModel):

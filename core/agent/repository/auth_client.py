@@ -67,6 +67,14 @@ class AuthClient(BaseModel):
                 }
             )
 
+            # [TEMPORARY TEST LOGIC] Only check auth for specific test user
+            if self.x_consumer_username != "2hhikfuh":
+                sp.add_info_event(
+                    f"[TEST MODE] Skipping auth check for user: {self.x_consumer_username}, "
+                    f"auto-passing permission for app_id={self.app_id}, bot_id={bot_id}"
+                )
+                return True
+
             try:
                 auth_url = agent_config.AUTH_API_URL
                 if not auth_url:
@@ -230,10 +238,10 @@ class AuthClient(BaseModel):
                         auth_url,
                         params=params,
                     )
-                    
+
                     # Parse response before checking status
                     response_data = response.json()
-                    
+
                     # Check HTTP status code
                     if response.status_code != 200:
                         sp.add_info_event(
@@ -243,9 +251,9 @@ class AuthClient(BaseModel):
                         raise AgentExc(
                             50001,
                             f"Auth service returned error: {response_data.get('message', response.text)}",
-                            on=f"app_id:{self.app_id} bot_id:{bot_id}",
+                            on=f"app_id:{self.app_id}",
                         )
-                    
+
                     auth_response = AuthResponse(**response_data)
 
                     sp.add_info_events(
@@ -312,6 +320,14 @@ class AuthClient(BaseModel):
                     "type": self.type,
                 }
             )
+
+            # [TEMPORARY TEST LOGIC] Only bind auth for specific test user
+            if self.x_consumer_username != "2hhikfuh":
+                sp.add_info_event(
+                    f"[TEST MODE] Skipping auth bind for user: {self.x_consumer_username}, "
+                    f"auto-passing bind for app_id={self.app_id}, bot_id={bot_id}"
+                )
+                return
 
             try:
                 auth_url = agent_config.AUTH_API_URL

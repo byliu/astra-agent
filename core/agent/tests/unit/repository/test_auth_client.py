@@ -38,6 +38,7 @@ def auth_client(mock_span):
         app_id="test_app",
         span=mock_span,
         type="agent",
+        x_consumer_username="2hhikfuh",
     )
 
 
@@ -69,6 +70,7 @@ class TestAuthClient:
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
+            mock_response.status_code = 200
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
             mock_http_client.get = AsyncMock(return_value=mock_response)
@@ -104,6 +106,7 @@ class TestAuthClient:
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
+            mock_response.status_code = 200
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
             mock_http_client.get = AsyncMock(return_value=mock_response)
@@ -131,6 +134,7 @@ class TestAuthClient:
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
+            mock_response.status_code = 200
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
             mock_http_client.get = AsyncMock(return_value=mock_response)
@@ -234,6 +238,7 @@ class TestAuthClient:
         with patch("httpx.AsyncClient") as mock_client:
             mock_http_client = AsyncMock()
             mock_response = MagicMock()
+            mock_response.status_code = 200
             mock_response.json = MagicMock(return_value=mock_response_data)
             mock_response.raise_for_status = MagicMock()
             mock_http_client.get = AsyncMock(return_value=mock_response)

@@ -369,8 +369,10 @@ class TestBotConfigClient:  # pylint: disable=too-many-public-methods
         ) as mock_set:
             mock_set.return_value = True
 
-            # Act
-            result = await bot_config_client.pull_from_mysql(bot_config_client.span)
+            # Act - test with default version parameter
+            result = await bot_config_client.pull_from_mysql(
+                bot_config_client.span, version="-1"
+            )
 
             # Assert
             assert result is not None
@@ -378,7 +380,10 @@ class TestBotConfigClient:  # pylint: disable=too-many-public-methods
             assert result.bot_id == "test_bot_001"
             mock_session.query.assert_called_once_with(TbBotConfig)
             mock_query.filter_by.assert_called_once_with(
-                app_id="test_app_001", bot_id="test_bot_001"
+                app_id="test_app_001",
+                bot_id="test_bot_001",
+                version="-1",
+                is_deleted=False,
             )
 
     @pytest.mark.unit
@@ -398,7 +403,9 @@ class TestBotConfigClient:  # pylint: disable=too-many-public-methods
         mock_query.first.return_value = None
 
         # Act
-        result = await bot_config_client.pull_from_mysql(bot_config_client.span)
+        result = await bot_config_client.pull_from_mysql(
+            bot_config_client.span, version="-1"
+        )
 
         # Assert
         assert result is None

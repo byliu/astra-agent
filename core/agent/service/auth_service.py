@@ -99,7 +99,7 @@ class AuthService(BaseModel):
                 sp.add_info_events(
                     {
                         "bot_app_id": bot_config.app_id,
-                        "group_id": bot_config.group_id,
+                        "bot_id": bot_config.bot_id,
                         "publish_status": publish_status,
                     }
                 )
@@ -201,6 +201,7 @@ class AuthService(BaseModel):
                 span=sp,
                 type="agent",
                 ability_id=self.bot_id,
+                x_consumer_username=self.x_consumer_username,
             )
 
             try:

@@ -42,8 +42,10 @@ class BotConfigClient(BaseModel):
             self.mysql_client = MysqlClient(
                 database_url=(
                     f"mysql+pymysql://{agent_config.MYSQL_USER}:"
-                    f"{agent_config.MYSQL_PASSWORD}@{agent_config.MYSQL_HOST}:"
-                    f"{agent_config.MYSQL_PORT}/{agent_config.MYSQL_DB}?charset=utf8mb4"
+                    f"{agent_config.MYSQL_PASSWORD}"
+                    f"@{agent_config.MYSQL_HOST}:"
+                    f"{agent_config.MYSQL_PORT}/{agent_config.MYSQL_DB}"
+                    "?charset=utf8mb4"
                 )
             )
 
@@ -83,7 +85,9 @@ class BotConfigClient(BaseModel):
                 ) from exc
 
             result = await self.build_bot_config(value=config)
-            sp.add_info_events({"redis-value": result.model_dump_json(by_alias=True)})
+            sp.add_info_events(
+                {"redis-value": result.model_dump_json(by_alias=True)}
+            )
 
             return result
 
@@ -91,7 +95,9 @@ class BotConfigClient(BaseModel):
         if ex is None:
             ex = agent_config.REDIS_EXPIRE
         assert self.redis_client is not None
-        redis_set_value = await self.redis_client.set(self.redis_key(), value, ex=ex)
+        redis_set_value = await self.redis_client.set(
+            self.redis_key(), value, ex=ex
+        )
         if not redis_set_value:
             raise AgentExc(
                 40001,
@@ -106,7 +112,9 @@ class BotConfigClient(BaseModel):
             await self.set_to_redis(value, ex)
 
     @staticmethod
-    async def build_bot_config(value: dict[str, Any] | TbBotConfig) -> BotConfig:
+    async def build_bot_config(
+        value: dict[str, Any] | TbBotConfig,
+    ) -> BotConfig:
         if isinstance(value, dict):
             return BotConfig(**value)
 
@@ -118,7 +126,9 @@ class BotConfigClient(BaseModel):
                 **json.loads(str(value.knowledge_config))
             ),
             model_config=BotModelConfig(**json.loads(str(value.model_config))),
-            regular_config=BotRegularConfig(**json.loads(str(value.regular_config))),
+            regular_config=BotRegularConfig(
+                **json.loads(str(value.regular_config))
+            ),
             tool_ids=json.loads(str(value.tool_ids)),
             mcp_server_ids=json.loads(str(value.mcp_server_ids)),
             mcp_server_urls=json.loads(str(value.mcp_server_urls)),
@@ -127,13 +137,20 @@ class BotConfigClient(BaseModel):
 
         return bot_config
 
-    async def pull_from_mysql(self, span: Span) -> Optional[BotConfig]:
+    async def pull_from_mysql(
+        self, span: Span, version: str = "-1"
+    ) -> Optional[BotConfig]:
         with span.start("PullFromMySQL") as sp:
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
                 record = (
                     session.query(TbBotConfig)
-                    .filter_by(app_id=self.app_id, bot_id=self.bot_id)
+                    .filter_by(
+                        app_id=self.app_id,
+                        bot_id=self.bot_id,
+                        version=version,
+                        is_deleted=False,
+                    )
                     .first()
                 )
                 if not record:
@@ -143,25 +160,55 @@ class BotConfigClient(BaseModel):
                 sp.add_info_events(
                     {"mysql-value": bot_config.model_dump_json(by_alias=True)}
                 )
-                # MySQL has value, write to Redis cache with configured expiration
-                ex_seconds = agent_config.REDIS_EXPIRE
-                await self.set_to_redis(
-                    bot_config.model_dump_json(by_alias=True), ex_seconds
-                )
+                # Only cache main version (version="-1")
+                # Version snapshots are not cached
+                # (historical data, low access frequency)
+                if version == "-1":
+                    ex_seconds = agent_config.REDIS_EXPIRE
+                    await self.set_to_redis(
+                        bot_config.model_dump_json(by_alias=True), ex_seconds
+                    )
 
                 return bot_config
 
-    async def pull(self, raw: bool = False) -> BotConfig | dict[Any, Any]:
+    async def pull(
+        self, raw: bool = False, version: str = "-1"
+    ) -> BotConfig | dict[Any, Any]:
+        """
+        Pull bot config from cache or database.
+
+        Args:
+            raw: If True, return dict instead of BotConfig object
+            version: Version to retrieve, defaults to "-1" (main version)
+
+        Returns:
+            BotConfig object or dict
+
+        Note:
+            - Only main version (version="-1") is cached in Redis
+            - Version snapshots are always fetched from MySQL
+        """
         with self.span.start("Pull") as sp:
-            bot_config = await self.pull_from_redis(sp) or await self.pull_from_mysql(
-                sp
-            )
+            sp.add_info_events({"requested_version": version})
+
+            # Only check Redis cache for main version
+            if version == "-1":
+                bot_config = await self.pull_from_redis(
+                    sp
+                ) or await self.pull_from_mysql(sp, version)
+            else:
+                # Version snapshots: directly query MySQL, no cache
+                bot_config = await self.pull_from_mysql(sp, version)
+
             if not bot_config:
                 raise AgentExc(
                     40001,
                     "failed to retrieve bot config",
-                    on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
-                )  # MySQL also didn't find any records
+                    on=(
+                        f"app_id:{self.app_id} "
+                        f"bot_id:{self.bot_id} version:{version}"
+                    ),
+                )
             if bot_config.app_id != self.app_id:
                 raise AgentExc(
                     40001,
@@ -170,17 +217,27 @@ class BotConfigClient(BaseModel):
                 )
 
             if raw:
-                return bot_config.model_dump(by_alias=True)  # type: ignore[no-any-return]
+                # type: ignore[no-any-return]
+                return bot_config.model_dump(by_alias=True)
 
             return bot_config
 
     async def add(self, bot_config: BotConfig) -> BotConfig:
+        """
+        Create new bot config - only check if main version exists.
+
+        Version snapshots are created by publish operations,
+        not by this method.
+        """
         with self.span.start("Add") as sp:
-            value = await self.pull_from_redis(sp) or await self.pull_from_mysql(sp)
+            # Only check if main version exists
+            value = await self.pull_from_redis(
+                sp
+            ) or await self.pull_from_mysql(sp, version="-1")
             if value:
                 raise BotConfigMgrExc(
                     40053,
-                    "bot config already exists, cannot create",
+                    "bot config main version already exists, cannot create",
                     on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
                 )
 
@@ -191,17 +248,27 @@ class BotConfigClient(BaseModel):
                     id=get_snowflake_id(),
                     app_id=bot_config.app_id,
                     bot_id=bot_config.bot_id,
-                    knowledge_config=bot_config.knowledge_config.model_dump_json(),
-                    model_config=bot_config.model_config_.model_dump_json(),
-                    regular_config=bot_config.regular_config.model_dump_json(),
-                    tool_ids=json.dumps(bot_config.tool_ids, ensure_ascii=False),
+                    knowledge_config=(
+                        bot_config.knowledge_config.model_dump_json()
+                    ),
+                    model_config=(
+                        bot_config.model_config_.model_dump_json()
+                    ),
+                    regular_config=(
+                        bot_config.regular_config.model_dump_json()
+                    ),
+                    tool_ids=json.dumps(
+                        bot_config.tool_ids, ensure_ascii=False
+                    ),
                     mcp_server_ids=json.dumps(
                         bot_config.mcp_server_ids, ensure_ascii=False
                     ),
                     mcp_server_urls=json.dumps(
                         bot_config.mcp_server_urls, ensure_ascii=False
                     ),
-                    flow_ids=json.dumps(bot_config.flow_ids, ensure_ascii=False),
+                    flow_ids=json.dumps(
+                        bot_config.flow_ids, ensure_ascii=False
+                    ),
                     is_deleted=False,
                 )
                 session.add(record)
@@ -209,14 +276,24 @@ class BotConfigClient(BaseModel):
             return bot_config
 
     async def delete(self) -> None:
+        """
+        Delete bot config - cascade delete all versions.
+
+        This will delete:
+        - Main version (version="-1")
+        - All version snapshots (v1.0, v2.0, etc.)
+        """
         with self.span.start("Delete") as sp:
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
-                value = await self.pull_from_redis(sp) or await self.pull_from_mysql(sp)
+                # Check main version exists
+                value = await self.pull_from_redis(
+                    sp
+                ) or await self.pull_from_mysql(sp, version="-1")
                 if not value:
                     raise AgentExc(
                         40001,
-                        "failed to retrieve bot config",
+                        "Main version not found, cannot delete",
                         on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
                     )
                 if value.app_id != self.app_id:
@@ -226,9 +303,17 @@ class BotConfigClient(BaseModel):
                         on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
                     )
 
-                session.query(TbBotConfig).filter_by(
-                    app_id=self.app_id, bot_id=self.bot_id
-                ).delete()
+                # Cascade delete: remove all versions of this bot_id
+                deleted_count = (
+                    session.query(TbBotConfig)
+                    .filter_by(
+                        app_id=self.app_id,
+                        bot_id=self.bot_id,
+                        is_deleted=False,
+                    )
+                    .delete()
+                )
+                sp.add_info_events({"deleted_versions_count": deleted_count})
 
                 # Check if exists in Redis
                 redis_value = await self.pull_from_redis(sp)
@@ -243,14 +328,22 @@ class BotConfigClient(BaseModel):
                         ) from e
 
     async def update(self, bot_config: BotConfig) -> BotConfig:
+        """
+        Update bot config - only main version (version="-1") can be updated.
+
+        Version snapshots are immutable and cannot be updated.
+        """
         with self.span.start("Update") as sp:
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
-                value = await self.pull_from_redis(sp) or await self.pull_from_mysql(sp)
+                # Only allow updating main version
+                value = await self.pull_from_redis(
+                    sp
+                ) or await self.pull_from_mysql(sp, version="-1")
                 if not value:
                     raise AgentExc(
                         40001,
-                        "failed to retrieve bot config",
+                        "Main version not found, cannot update",
                         on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
                     )
                 if value.app_id != self.app_id:
@@ -260,27 +353,27 @@ class BotConfigClient(BaseModel):
                         on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
                     )
 
+                # Query main version only
                 record = (
                     session.query(TbBotConfig)
-                    .filter_by(app_id=self.app_id, bot_id=self.bot_id)
+                    .filter_by(
+                        app_id=self.app_id,
+                        bot_id=self.bot_id,
+                        version="-1",
+                        is_deleted=False,
+                    )
                     .first()
                 )
                 if record:
-                    # Update record attributes properly
-                    setattr(
-                        record,
-                        "knowledge_config",
-                        bot_config.knowledge_config.model_dump_json(),
+                    # Update record attributes
+                    record.knowledge_config = (
+                        bot_config.knowledge_config.model_dump_json()
                     )
-                    setattr(
-                        record,
-                        "model_config",
-                        bot_config.model_config_.model_dump_json(),
+                    record.model_config = (
+                        bot_config.model_config_.model_dump_json()
                     )
-                    setattr(
-                        record,
-                        "regular_config",
-                        bot_config.regular_config.model_dump_json(),
+                    record.regular_config = (
+                        bot_config.regular_config.model_dump_json()
                     )
                     record.tool_ids = json.dumps(
                         bot_config.tool_ids, ensure_ascii=False
@@ -301,7 +394,9 @@ class BotConfigClient(BaseModel):
                 if redis_value:
                     assert self.redis_client is not None
                     ttl_key = await self.redis_client.get_ttl(self.redis_key())
-                    bot_config_value = bot_config.model_dump_json(by_alias=True)
+                    bot_config_value = bot_config.model_dump_json(
+                        by_alias=True
+                    )
                     if ttl_key == -1:
                         await self.set_to_redis(bot_config_value, ex=None)
                     elif ttl_key is not None and ttl_key > 0:

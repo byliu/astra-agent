@@ -204,11 +204,16 @@ async def delete_bot_config(
 
 
 @bot_config_mgr_router.put("/bot-config")  # type: ignore[misc]
-async def update_bot_config(bot_config: BotConfig) -> GeneralResponse:
+async def update_bot_config(
+    bot_config: BotConfig,
+    x_consumer_username: Annotated[str, Header()],
+) -> GeneralResponse:
     """Update bot config"""
 
     # Verify permission
-    await verify_bot_permission_from_body(bot_config.app_id, bot_config.bot_id)
+    await verify_bot_permission_from_body(
+        bot_config.app_id, bot_config.bot_id, x_consumer_username
+    )
 
     async def _update_operation(sp: Span) -> dict[str, Any]:
         result = await BotConfigClient(
@@ -232,14 +237,26 @@ async def get_bot_config(
     include_publish_info: bool = Query(
         default=False, description="Include publish status information"
     ),
+    version: str = Query(
+        default="-1",
+        description="Version to query (default: -1 for main version)",
+    ),
 ) -> GeneralResponse:
-    """Query bot config with optional publish status information"""
+    """
+    Query bot config with optional version and publish status information.
+
+    Args:
+        version: Version identifier
+            - "-1" (default): main development version
+            - "v1.0", "v2.0", etc.: version snapshots
+        include_publish_info: Include publish status details
+    """
     app_id, bot_id = verified_params
 
     async def _get_operation(sp: Span) -> dict[str, Any]:
         bot_config_result = await BotConfigClient(
             app_id=app_id, bot_id=bot_id, span=sp
-        ).pull(raw=True)
+        ).pull(raw=True, version=version)
 
         # Ensure returning dict type
         if isinstance(bot_config_result, dict):

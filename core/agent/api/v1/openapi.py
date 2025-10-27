@@ -194,7 +194,9 @@ async def chat_completions(
     x_consumer_username: Annotated[str, Header()], inputs: CompletionInputs
 ) -> Any:
     # Verify permission before processing
-    await verify_bot_permission_from_body(x_consumer_username, inputs.bot_id)
+    await verify_bot_permission_from_body(
+        x_consumer_username, inputs.bot_id, x_consumer_username
+    )
 
     span = Span(app_id=x_consumer_username, uid=inputs.uid)
     with span.start("ChatCompletion") as chat_span:
