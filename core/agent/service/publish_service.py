@@ -357,11 +357,15 @@ class PublishService(BaseModel):
             }
         )
 
-        # Check if version already exists for this bot_id
+        # Check if version already exists for this app_id and bot_id
+        # If multiple records exist, returns first one (constraint handled by upstream)
         existing_version = (
             session.query(TbBotConfig)
             .filter_by(
-                bot_id=bot_config.bot_id, version=version, is_deleted=False
+                app_id=bot_config.app_id,
+                bot_id=bot_config.bot_id,
+                version=version,
+                is_deleted=False,
             )
             .first()
         )
