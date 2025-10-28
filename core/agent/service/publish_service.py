@@ -369,8 +369,9 @@ class PublishService(BaseModel):
         if not existing_version:
             # Create new version snapshot with same bot_id
             # bot_id stays constant (external identifier)
-            # id will auto-increment (internal identifier)
+            # id is explicitly generated with snowflake algorithm
             version_snapshot = TbBotConfig(
+                id=get_snowflake_id(),  # Generate unique ID for version snapshot
                 app_id=bot_config.app_id,
                 bot_id=bot_config.bot_id,  # Keep same bot_id
                 version=version,

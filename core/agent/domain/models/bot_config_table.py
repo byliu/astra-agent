@@ -11,7 +11,7 @@ Base = declarative_base()
 class TbBotConfig(Base):  # type: ignore[valid-type,misc]
     __tablename__ = "bot_config"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=False)
     app_id = Column(String(32), nullable=False, comment="应用id")
     bot_id = Column(String(40), nullable=False, unique=True, comment="bot_id")
     knowledge_config = Column(JSON, nullable=False, comment="知识库参数配置")
