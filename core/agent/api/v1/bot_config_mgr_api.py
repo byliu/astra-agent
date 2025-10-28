@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Any, AsyncIterator, Callable, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, Query
-from fastapi.routing import APIRoute
 
 from api.dependencies.auth_permission import (
     verify_bot_permission,
@@ -142,16 +141,6 @@ async def create_bot_config(
 ) -> GeneralResponse:
     """Create new bot config"""
 
-    # Tenant isolation: verify header matches body app_id
-    # This ensures each tenant can only create bots under their own app_id
-    # No external Auth Service verification needed for creation
-    if x_consumer_username != bot_config.app_id:
-        raise AgentExc(
-            40300,
-            "Permission denied: tenant app ID mismatch",
-            on=f"header:{x_consumer_username} body:{bot_config.app_id}",
-        )
-
     async def _create_operation(sp: Span) -> dict[str, Any]:
         result = await BotConfigClient(
             app_id=bot_config.app_id, bot_id=bot_config.bot_id, span=sp
@@ -266,7 +255,7 @@ async def get_bot_config(
 
         # Optionally add publish status information
         if include_publish_info:
-            from consts.publish_status import PLATFORM_NAMES, Platform, get_published_platforms
+            from consts.publish_status import PLATFORM_NAMES, get_published_platforms
 
             publish_status = result.get("publish_status", 0)
             published_platforms = get_published_platforms(publish_status)

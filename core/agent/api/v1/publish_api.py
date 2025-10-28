@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from api.schemas.publish_inputs import AuthBindInput, PublishInput, PublishResponse
 from common_imports import Span
-from consts.publish_status import PLATFORM_NAMES, Platform, PublishOperation
+from consts.publish_status import PLATFORM_NAMES, PublishOperation
 from exceptions.agent_exc import AgentExc, AgentInternalExc
 from service.auth_service import AuthService
 from service.publish_service import PublishService
@@ -58,18 +58,6 @@ async def publish_bot_config(
         )
 
         try:
-            # Validate tenant app owns the bot
-            if tenant_app_id != publish_input.app_id:
-                sp.add_error_event(
-                    f"Tenant mismatch: header={tenant_app_id}, "
-                    f"input={publish_input.app_id}"
-                )
-                raise AgentExc(
-                    40300,
-                    "Permission denied: tenant app ID mismatch",
-                    on=f"header:{tenant_app_id} input:{publish_input.app_id}",
-                )
-
             # Create publish service
             publish_service = PublishService(
                 app_id=publish_input.app_id,
