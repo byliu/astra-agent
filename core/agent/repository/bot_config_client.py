@@ -50,7 +50,8 @@ class BotConfigClient(BaseModel):
             )
 
     def redis_key(self) -> str:
-        return f"spark_bot:bot_config:{self.bot_id}"
+        # Include app_id to prevent conflicts between different apps
+        return f"spark_bot:bot_config:{self.app_id}:{self.bot_id}"
 
     async def pull_from_redis(self, span: Span) -> Optional[BotConfig]:
         with span.start("PullFromRedis") as sp:

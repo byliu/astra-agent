@@ -71,7 +71,7 @@ class AuthService(BaseModel):
             with self.mysql_client.session_getter() as session:
                 bot_config = (
                     session.query(TbBotConfig)
-                    .filter_by(bot_id=self.bot_id, is_deleted=False)
+                    .filter_by(app_id=self.app_id, bot_id=self.bot_id, is_deleted=False)
                     .first()
                 )
 
@@ -252,7 +252,7 @@ class AuthService(BaseModel):
             with self.mysql_client.session_getter() as session:
                 bot_config = (
                     session.query(TbBotConfig)
-                    .filter_by(bot_id=self.bot_id, is_deleted=False)
+                    .filter_by(app_id=self.app_id, bot_id=self.bot_id, is_deleted=False)
                     .first()
                 )
 

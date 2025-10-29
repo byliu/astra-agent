@@ -13,7 +13,7 @@ class TbBotConfig(Base):  # type: ignore[valid-type,misc]
 
     id = Column(BigInteger, primary_key=True, autoincrement=False)
     app_id = Column(String(32), nullable=False, comment="应用id")
-    bot_id = Column(String(40), nullable=False, unique=True, comment="bot_id")
+    bot_id = Column(String(40), nullable=False, comment="bot_id")
     knowledge_config = Column(JSON, nullable=False, comment="知识库参数配置")
     model_config = Column(JSON, nullable=False, comment="模型配置")
     regular_config = Column(JSON, nullable=False, comment="知识库选择配置")

@@ -157,6 +157,33 @@ class PublishService(BaseModel):
                 # Handle version snapshot creation if version is specified
                 if version:
                     self._handle_version(session, bot_config, version, sp)
+                else:
+                    # When publishing main version only (no version specified),
+                    # sync publish_status across all existing versions
+                    from sqlalchemy import text
+
+                    sp.add_info_events(
+                        {
+                            "operation": "sync_publish_status_main_version_only",
+                            "bot_id": bot_config.bot_id,
+                            "publish_status": bot_config.publish_status,
+                        }
+                    )
+
+                    session.execute(
+                        text("""
+                            UPDATE bot_config
+                            SET publish_status = :publish_status
+                            WHERE app_id = :app_id 
+                              AND bot_id = :bot_id 
+                              AND is_deleted = 0
+                        """),
+                        {
+                            "publish_status": bot_config.publish_status,
+                            "app_id": bot_config.app_id,
+                            "bot_id": bot_config.bot_id,
+                        },
+                    )
 
                 session.commit()
 
@@ -173,43 +200,56 @@ class PublishService(BaseModel):
             # Clear cache after successful publish
             await self._clear_cache()
 
-    async def unpublish(self, platform: Platform) -> None:
+    async def unpublish(
+        self, platform: Platform, version: str | None = None
+    ) -> None:
         """
         Unpublish bot configuration from specified platform.
 
         Args:
             platform: Target platform to unpublish from
+            version: Optional version to unpublish. If None, unpublishes main version (-1)
 
         Raises:
             AgentExc: When bot config not found or not published to platform
         """
         with self.span.start("UnpublishBotConfig") as sp:
+            # Determine target version: use specified version or default to main version (-1)
+            target_version = version if version else "-1"
+            
             sp.set_attributes(
                 {
                     "app_id": self.app_id,
                     "bot_id": self.bot_id,
                     "platform": platform.name,
+                    "version": target_version,
                 }
             )
 
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
-                # Get bot config
+                # Get bot config with version filter
                 bot_config = (
                     session.query(TbBotConfig)
-                    .filter_by(app_id=self.app_id, bot_id=self.bot_id, is_deleted=False)
+                    .filter_by(
+                        app_id=self.app_id,
+                        bot_id=self.bot_id,
+                        version=target_version,
+                        is_deleted=False,
+                    )
                     .first()
                 )
 
                 if not bot_config:
                     sp.add_error_event(
                         f"Bot config not found: "
-                        f"app_id={self.app_id}, bot_id={self.bot_id}"
+                        f"app_id={self.app_id}, bot_id={self.bot_id}, "
+                        f"version={target_version}"
                     )
                     raise AgentExc(
                         40001,
                         "Failed to get bot configuration",
-                        on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
+                        on=f"app_id:{self.app_id} bot_id:{self.bot_id} version:{target_version}",
                     )
 
                 # Check if published to platform
@@ -251,6 +291,53 @@ class PublishService(BaseModel):
                     )
 
                 session.add(bot_config)
+
+                # Sync publish_status across all versions to maintain consistency
+                # This ensures all versions of the same bot show the same publish status
+                from sqlalchemy import text
+
+                sp.add_info_events(
+                    {
+                        "operation": "sync_unpublish_status_across_versions",
+                        "bot_id": self.bot_id,
+                        "new_publish_status": new_status,
+                    }
+                )
+
+                session.execute(
+                    text("""
+                        UPDATE bot_config
+                        SET publish_status = :publish_status
+                        WHERE app_id = :app_id 
+                          AND bot_id = :bot_id 
+                          AND is_deleted = 0
+                    """),
+                    {
+                        "publish_status": new_status,
+                        "app_id": self.app_id,
+                        "bot_id": self.bot_id,
+                    },
+                )
+
+                # If completely unpublished, sync clear publish_data for all versions
+                if new_status == 0:
+                    session.execute(
+                        text("""
+                            UPDATE bot_config
+                            SET publish_data = NULL
+                            WHERE app_id = :app_id 
+                              AND bot_id = :bot_id 
+                              AND is_deleted = 0
+                        """),
+                        {
+                            "app_id": self.app_id,
+                            "bot_id": self.bot_id,
+                        },
+                    )
+                    sp.add_info_events(
+                        {"message": "Cleared publish_data for all versions"}
+                    )
+
                 session.commit()
 
                 sp.add_info_events(
@@ -421,3 +508,30 @@ class PublishService(BaseModel):
 
         # Mark original record as main development version
         bot_config.version = "-1"
+
+        # Sync publish_status across all versions to maintain consistency
+        # This ensures all versions of the same bot show the same publish status
+        span.add_info_events(
+            {
+                "operation": "sync_publish_status_across_versions",
+                "bot_id": bot_config.bot_id,
+                "publish_status": bot_config.publish_status,
+            }
+        )
+
+        from sqlalchemy import text
+
+        session.execute(
+            text("""
+                UPDATE bot_config
+                SET publish_status = :publish_status
+                WHERE app_id = :app_id 
+                  AND bot_id = :bot_id 
+                  AND is_deleted = 0
+            """),
+            {
+                "publish_status": bot_config.publish_status,
+                "app_id": bot_config.app_id,
+                "bot_id": bot_config.bot_id,
+            },
+        )

@@ -82,9 +82,18 @@ async def publish_bot_config(
                     f"{version_msg}"
                 )
             else:  # UNPUBLISH
-                await publish_service.unpublish(platform=publish_input.platform)
+                await publish_service.unpublish(
+                    platform=publish_input.platform,
+                    version=publish_input.version,
+                )
+                version_msg = (
+                    f" (version: {publish_input.version})"
+                    if publish_input.version
+                    else ""
+                )
                 message = (
                     f"Successfully unpublished from {PLATFORM_NAMES[publish_input.platform]}"
+                    f"{version_msg}"
                 )
 
             response = PublishResponse(
