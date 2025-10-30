@@ -26,11 +26,13 @@ class OpenAPIRunnerBuilder(BaseApiBuilder):
                 app_id=self.app_id,
                 model_name=bot_config.model_config_.plan.domain,
                 base_url=bot_config.model_config_.plan.api,
+                api_key=bot_config.model_config_.plan.sk,
             )
             summary_model = await self.create_model(
                 app_id=self.app_id,
                 model_name=bot_config.model_config_.summary.domain,
                 base_url=bot_config.model_config_.summary.api,
+                api_key=bot_config.model_config_.summary.sk,
             )
             metadata_list, knowledge = await self.query_knowledge(bot_config, sp)
 
