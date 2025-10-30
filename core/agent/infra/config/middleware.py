@@ -48,6 +48,10 @@ class AppAuthConfig(BaseSettings):
 
 class AuthPermissionConfig(BaseSettings):
     AUTH_API_URL: str = Field(default="", description="Auth permission service URL")
+    AUTH_REQUIRED_USERNAME: str = Field(
+        default="2hhikfuh",
+        description="Username required for /agent/v1/auth endpoint authorization binding"
+    )
 
 
 class ElkUploadConfig(BaseSettings):

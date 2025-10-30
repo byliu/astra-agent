@@ -45,10 +45,6 @@ class AuthClient(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def _should_skip_auth_check(self) -> bool:
-        """Check if auth check should be skipped for test mode"""
-        return self.x_consumer_username != "2hhikfuh"
-
     def _validate_auth_url(self) -> str:
         """Validate and return auth URL"""
         auth_url = agent_config.AUTH_API_URL
@@ -170,14 +166,6 @@ class AuthClient(BaseModel):
                     "type": self.type,
                 }
             )
-
-            # [TEMPORARY TEST LOGIC] Only check auth for specific test user
-            if self._should_skip_auth_check():
-                sp.add_info_event(
-                    f"[TEST MODE] Skipping auth check for user: {self.x_consumer_username}, "
-                    f"auto-passing permission for app_id={self.app_id}, bot_id={bot_id}"
-                )
-                return True
 
             try:
                 auth_url = self._validate_auth_url()
@@ -353,14 +341,6 @@ class AuthClient(BaseModel):
                     "type": self.type,
                 }
             )
-
-            # [TEMPORARY TEST LOGIC] Only bind auth for specific test user
-            if self._should_skip_auth_check():
-                sp.add_info_event(
-                    f"[TEST MODE] Skipping auth bind for user: {self.x_consumer_username}, "
-                    f"auto-passing bind for app_id={self.app_id}, bot_id={bot_id}"
-                )
-                return
 
             try:
                 auth_url = self._validate_auth_url()

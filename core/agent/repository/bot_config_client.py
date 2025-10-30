@@ -27,6 +27,10 @@ class BotConfigClient(BaseModel):
     span: Span
     redis_client: Optional[BaseRedisClient] = Field(default=None)
     mysql_client: Optional[MysqlClient] = Field(default=None)
+    allow_cross_app_access: bool = Field(
+        default=False,
+        description="Allow accessing bot config across different app_ids (for authorized access)"
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -50,8 +54,9 @@ class BotConfigClient(BaseModel):
             )
 
     def redis_key(self) -> str:
-        # Include app_id to prevent conflicts between different apps
-        return f"spark_bot:bot_config:{self.app_id}:{self.bot_id}"
+        # Use only bot_id as key to enable cache sharing across authorized apps
+        # Since bot_id is unique, no conflicts will occur
+        return f"spark_bot:bot_config:{self.bot_id}"
 
     async def pull_from_redis(self, span: Span) -> Optional[BotConfig]:
         with span.start("PullFromRedis") as sp:
@@ -144,16 +149,31 @@ class BotConfigClient(BaseModel):
         with span.start("PullFromMySQL") as sp:
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
-                record = (
-                    session.query(TbBotConfig)
-                    .filter_by(
-                        app_id=self.app_id,
-                        bot_id=self.bot_id,
-                        version=version,
-                        is_deleted=False,
+                # Build query filters based on cross-app access mode
+                if self.allow_cross_app_access:
+                    # When cross-app access is allowed, only filter by bot_id
+                    # This allows authorized apps to access bots owned by other apps
+                    record = (
+                        session.query(TbBotConfig)
+                        .filter_by(
+                            bot_id=self.bot_id,
+                            version=version,
+                            is_deleted=False,
+                        )
+                        .first()
                     )
-                    .first()
-                )
+                else:
+                    # Normal mode: filter by both app_id and bot_id
+                    record = (
+                        session.query(TbBotConfig)
+                        .filter_by(
+                            app_id=self.app_id,
+                            bot_id=self.bot_id,
+                            version=version,
+                            is_deleted=False,
+                        )
+                        .first()
+                    )
                 if not record:
                     sp.add_info_events({"mysql-value": ""})
                     return None
@@ -210,7 +230,9 @@ class BotConfigClient(BaseModel):
                         f"bot_id:{self.bot_id} version:{version}"
                     ),
                 )
-            if bot_config.app_id != self.app_id:
+            
+            # Only check app_id match if cross-app access is not allowed
+            if not self.allow_cross_app_access and bot_config.app_id != self.app_id:
                 raise AgentExc(
                     40001,
                     "failed to retrieve bot config",
@@ -301,6 +323,30 @@ class BotConfigClient(BaseModel):
                         40001,
                         "failed to retrieve bot config",
                         on=f"app_id:{self.app_id} bot_id:{self.bot_id}",
+                    )
+
+                # Check if bot is published - published bots cannot be deleted
+                # Must unpublish first before deletion
+                record = (
+                    session.query(TbBotConfig)
+                    .filter_by(
+                        app_id=self.app_id,
+                        bot_id=self.bot_id,
+                        version="-1",
+                        is_deleted=False,
+                    )
+                    .first()
+                )
+                
+                if record and record.publish_status and record.publish_status > 0:
+                    sp.add_error_event(
+                        f"Cannot delete published bot: bot_id={self.bot_id}, "
+                        f"publish_status={record.publish_status}"
+                    )
+                    raise AgentExc(
+                        40063,
+                        "Cannot delete published bot. Please unpublish first.",
+                        on=f"app_id:{self.app_id} bot_id:{self.bot_id} publish_status:{record.publish_status}",
                     )
 
                 # Cascade delete: remove all versions of this bot_id

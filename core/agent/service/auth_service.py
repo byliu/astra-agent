@@ -67,11 +67,17 @@ class AuthService(BaseModel):
             )
 
             # Step 1: Validate bot exists and is published
+            # Note: Only check bot_id, not app_id, because we're authorizing
+            # a different app to access this bot
             assert self.mysql_client is not None
             with self.mysql_client.session_getter() as session:
                 bot_config = (
                     session.query(TbBotConfig)
-                    .filter_by(app_id=self.app_id, bot_id=self.bot_id, is_deleted=False)
+                    .filter_by(
+                        bot_id=self.bot_id,
+                        version="-1",  # Only check main version
+                        is_deleted=False
+                    )
                     .first()
                 )
 
@@ -252,7 +258,11 @@ class AuthService(BaseModel):
             with self.mysql_client.session_getter() as session:
                 bot_config = (
                     session.query(TbBotConfig)
-                    .filter_by(app_id=self.app_id, bot_id=self.bot_id, is_deleted=False)
+                    .filter_by(
+                        bot_id=self.bot_id,
+                        version="-1",  # Only check main version
+                        is_deleted=False
+                    )
                     .first()
                 )
 

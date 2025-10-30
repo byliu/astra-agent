@@ -49,11 +49,15 @@ class BaseApiBuilder(BaseModel):
     uid: str = Field(default="")
     span: Span
 
-    async def build_bot_config(self, bot_id: str) -> BotConfig:
-
+    async def build_bot_config(
+        self, bot_id: str, allow_cross_app_access: bool = False
+    ) -> BotConfig:
         with self.span.start("BuildBotConfig") as sp:
             bot_config_result = await BotConfigClient(
-                app_id=self.app_id, bot_id=bot_id, span=self.span
+                app_id=self.app_id,
+                bot_id=bot_id,
+                span=self.span,
+                allow_cross_app_access=allow_cross_app_access,
             ).pull()
 
             # Ensure the returned value is a BotConfig object

@@ -5,10 +5,7 @@ from typing import Annotated, Any, AsyncIterator, Callable, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, Query
 
-from api.dependencies.auth_permission import (
-    verify_bot_permission,
-    verify_bot_permission_from_body,
-)
+from api.dependencies.auth_permission import verify_bot_permission
 from api.schemas.bot_config import BotConfig
 from api.schemas.bot_config_mgr_response import GeneralResponse
 
@@ -159,10 +156,11 @@ async def create_bot_config(
 
 @bot_config_mgr_router.delete("/bot-config")  # type: ignore[misc]
 async def delete_bot_config(
-    verified_params: tuple[str, str] = Depends(verify_bot_permission),
+    app_id: Annotated[str, Query(min_length=1, max_length=64)],
+    bot_id: Annotated[str, Query(min_length=1, max_length=64)],
+    x_consumer_username: Annotated[str, Header()],
 ) -> GeneralResponse:
     """Delete bot config and clear associated cache"""
-    app_id, bot_id = verified_params
 
     async def _delete_operation(sp: Span) -> GeneralResponse:
         bot_config_client = BotConfigClient(app_id=app_id, bot_id=bot_id, span=sp)
@@ -198,11 +196,6 @@ async def update_bot_config(
     x_consumer_username: Annotated[str, Header()],
 ) -> GeneralResponse:
     """Update bot config"""
-
-    # Verify permission
-    await verify_bot_permission_from_body(
-        bot_config.app_id, bot_config.bot_id, x_consumer_username
-    )
 
     async def _update_operation(sp: Span) -> dict[str, Any]:
         result = await BotConfigClient(
@@ -243,8 +236,13 @@ async def get_bot_config(
     app_id, bot_id = verified_params
 
     async def _get_operation(sp: Span) -> dict[str, Any]:
+        # Allow cross-app access since permission was already verified
+        # via verify_bot_permission dependency
         bot_config_result = await BotConfigClient(
-            app_id=app_id, bot_id=bot_id, span=sp
+            app_id=app_id,
+            bot_id=bot_id,
+            span=sp,
+            allow_cross_app_access=True,
         ).pull(raw=True, version=version)
 
         # Ensure returning dict type

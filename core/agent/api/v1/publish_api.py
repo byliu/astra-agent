@@ -159,9 +159,10 @@ async def bind_bot_authorization(
     Create authorization binding between app and bot configuration.
 
     This endpoint:
-    1. Validates bot is published
-    2. Calls remote auth service to create binding
-    3. Caches authorization status
+    1. Validates x_consumer_username matches required username
+    2. Validates bot is published
+    3. Calls remote auth service to create binding
+    4. Caches authorization status
 
     Args:
         x_consumer_username: Tenant app ID from header
@@ -173,6 +174,20 @@ async def bind_bot_authorization(
     Raises:
         Various AgentExc: When validation fails or binding errors occur
     """
+        # Import agent_config for AUTH_REQUIRED_USERNAME validation
+    from infra import agent_config
+    
+    # Validate x_consumer_username matches required username
+    if x_consumer_username != agent_config.AUTH_REQUIRED_USERNAME:
+        return JSONResponse(
+            status_code=200,
+            content=PublishResponse(
+                code=40003,
+                message=f"Unauthorized: only user '{agent_config.AUTH_REQUIRED_USERNAME}' can create authorization bindings",
+                sid="auth-validation-error",
+            ).model_dump(by_alias=True),
+        )
+    
     tenant_app_id = x_consumer_username
     span = Span(app_id=tenant_app_id)
 

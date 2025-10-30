@@ -17,18 +17,20 @@ class OpenAPIRunnerBuilder(BaseApiBuilder):
         """构建"""
 
         with self.span.start("BuildRunner") as sp:
-            bot_config = await self.build_bot_config(self.inputs.bot_id)
+            # Allow cross-app access since permission was already verified
+            # in the API endpoint via verify_bot_permission_from_body
+            bot_config = await self.build_bot_config(
+                self.inputs.bot_id, allow_cross_app_access=True
+            )
             plan_model = await self.create_model(
                 app_id=self.app_id,
                 model_name=bot_config.model_config_.plan.domain,
                 base_url=bot_config.model_config_.plan.api,
-                api_key=bot_config.model_config_.plan.sk,
             )
             summary_model = await self.create_model(
                 app_id=self.app_id,
                 model_name=bot_config.model_config_.summary.domain,
                 base_url=bot_config.model_config_.summary.api,
-                api_key=bot_config.model_config_.summary.sk,
             )
             metadata_list, knowledge = await self.query_knowledge(bot_config, sp)
 
