@@ -1,8 +1,9 @@
 """FastAPI dependencies for auth permission verification"""
-from typing import Annotated, Optional
+from typing import Annotated, Optional, cast
 
 from fastapi import Depends, Query
 
+from api.schemas.bot_config import BotConfig
 from common_imports import Span
 from exceptions.agent_exc import AgentExc
 from repository.auth_client import AuthClient
@@ -41,7 +42,8 @@ async def verify_bot_permission(
                 span=sp,
                 allow_cross_app_access=True,  # Allow querying across apps
             )
-            bot_config = await bot_config_client.pull()
+            # Cast to BotConfig since raw=False (default) returns BotConfig object
+            bot_config = cast(BotConfig, await bot_config_client.pull())
 
             sp.add_info_events({
                 "bot_owner": bot_config.app_id,
@@ -120,7 +122,8 @@ async def verify_bot_permission_from_body(
                 span=sp,
                 allow_cross_app_access=True,  # Allow querying across apps
             )
-            bot_config = await bot_config_client.pull()
+            # Cast to BotConfig since raw=False (default) returns BotConfig object
+            bot_config = cast(BotConfig, await bot_config_client.pull())
 
             sp.add_info_events({
                 "bot_owner": bot_config.app_id,
