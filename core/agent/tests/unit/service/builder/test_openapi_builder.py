@@ -312,7 +312,8 @@ class TestOpenAPIRunnerBuilder:
                                     # Assert - Verify method calls with correct
                                     # parameters
                                     mock_build_config.assert_called_once_with(
-                                        "test_bot_123"
+                                        "test_bot_123",
+                                        allow_cross_app_access=True
                                     )
 
                                     # Verify create_model calls
