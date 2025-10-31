@@ -198,11 +198,11 @@ class CotRunner(RunnerBase):
 
             # Usage will be attached to stop chunk in _finalize_run
             sp.add_info_events({
-                "accumulated_usage": {
+                "accumulated_usage": json.dumps({
                     "completion_tokens": node_data_usage.completion_tokens,
                     "prompt_tokens": node_data_usage.prompt_tokens,
                     "total_tokens": node_data_usage.total_tokens
-                }
+                })
             })
 
             node_end_time = int(round(time.time() * 1000))
