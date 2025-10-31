@@ -3,7 +3,7 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, AsyncIterator, Callable, Dict, Optional
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Query
 
 from api.dependencies.auth_permission import verify_bot_permission
 from api.schemas.bot_config import BotConfig
@@ -133,7 +133,6 @@ async def handle_bot_config_operation(
 
 @bot_config_mgr_router.post("/bot-config")  # type: ignore[misc]
 async def create_bot_config(
-    x_consumer_username: Annotated[str, Header()],
     bot_config: BotConfig,
 ) -> GeneralResponse:
     """Create new bot config"""
@@ -158,7 +157,6 @@ async def create_bot_config(
 async def delete_bot_config(
     app_id: Annotated[str, Query(min_length=1, max_length=64)],
     bot_id: Annotated[str, Query(min_length=1, max_length=64)],
-    x_consumer_username: Annotated[str, Header()],
 ) -> GeneralResponse:
     """Delete bot config and clear associated cache"""
 
@@ -193,7 +191,6 @@ async def delete_bot_config(
 @bot_config_mgr_router.put("/bot-config")  # type: ignore[misc]
 async def update_bot_config(
     bot_config: BotConfig,
-    x_consumer_username: Annotated[str, Header()],
 ) -> GeneralResponse:
     """Update bot config"""
 

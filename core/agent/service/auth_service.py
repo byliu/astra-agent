@@ -207,7 +207,6 @@ class AuthService(BaseModel):
                 span=sp,
                 type="agent",
                 ability_id=self.bot_id,
-                x_consumer_username=self.x_consumer_username,
             )
 
             try:
