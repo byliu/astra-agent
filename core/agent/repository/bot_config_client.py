@@ -230,7 +230,7 @@ class BotConfigClient(BaseModel):
                         f"bot_id:{self.bot_id} version:{version}"
                     ),
                 )
-            
+
             # Only check app_id match if cross-app access is not allowed
             if not self.allow_cross_app_access and bot_config.app_id != self.app_id:
                 raise AgentExc(
@@ -337,7 +337,7 @@ class BotConfigClient(BaseModel):
                     )
                     .first()
                 )
-                
+
                 if record and record.publish_status and record.publish_status > 0:
                     sp.add_error_event(
                         f"Cannot delete published bot: bot_id={self.bot_id}, "

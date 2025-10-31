@@ -174,8 +174,8 @@ class PublishService(BaseModel):
                         text("""
                             UPDATE bot_config
                             SET publish_status = :publish_status
-                            WHERE app_id = :app_id 
-                              AND bot_id = :bot_id 
+                            WHERE app_id = :app_id
+                              AND bot_id = :bot_id
                               AND is_deleted = 0
                         """),
                         {
@@ -216,7 +216,7 @@ class PublishService(BaseModel):
         with self.span.start("UnpublishBotConfig") as sp:
             # Determine target version: use specified version or default to main version (-1)
             target_version = version if version else "-1"
-            
+
             sp.set_attributes(
                 {
                     "app_id": self.app_id,
@@ -308,8 +308,8 @@ class PublishService(BaseModel):
                     text("""
                         UPDATE bot_config
                         SET publish_status = :publish_status
-                        WHERE app_id = :app_id 
-                          AND bot_id = :bot_id 
+                        WHERE app_id = :app_id
+                          AND bot_id = :bot_id
                           AND is_deleted = 0
                     """),
                     {
@@ -325,8 +325,8 @@ class PublishService(BaseModel):
                         text("""
                             UPDATE bot_config
                             SET publish_data = NULL
-                            WHERE app_id = :app_id 
-                              AND bot_id = :bot_id 
+                            WHERE app_id = :app_id
+                              AND bot_id = :bot_id
                               AND is_deleted = 0
                         """),
                         {
@@ -525,8 +525,8 @@ class PublishService(BaseModel):
             text("""
                 UPDATE bot_config
                 SET publish_status = :publish_status
-                WHERE app_id = :app_id 
-                  AND bot_id = :bot_id 
+                WHERE app_id = :app_id
+                  AND bot_id = :bot_id
                   AND is_deleted = 0
             """),
             {

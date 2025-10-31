@@ -15,10 +15,10 @@ async def verify_bot_permission(
 ) -> tuple[str, str]:
     """
     Dependency to verify bot permission before processing request.
-    
+
     Permission logic:
     1. If app_id is the bot owner (creator) → allow access
-    2. If app_id is authorized via auth service → allow access  
+    2. If app_id is authorized via auth service → allow access
     3. Otherwise → deny access
 
     Args:
@@ -42,24 +42,24 @@ async def verify_bot_permission(
                 allow_cross_app_access=True,  # Allow querying across apps
             )
             bot_config = await bot_config_client.pull()
-            
+
             sp.add_info_events({
                 "bot_owner": bot_config.app_id,
                 "requester_app_id": app_id,
             })
-            
+
             # Step 2: Check if requester is the bot owner (creator)
             if bot_config.app_id == app_id:
                 sp.add_info_event(
                     f"Permission granted: app_id={app_id} is the bot owner"
                 )
                 return app_id, bot_id
-            
+
             # Step 3: Not the owner, check authorization via auth service
             sp.add_info_event(
                 "Requester is not owner, checking auth service authorization"
             )
-            
+
         except AgentExc as e:
             # Bot not found or other errors
             sp.add_error_event(f"Failed to retrieve bot config: {e.m}")
@@ -68,23 +68,23 @@ async def verify_bot_permission(
                 f"Bot not found or access denied: {e.m}",
                 on=f"app_id:{app_id} bot_id:{bot_id}",
             ) from e
-        
+
         # Check authorization via auth service
         auth_client = AuthClient(
             app_id=app_id,
             span=sp,
             type="agent",
         )
-        
+
         has_permission = await auth_client.verify_permission(bot_id)
-        
+
         if not has_permission:
             raise AgentExc(
                 40300,
                 "Permission denied: app does not have access to this bot",
                 on=f"app_id:{app_id} bot_id:{bot_id}",
             )
-        
+
         return app_id, bot_id
 
 
@@ -94,7 +94,7 @@ async def verify_bot_permission_from_body(
 ) -> tuple[str, str]:
     """
     Dependency to verify bot permission from request body.
-    
+
     Permission logic:
     1. If app_id is the bot owner (creator) → allow access
     2. If app_id is authorized via auth service → allow access
@@ -121,24 +121,24 @@ async def verify_bot_permission_from_body(
                 allow_cross_app_access=True,  # Allow querying across apps
             )
             bot_config = await bot_config_client.pull()
-            
+
             sp.add_info_events({
                 "bot_owner": bot_config.app_id,
                 "requester_app_id": app_id,
             })
-            
+
             # Step 2: Check if requester is the bot owner (creator)
             if bot_config.app_id == app_id:
                 sp.add_info_event(
                     f"Permission granted: app_id={app_id} is the bot owner"
                 )
                 return app_id, bot_id
-            
+
             # Step 3: Not the owner, check authorization via auth service
             sp.add_info_event(
                 "Requester is not owner, checking auth service authorization"
             )
-            
+
         except AgentExc as e:
             # Bot not found or other errors
             sp.add_error_event(f"Failed to retrieve bot config: {e.m}")
@@ -147,21 +147,21 @@ async def verify_bot_permission_from_body(
                 f"Bot not found or access denied: {e.m}",
                 on=f"app_id:{app_id} bot_id:{bot_id}",
             ) from e
-        
+
         # Check authorization via auth service
         auth_client = AuthClient(
             app_id=app_id,
             span=sp,
             type="agent",
         )
-        
+
         has_permission = await auth_client.verify_permission(bot_id)
-        
+
         if not has_permission:
             raise AgentExc(
                 40300,
                 "Permission denied: app does not have access to this bot",
                 on=f"app_id:{app_id} bot_id:{bot_id}",
             )
-        
+
         return app_id, bot_id
