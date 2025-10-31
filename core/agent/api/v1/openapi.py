@@ -195,7 +195,7 @@ async def chat_completions(
 ) -> Any:
     # Verify permission before processing
     await verify_bot_permission_from_body(
-        x_consumer_username, inputs.bot_id, x_consumer_username
+        x_consumer_username, inputs.bot_id
     )
 
     span = Span(app_id=x_consumer_username, uid=inputs.uid)
