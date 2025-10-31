@@ -3,7 +3,7 @@
 import traceback
 from typing import Annotated
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from api.schemas.publish_inputs import AuthBindInput, PublishInput, PublishResponse
@@ -18,7 +18,6 @@ publish_router = APIRouter(prefix="/agent/v1", tags=["Bot Publish & Auth"])
 
 @publish_router.post("/publish", response_model=PublishResponse)  # type: ignore[misc]
 async def publish_bot_config(
-    x_consumer_username: Annotated[str, Header()],
     publish_input: PublishInput,
 ) -> JSONResponse:
     """
@@ -29,7 +28,6 @@ async def publish_bot_config(
     - Unpublish bot configurations to remove them from platforms
 
     Args:
-        x_consumer_username: Tenant app ID from header
         publish_input: Publish operation details
 
     Returns:
@@ -38,8 +36,7 @@ async def publish_bot_config(
     Raises:
         Various AgentExc: When validation fails or operation errors occur
     """
-    tenant_app_id = x_consumer_username
-    span = Span(app_id=tenant_app_id)
+    span = Span(app_id=publish_input.app_id)
 
     with span.start("PublishBotConfig") as sp:
         sp.set_attributes(
@@ -152,20 +149,17 @@ async def publish_bot_config(
 
 @publish_router.post("/auth", response_model=PublishResponse)  # type: ignore[misc]
 async def bind_bot_authorization(
-    x_consumer_username: Annotated[str, Header()],
     auth_input: AuthBindInput,
 ) -> JSONResponse:
     """
     Create authorization binding between app and bot configuration.
 
     This endpoint:
-    1. Validates x_consumer_username matches required username
-    2. Validates bot is published
-    3. Calls remote auth service to create binding
-    4. Caches authorization status
+    1. Validates bot is published
+    2. Calls remote auth service to create binding
+    3. Caches authorization status
 
     Args:
-        x_consumer_username: Tenant app ID from header
         auth_input: Authorization binding details
 
     Returns:
@@ -174,27 +168,11 @@ async def bind_bot_authorization(
     Raises:
         Various AgentExc: When validation fails or binding errors occur
     """
-        # Import agent_config for AUTH_REQUIRED_USERNAME validation
-    from infra import agent_config
-    
-    # Validate x_consumer_username matches required username
-    if x_consumer_username != agent_config.AUTH_REQUIRED_USERNAME:
-        return JSONResponse(
-            status_code=200,
-            content=PublishResponse(
-                code=40003,
-                message=f"Unauthorized: only user '{agent_config.AUTH_REQUIRED_USERNAME}' can create authorization bindings",
-                sid="auth-validation-error",
-            ).model_dump(by_alias=True),
-        )
-    
-    tenant_app_id = x_consumer_username
-    span = Span(app_id=tenant_app_id)
+    span = Span(app_id=auth_input.app_id)
 
     with span.start("BindBotAuthorization") as sp:
         sp.set_attributes(
             {
-                "tenant_app_id": tenant_app_id,
                 "target_app_id": auth_input.app_id,
                 "bot_id": auth_input.bot_id,
             }
@@ -212,7 +190,6 @@ async def bind_bot_authorization(
                 app_id=auth_input.app_id,
                 bot_id=auth_input.bot_id,
                 span=sp,
-                x_consumer_username=x_consumer_username,
             )
 
             # Bind authorization

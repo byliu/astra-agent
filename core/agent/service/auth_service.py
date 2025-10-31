@@ -111,12 +111,16 @@ class AuthService(BaseModel):
                 )
 
             # Step 2: Call remote auth service to create binding
+            # Read x_consumer_username from config instead of parameter
+            from infra.config.middleware import MiddlewareConfig
+            config = MiddlewareConfig()
+            
             auth_client = AuthClient(
                 app_id=self.app_id,
                 span=sp,
                 type="agent",
                 ability_id=self.bot_id,
-                x_consumer_username=self.x_consumer_username,
+                x_consumer_username=config.AUTH_REQUIRED_USERNAME,
             )
 
             try:
