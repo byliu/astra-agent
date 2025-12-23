@@ -1,7 +1,7 @@
 import json
 import os
 
-import requests  # type: ignore
+from common.utils.hmac_auth import HMACAuth
 from sqlmodel import Session  # type: ignore
 
 from workflow.cache.app import get_app_by_app_id, set_app_by_app_id
@@ -10,7 +10,6 @@ from workflow.domain.models.app_source import AppSource
 from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.otlp.trace.span import Span
-from workflow.utils.hmac_auth import HMACAuth
 
 
 def _gen_app_auth_header(url: str) -> dict[str, str]:
@@ -50,6 +49,9 @@ def get_app_source_id(app_id: str, span: Span) -> str:
     url = f"{os.getenv('APP_MANAGE_PLAT_BASE_URL')}/v2/app/list"
 
     # Make authenticated request to get application list
+
+    import requests  # type: ignore
+
     resp = requests.get(
         url, headers=_gen_app_auth_header(url), params={"app_ids": app_id}
     )
@@ -92,6 +94,9 @@ def get_app_source_detail(app_id: str, span: Span) -> tuple[str, str, str, str]:
     url = f"{os.getenv('APP_MANAGE_PLAT_BASE_URL')}/v2/app/details"
 
     # Make authenticated request to get application details
+
+    import requests  # type: ignore
+
     resp = requests.get(
         url, headers=_gen_app_auth_header(url), params={"app_ids": app_id}
     )

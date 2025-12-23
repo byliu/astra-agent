@@ -103,13 +103,18 @@ const useOrderStore = create<OrderStore>()(
       },
 
       // 设置方法
-      setUserOrderList: (list: UserOrderItem[]): void =>
-        set({ userOrderList: list }),
-      setUserOrderType: (type: string): void => set({ userOrderType: type }),
-      setUserOrderNow: (order: CurrentOrder): void =>
-        set({ userOrderNow: order }),
-      setTraceColumn: (column: TraceColumnItem[]): void =>
-        set({ traceColumn: column }),
+      setUserOrderList: (list: UserOrderItem[]): void => {
+        set({ userOrderList: list });
+      },
+      setUserOrderType: (type: string): void => {
+        set({ userOrderType: type });
+      },
+      setUserOrderNow: (order: CurrentOrder): void => {
+        set({ userOrderNow: order });
+      },
+      setTraceColumn: (column: TraceColumnItem[]): void => {
+        set({ traceColumn: column });
+      },
       setUserOrderMeta: (meta: OrderMetaType[]): void => {
         set({ userOrderMeta: meta });
         // 更新派生信息
@@ -122,8 +127,9 @@ const useOrderStore = create<OrderStore>()(
         const derivedInfo = get().calculateDerivedInfo();
         set({ orderDerivedInfo: derivedInfo });
       },
-      setIsSpecialUser: (isSpecial: boolean): void =>
-        set({ isSpecialUser: isSpecial }),
+      setIsSpecialUser: (isSpecial: boolean): void => {
+        set({ isSpecialUser: isSpecial });
+      },
 
       // 计算派生信息的方法
       calculateDerivedInfo: (): OrderDerivedInfo => {

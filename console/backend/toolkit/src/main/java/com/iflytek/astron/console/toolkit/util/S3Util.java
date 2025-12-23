@@ -51,9 +51,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class S3Util {
-
-    @Value("${s3.endpoint}")
-    private String endpoint;
+    @Value("${s3.remoteEndpoint}")
+    private String remoteEndpoint;
 
     @Value("${s3.accessKey}")
     private String accessKey;
@@ -87,7 +86,7 @@ public class S3Util {
     @PostConstruct
     public void init() {
         MinioClient.Builder builder = MinioClient.builder();
-        builder.endpoint(endpoint);
+        builder.endpoint(remoteEndpoint);
         builder.credentials(accessKey, secretKey);
         this.minioClient = builder.build();
     }
@@ -281,7 +280,7 @@ public class S3Util {
      * @return direct URL string
      */
     public String getS3Url(String key) {
-        String base = (hostname == null || hostname.isEmpty()) ? endpoint : ("https://" + hostname);
+        String base = (hostname == null || hostname.isEmpty()) ? remoteEndpoint : ("https://" + hostname);
         String url = base + "/" + bucketName;
         try {
             for (String p : key.split("/")) {
@@ -300,7 +299,7 @@ public class S3Util {
      * @return URL prefix ending with "/"
      */
     public String getS3Prefix() {
-        String base = (hostname == null || hostname.isEmpty()) ? endpoint : ("https://" + hostname);
+        String base = (hostname == null || hostname.isEmpty()) ? remoteEndpoint : ("https://" + hostname);
         return base + "/" + bucketName + "/";
     }
 
@@ -311,7 +310,7 @@ public class S3Util {
      * @return direct URL string
      */
     public String getS3UrlForKnowledge(String key) {
-        String base = (hostname == null || hostname.isEmpty()) ? endpoint : ("http://" + hostname);
+        String base = (hostname == null || hostname.isEmpty()) ? remoteEndpoint : ("http://" + hostname);
         return base + "/" + bucketName + "/" + key;
     }
 
@@ -326,6 +325,9 @@ public class S3Util {
      * @return presigned URL string
      * @throws BusinessException when presign generation fails
      */
+    // Deprecated: use com.iflytek.astron.console.commons.util.S3ClientUtil.generatePresignedPutUrl()
+    // instead
+    @Deprecated(forRemoval = true)
     public String generatePresignedPutUrl(String objectKey, Integer expirySeconds) {
         try {
             int exp = (expirySeconds != null && expirySeconds > 0) ? expirySeconds : presignExpirySeconds;

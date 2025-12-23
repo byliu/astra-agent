@@ -30,7 +30,7 @@ public class MaasApi {
         this.flow_id = flow_id;
         this.app_id = app_id;
         this.release_status = 1;
-        this.plat = 2;
+        this.plat = 1;
     }
 
     public MaasApi(String flow_id, String app_id, String version) {
@@ -38,7 +38,7 @@ public class MaasApi {
         this.app_id = app_id;
         this.version = version;
         this.release_status = 1;
-        this.plat = 2;
+        this.plat = 1;
     }
 
     public MaasApi(String flow_id, String app_id, String version, JSONObject data) {
@@ -46,7 +46,7 @@ public class MaasApi {
         this.app_id = app_id;
         this.version = version;
         this.release_status = 1;
-        this.plat = 2;
+        this.plat = 1;
         this.data = data;
     }
 }

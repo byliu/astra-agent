@@ -147,6 +147,13 @@ public class BotCreateForm {
     @Schema(description = "maas_bot_id")
     private String maasBotId;
 
+    @Schema(description = "Whether to enable personality")
+    private Boolean enablePersonality;
+
+
+    @Schema(description = "Personality configuration")
+    private PersonalityConfigDto personalityConfig;
+
     @Data
     public static class PromptStruct {
         private String promptKey;

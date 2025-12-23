@@ -1,7 +1,5 @@
-/* eslint-disable */
 (function (factory) {
   factory(window);
-  //umd returnExports.js
   if (typeof define == 'function' && define.amd) {
     define(function () {
       return Recorder;
@@ -11,14 +9,12 @@
     module.exports = Recorder;
   }
 })(function (window) {
-  'use strict';
-
   var NOOP = function () {};
 
   var Recorder = function (set) {
     return new initFn(set);
   };
-  Recorder.LM = '2022-08-06 20:51';
+
   var RecTxt = 'Recorder';
   var getUserMediaTxt = 'getUserMedia';
   var srcSampleRateTxt = 'srcSampleRate';
@@ -692,9 +688,6 @@ pcmLength: pcm长度
   function initFn(set) {
     this.id = ++ID;
 
-    //如果开启了流量统计，这里将发送一个图片请求
-    Traffic();
-
     var o = {
       type: 'mp3', //输出类型：mp3,wav，wav输出文件尺寸超大不推荐使用，但mp3编码支持会导致js文件超大，如果不需支持mp3可以使js文件大幅减小
       bitRate: 16, //比特率 wav:16或8位，MP3：8kbps 1k/s，8kbps 2k/s 录音文件很小
@@ -705,18 +698,18 @@ pcmLength: pcm长度
       onProcess: NOOP, //fn(buffers,powerLevel,bufferDuration,bufferSampleRate,newBufferIdx,asyncEnd) buffers=[[Int16,...],...]：缓冲的PCM数据，为从开始录音到现在的所有pcm片段；powerLevel：当前缓冲的音量级别0-100，bufferDuration：已缓冲时长，bufferSampleRate：缓冲使用的采样率（当type支持边录边转码(Worker)时，此采样率和设置的采样率相同，否则不一定相同）；newBufferIdx:本次回调新增的buffer起始索引；asyncEnd:fn() 如果onProcess是异步的(返回值为true时)，处理完成时需要调用此回调，如果不是异步的请忽略此参数，此方法回调时必须是真异步（不能真异步时需用setTimeout包裹）。onProcess返回值：如果返回true代表开启异步模式，在某些大量运算的场合异步是必须的，必须在异步处理完成时调用asyncEnd(不能真异步时需用setTimeout包裹)，在onProcess执行后新增的buffer会全部替换成空数组，因此本回调开头应立即将newBufferIdx到本次回调结尾位置的buffer全部保存到另外一个数组内，处理完成后写回buffers中本次回调的结尾位置。
 
       //*******高级设置******
-      //,sourceStream:MediaStream Object
+      // sourceStream:MediaStream Object
       //可选直接提供一个媒体流，从这个流中录制、实时处理音频数据（当前Recorder实例独享此流）；不提供时为普通的麦克风录音，由getUserMedia提供音频流（所有Recorder实例共享同一个流）
       //比如：audio、video标签dom节点的captureStream方法（实验特性，不同浏览器支持程度不高）返回的流；WebRTC中的remote流；自己创建的流等
       //注意：流内必须至少存在一条音轨(Audio Track)，比如audio标签必须等待到可以开始播放后才会有音轨，否则open会失败
 
-      //,audioTrackSet:{ deviceId:"",groupId:"", autoGainControl:true, echoCancellation:true, noiseSuppression:true }
+      // audioTrackSet:{ deviceId:"",groupId:"", autoGainControl:true, echoCancellation:true, noiseSuppression:true }
       //普通麦克风录音时getUserMedia方法的audio配置参数，比如指定设备id，回声消除、降噪开关；注意：提供的任何配置值都不一定会生效
       //由于麦克风是全局共享的，所以新配置后需要close掉以前的再重新open
 
-      //,disableEnvInFix:false 内部参数，禁用设备卡顿时音频输入丢失补偿功能
+      // disableEnvInFix:false 内部参数，禁用设备卡顿时音频输入丢失补偿功能
 
-      //,takeoffEncodeChunk:NOOP //fn(chunkBytes) chunkBytes=[Uint8,...]：实时编码环境下接管编码器输出，当编码器实时编码出一块有效的二进制音频数据时实时回调此方法；参数为二进制的Uint8Array，就是编码出来的音频数据片段，所有的chunkBytes拼接在一起即为完整音频。本实现的想法最初由QQ2543775048提出
+      // takeoffEncodeChunk:NOOP //fn(chunkBytes) chunkBytes=[Uint8,...]：实时编码环境下接管编码器输出，当编码器实时编码出一块有效的二进制音频数据时实时回调此方法；参数为二进制的Uint8Array，就是编码出来的音频数据片段，所有的chunkBytes拼接在一起即为完整音频。本实现的想法最初由QQ2543775048提出
       //当提供此回调方法时，将接管编码器的数据输出，编码器内部将放弃存储生成的音频数据；环境要求比较苛刻：如果当前环境不支持实时编码处理，将在open时直接走fail逻辑
       //因此提供此回调后调用stop方法将无法获得有效的音频数据，因为编码器内没有音频数据，因此stop时返回的blob将是一个字节长度为0的blob
       //目前只有mp3格式实现了实时编码，在支持实时处理的环境中将会实时的将编码出来的mp3片段通过此方法回调，所有的chunkBytes拼接到一起即为完整的mp3，此种拼接的结果比mock方法实时生成的音质更加，因为天然避免了首尾的静默
@@ -1686,41 +1679,4 @@ pcmLength: pcm长度
     pos[0] = i;
     return val;
   };
-  //=====End WebM读取=====
-
-  //流量统计用1像素图片地址，设置为空将不参与统计
-  Recorder.TrafficImgUrl = '//ia.51.la/go1?id=20469973&pvFlag=1';
-  var Traffic = (Recorder.Traffic = function (report) {
-    report = report ? '/' + RecTxt + '/Report/' + report : '';
-    var imgUrl = Recorder.TrafficImgUrl;
-    if (imgUrl) {
-      var data = Recorder.Traffic;
-      var m = /^(https?:..[^\/#]*\/?)[^#]*/i.exec(location.href) || [];
-      var host = m[1] || 'http://file/';
-      var idf = (m[0] || host) + report;
-
-      if (imgUrl.indexOf('//') == 0) {
-        //给url加上http前缀，如果是file协议下，不加前缀没法用
-        if (/^https:/i.test(idf)) {
-          imgUrl = 'https:' + imgUrl;
-        } else {
-          imgUrl = 'http:' + imgUrl;
-        }
-      }
-      if (report) {
-        imgUrl = imgUrl + '&cu=' + encodeURIComponent(host + report);
-      }
-
-      if (!data[idf]) {
-        data[idf] = 1;
-
-        var img = new Image();
-        img.src = imgUrl;
-        CLog(
-          'Traffic Analysis Image: ' +
-            (report || RecTxt + '.TrafficImgUrl=' + Recorder.TrafficImgUrl)
-        );
-      }
-    }
-  });
 });

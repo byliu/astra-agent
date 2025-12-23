@@ -11,9 +11,6 @@
   }
 
   .create_modal_wrap {
-    // width: fit-content;
-    //width: 972px;
-    width: 880px;
     height: 714px;
     background: #ffffff;
     border-radius: 16px;
@@ -135,12 +132,12 @@
           word-break: keep-all;
         }
         &:hover {
-          color: #275eff;
+          color: #6356EA;
           background: #ffffff;
         }
       }
       .agent_Template_Tab_item_active {
-        color: #275eff;
+        color: #6356EA;
         background: #ffffff;
       }
     }
@@ -328,7 +325,7 @@
             transition: all 0.3s ease;
             width: 100%;
             height: 36px;
-            background: #275eff;
+            background: #6356EA;
             margin-top: 4px;
             border-radius: 10px;
             border: none;
@@ -605,6 +602,7 @@
 
 :global(.lang-en) {
   .agent_Template_Tab_item {
+    line-height: 34px !important;
     width: auto !important;
     min-width: 88px !important;
     max-width: 130px !important;

@@ -88,6 +88,7 @@ const useChat = () => {
     let ans: string = '';
     let nodeChat: boolean = false;
     let nodeChatContent: string = '';
+    let messageContent: string = '';
     const controller = new AbortController();
     controllerRef.current = controller;
     setControllerRef(controllerRef.current);
@@ -154,7 +155,9 @@ const useChat = () => {
           ignore,
           error,
           reqId,
+          message,
         } = deCodedData;
+        message && (messageContent = message);
         sseId && setStreamId(sseId);
         id && (sidRef.current = id.toString());
         reqId && (reqIdRef.current = reqId);
@@ -176,6 +179,7 @@ const useChat = () => {
         }
         // x1思考链
         if (choices?.[0]?.delta?.reasoning_content) {
+          messageContent = '';
           setDeepThinkText(choices?.[0]?.delta?.reasoning_content);
           updateStreamingMessage(ans);
           return;
@@ -209,6 +213,10 @@ const useChat = () => {
         }
         if (!error && !ERROR_CODE.includes(code || 0)) {
           if (end) {
+            if (ans.length === 0) {
+              ans = messageContent;
+              updateStreamingMessage(ans);
+            }
             // 完成流式消息，添加sid和id
             finishStreamingMessage(sidRef.current, reqIdRef.current);
             controller.abort('结束');
@@ -242,19 +250,17 @@ const useChat = () => {
     msg: string;
     workflowOperation?: string;
     version?: string;
-    fileUrl?: string;
     onSendCallback?: () => void;
   }) => {
     setIsWorkflowOption(false);
     setWorkflowOption({ option: [], content: '' });
-    const { msg, workflowOperation, version, fileUrl, onSendCallback } = params;
+    const { msg, workflowOperation, version, onSendCallback } = params;
     const esURL = `${baseURL}/chat-message/chat`;
     const form = new FormData();
     form.append('text', msg || '');
     form.append('chatId', `${currentChatId}`);
     form.append('workflowVersion', version || '');
     workflowOperation && form.append('workflowOperation', workflowOperation);
-    fileUrl && form.append('fileUrl', fileUrl);
     // 执行回调函数
     onSendCallback && onSendCallback();
     fetchSSE(esURL, form);
@@ -276,14 +282,11 @@ const useChat = () => {
   };
 
   const handleFlowToChat = (item: any) => {
-    let url = `${location.origin}/chat/${item?.botId}`;
+    let url = `${window.location.origin}/chat/${item?.botId}`;
     if (item?.version) {
       url += `?version=${item?.version}`;
     }
     window.open(url, '_blank');
-    if (item?.chatId || item?.id) {
-      setCurrentChatId(item?.chatId || item?.id);
-    }
   };
 
   return {

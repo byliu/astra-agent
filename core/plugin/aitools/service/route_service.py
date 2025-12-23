@@ -15,13 +15,12 @@ from typing import Any, Union
 
 from plugin.aitools.api.schema.types import ErrorResponse, SuccessDataResponse
 from plugin.aitools.common.sid_generator2 import new_sid
+from plugin.aitools.const import const
 from plugin.aitools.const.err_code.code import CodeEnum
 from plugin.aitools.service.image_understanding.image_understanding_client import (
     ImageUnderstandingClient,
 )
-from plugin.aitools.service.translation.translation_client import (
-    TranslationClient,
-)
+from plugin.aitools.service.translation.translation_client import TranslationClient
 
 from common.otlp.log_trace.node_trace_log import NodeTraceLog, Status
 from common.otlp.metrics.meter import Meter
@@ -83,43 +82,43 @@ def image_understanding_main(
                 span_context.add_error_event(str(error_message))
                 if isinstance(error_message[0], dict):
                     response = error_message[0]
-                    m.in_error_count(response.get("code"))
-
-                    node_trace.answer = json.dumps(response, ensure_ascii=False)
-                    node_trace.status = Status(
-                        code=response.get("code"), message=response.get("message")
-                    )
-                    kafka_service.send("spark-agent-builder", node_trace.to_json())
+                    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                        m.in_error_count(response.get("code"))
+                        node_trace.answer = json.dumps(response, ensure_ascii=False)
+                        node_trace.status = Status(
+                            code=response.get("code"), message=response.get("message")
+                        )
+                        kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
                     return response
                 else:
                     response = ErrorResponse.from_enum(CodeEnum.UNAUTHORIZED_ERROR)
-                    m.in_error_count(response.code)
-
-                    node_trace.answer = response.message
-                    node_trace.status = Status(
-                        code=response.code, message=response.message
-                    )
-                    kafka_service.send("spark-agent-builder", node_trace.to_json())
+                    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                        m.in_error_count(response.code)
+                        node_trace.answer = response.message
+                        node_trace.status = Status(
+                            code=response.code, message=response.message
+                        )
+                        kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
                     return response
 
             response = SuccessDataResponse(data={"content": answer}, sid=sid)
-            m.in_success_count()
-
-            node_trace.answer = json.dumps(response.data, ensure_ascii=False)
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_success_count()
+                node_trace.answer = json.dumps(response.data, ensure_ascii=False)
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
     except Exception as e:
         logging.error("图片理解请求error: %s", str(e))
         response = ErrorResponse.from_enum(CodeEnum.INTERNAL_ERROR)
-        m.in_error_count(response.code)
-
-        node_trace.answer = response.message
-        node_trace.status = Status(code=response.code, message=response.message)
-        kafka_service.send("spark-agent-builder", node_trace.to_json())
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+            m.in_error_count(response.code)
+            node_trace.answer = response.message
+            node_trace.status = Status(code=response.code, message=response.message)
+            kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
         return response
 
@@ -191,23 +190,24 @@ async def ise_evaluate_main(
             )
 
             if success:
-                m.in_success_count()
-                # 记录完整的评测结果到日志中（包含raw_xml）
-                node_trace.answer = json.dumps(result, ensure_ascii=False)
-                node_trace.status = Status(code=0, message="success")
-                kafka_service.send("spark-agent-builder", node_trace.to_json())
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_success_count()
+                    # 记录完整的评测结果到日志中（包含raw_xml）
+                    node_trace.answer = json.dumps(result, ensure_ascii=False)
+                    node_trace.status = Status(code=0, message="success")
+                    kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
                 # 从API响应中移除raw_xml字段，保持响应精简
                 api_result = {k: v for k, v in result.items() if k != "raw_xml"}
                 return SuccessDataResponse(data=api_result, sid=sid)
             else:
-                m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
-
-                node_trace.answer = message
-                node_trace.status = Status(
-                    code=CodeEnum.INTERNAL_ERROR.code, message=message
-                )
-                kafka_service.send("spark-agent-builder", node_trace.to_json())
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
+                    node_trace.answer = message
+                    node_trace.status = Status(
+                        code=CodeEnum.INTERNAL_ERROR.code, message=message
+                    )
+                    kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
                 return ErrorResponse.from_enum(
                     code_enum=CodeEnum.INTERNAL_ERROR,
@@ -217,11 +217,13 @@ async def ise_evaluate_main(
 
     except Exception as e:
         logging.error("ISE语音评测失败， error: %s", str(e))
-        m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
-
-        node_trace.answer = str(e)
-        node_trace.status = Status(code=CodeEnum.INTERNAL_ERROR.code, message=str(e))
-        kafka_service.send("spark-agent-builder", node_trace.to_json())
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+            m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
+            node_trace.answer = str(e)
+            node_trace.status = Status(
+                code=CodeEnum.INTERNAL_ERROR.code, message=str(e)
+            )
+            kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
         return ErrorResponse.from_enum(
             code_enum=CodeEnum.INTERNAL_ERROR, message=f"ISE评测异常: {str(e)}", sid=sid
@@ -284,7 +286,8 @@ def translation_main(
             )
 
             if success:
-                m.in_success_count()
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_success_count()
                 return SuccessDataResponse(
                     data=result,
                     message="Translation successful",
@@ -292,20 +295,23 @@ def translation_main(
                 )
             else:
                 # Map error messages to appropriate error codes
-                if "翻译文本不能为空" in message:
-                    error_code = CodeEnum.TRANSLATION_EMPTY_ERROR
-                elif "翻译文本超过5000字符限制" in message:
-                    error_code = CodeEnum.TRANSLATION_TOO_LONG_ERROR
-                elif "不支持的语言组合" in message:
-                    error_code = CodeEnum.TRANSLATION_LANG_ERROR
-                elif "API请求失败" in message:
-                    error_code = CodeEnum.TRANSLATION_API_ERROR
-                elif "API返回数据格式错误" in message:
-                    error_code = CodeEnum.TRANSLATION_RESPONSE_ERROR
-                else:
-                    error_code = CodeEnum.TRANSLATION_API_ERROR
+                error_code = CodeEnum.TRANSLATION_API_ERROR
+                error_code_mapping = {
+                    "翻译文本不能为空": CodeEnum.TRANSLATION_EMPTY_ERROR,
+                    "翻译文本超过5000字符限制": CodeEnum.TRANSLATION_TOO_LONG_ERROR,
+                    "不支持的语言组合": CodeEnum.TRANSLATION_LANG_ERROR,
+                    "API请求失败": CodeEnum.TRANSLATION_API_ERROR,
+                    "API返回数据格式错误": CodeEnum.TRANSLATION_RESPONSE_ERROR,
+                }
+                for key in error_code_mapping.keys():
+                    if key in message:
+                        error_code = error_code_mapping.get(
+                            key, CodeEnum.TRANSLATION_API_ERROR
+                        )
+                        break
 
-                m.in_error_count(error_code.code)
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_error_count(error_code.code)
                 return ErrorResponse.from_enum(
                     code_enum=error_code,
                     message=f"Translation failed: {message}",
@@ -314,7 +320,8 @@ def translation_main(
 
     except Exception as e:
         logging.error("Translation service error: %s", str(e))
-        m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+            m.in_error_count(CodeEnum.INTERNAL_ERROR.code)
         return ErrorResponse.from_enum(
             code_enum=CodeEnum.INTERNAL_ERROR,
             message=f"Translation service error: {str(e)}",

@@ -6,7 +6,7 @@ Uses Pydantic for data validation and serialization
 """
 
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -148,6 +148,7 @@ class ChunkQueryReq(BaseModel):
     topN: int = Field(..., ge=1, le=5, description="Required, range 1~5")
     match: QueryMatch = Field(..., description="Matching conditions")
     ragType: RAGType = Field(..., description="RAG type")
+    history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class QueryDocReq(BaseModel):

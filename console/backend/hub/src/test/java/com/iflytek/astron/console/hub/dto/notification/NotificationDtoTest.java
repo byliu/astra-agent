@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * NotificationDto 单元测试 测试枚举类型映射和基本功能
+ * NotificationDto unit test - Test enum type mapping and basic functionality
  */
 class NotificationDtoTest {
 
@@ -22,7 +22,7 @@ class NotificationDtoTest {
 
     @Test
     void testNotificationTypeEnum() {
-        // 测试设置和获取枚举类型
+        // Test setting and getting enum type
         notificationDto.setType(NotificationType.PERSONAL);
         assertEquals(NotificationType.PERSONAL, notificationDto.getType());
 
@@ -38,13 +38,13 @@ class NotificationDtoTest {
 
     @Test
     void testNotificationDtoFields() {
-        // 设置所有字段
+        // Set all fields
         LocalDateTime now = LocalDateTime.now();
 
         notificationDto.setId(1L);
         notificationDto.setType(NotificationType.PERSONAL);
-        notificationDto.setTitle("测试标题");
-        notificationDto.setBody("测试内容");
+        notificationDto.setTitle("test-title");
+        notificationDto.setBody("test-body");
         notificationDto.setTemplateCode("TEST_TEMPLATE");
         notificationDto.setPayload("{\"key\":\"value\"}");
         notificationDto.setCreatorUid("creator123");
@@ -55,11 +55,10 @@ class NotificationDtoTest {
         notificationDto.setReadAt(null);
         notificationDto.setReceivedAt(now);
 
-        // 验证所有字段
         assertEquals(1L, notificationDto.getId());
         assertEquals(NotificationType.PERSONAL, notificationDto.getType());
-        assertEquals("测试标题", notificationDto.getTitle());
-        assertEquals("测试内容", notificationDto.getBody());
+        assertEquals("test-title", notificationDto.getTitle());
+        assertEquals("test-body", notificationDto.getBody());
         assertEquals("TEST_TEMPLATE", notificationDto.getTemplateCode());
         assertEquals("{\"key\":\"value\"}", notificationDto.getPayload());
         assertEquals("creator123", notificationDto.getCreatorUid());
@@ -76,14 +75,14 @@ class NotificationDtoTest {
         NotificationDto dto1 = new NotificationDto();
         dto1.setId(1L);
         dto1.setType(NotificationType.PERSONAL);
-        dto1.setTitle("标题");
+        dto1.setTitle("sample-title");
 
         NotificationDto dto2 = new NotificationDto();
         dto2.setId(1L);
         dto2.setType(NotificationType.PERSONAL);
-        dto2.setTitle("标题");
+        dto2.setTitle("sample-title");
 
-        // Lombok 生成的 equals 和 hashCode
+        // Lombok generated equals and hashCode
         assertEquals(dto1, dto2);
         assertEquals(dto1.hashCode(), dto2.hashCode());
     }
@@ -92,21 +91,21 @@ class NotificationDtoTest {
     void testNotificationDtoToString() {
         notificationDto.setId(1L);
         notificationDto.setType(NotificationType.SYSTEM);
-        notificationDto.setTitle("系统通知");
+        notificationDto.setTitle("System notification");
 
         String toString = notificationDto.toString();
 
-        // 验证 toString 包含关键信息
+        // Verify toString contains key information (including Chinese test data)
         assertNotNull(toString);
         assertTrue(toString.contains("NotificationDto"));
         assertTrue(toString.contains("id=1"));
         assertTrue(toString.contains("SYSTEM"));
-        assertTrue(toString.contains("系统通知"));
+        assertTrue(toString.contains("System notification"));
     }
 
     @Test
     void testNullTypeHandling() {
-        // 测试空类型处理
+        // Test null type handling
         notificationDto.setType(null);
         assertNull(notificationDto.getType());
     }
@@ -115,13 +114,13 @@ class NotificationDtoTest {
     void testReadStatusFields() {
         LocalDateTime readTime = LocalDateTime.now();
 
-        // 测试未读状态
+        // Test unread status
         notificationDto.setIsRead(false);
         notificationDto.setReadAt(null);
         assertFalse(notificationDto.getIsRead());
         assertNull(notificationDto.getReadAt());
 
-        // 测试已读状态
+        // Test read status
         notificationDto.setIsRead(true);
         notificationDto.setReadAt(readTime);
         assertTrue(notificationDto.getIsRead());

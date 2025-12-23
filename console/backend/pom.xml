@@ -49,11 +49,13 @@
         <logback.version>1.5.18</logback.version>
         <spring-aspects.version>6.2.10</spring-aspects.version>
         <guava.version>33.4.8-jre</guava.version>
-        <xfyun-websdk.version>2.1.5</xfyun-websdk.version>
+        <websdk-java-spark.version>2.1.5</websdk-java-spark.version>
+        <websdk-java-speech.version>3.0.6</websdk-java-speech.version>
         <easy-excel.version>4.0.3</easy-excel.version>
         <minio.version>8.5.10</minio.version>
         <retrofit>2.5.0</retrofit>
         <converter-jackson>2.5.0</converter-jackson>
+        <flyway.version>10.21.0</flyway.version>
 
         <!-- maven plugins -->
         <spotless.version>2.46.1</spotless.version>
@@ -179,7 +181,13 @@
             <dependency>
                 <groupId>cn.xfyun</groupId>
                 <artifactId>websdk-java-spark</artifactId>
-                <version>${xfyun-websdk.version}</version>
+                <version>${websdk-java-spark.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.xfyun</groupId>
+                <artifactId>websdk-java-speech</artifactId>
+                <version>${websdk-java-speech.version}</version>
             </dependency>
 
             <dependency>
@@ -242,6 +250,18 @@
                 <groupId>com.squareup.retrofit2</groupId>
                 <artifactId>converter-jackson</artifactId>
                 <version>${converter-jackson}</version>
+            </dependency>
+
+            <!-- Flyway database migration -->
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

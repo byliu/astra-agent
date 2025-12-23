@@ -10,10 +10,8 @@ import json
 import multiprocessing
 import os
 import sys
-from pathlib import Path
 
 import uvicorn
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
@@ -22,7 +20,6 @@ from starlette.middleware.cors import CORSMiddleware
 
 from workflow.api.v1.router import old_auth_router, sparkflow_router, workflow_router
 from workflow.cache.event_registry import EventRegistry
-from workflow.consts.runtime_env import RuntimeEnv
 from workflow.extensions.fastapi.handler.validation import validation_exception_handler
 from workflow.extensions.fastapi.middleware.auth import AuthMiddleware
 from workflow.extensions.fastapi.middleware.otlp import OtlpMiddleware
@@ -107,6 +104,8 @@ def create_app() -> FastAPI:
         logger.info("Registered routes:")
         for route_info in route_infos:
             logger.info(json.dumps(route_info, ensure_ascii=False))
+        logger.info("🚀 FastAPI service started successfully!")
+        print("🚀 FastAPI service started successfully!")
 
     # Define final shutdown logic callback
     async def do_final_shutdown_logic() -> None:
@@ -132,36 +131,6 @@ def create_app() -> FastAPI:
     return app
 
 
-def set_env() -> None:
-    """
-    Set environment variables by loading configuration from environment files.
-
-    This function determines the appropriate configuration file based on the
-    runtime environment (local vs production) and loads the environment
-    variables from the corresponding .env file.
-
-    :raises ValueError: If no configuration file is found
-    :raises Exception: Re-raises any other exceptions that occur during loading
-    """
-    # Determine the runtime environment (defaults to Local)
-    running_env = os.getenv("RUNTIME_ENV", "")
-
-    # Select the appropriate configuration file based on environment
-    if running_env == RuntimeEnv.Local.value:
-        env_file = Path(__file__).parent.parent / "workflow/config.local.env"
-    else:
-        env_file = Path(__file__).parent.parent / "workflow/config.env"
-
-    logger.debug(f"config.env: {env_file}")
-
-    # Load environment variables from the configuration file
-    if os.path.exists(env_file):
-        load_dotenv(env_file, override=False)
-        logger.debug("Using config.env file.")
-    else:
-        raise ValueError("No config.env file found.")
-
-
 def _get_worker_count() -> int:
     """
     Get the number of workers to use for the application.
@@ -169,7 +138,7 @@ def _get_worker_count() -> int:
     worker_count: int = int(os.getenv("WORKERS", "0"))
     if worker_count == 0:
         worker_count = multiprocessing.cpu_count() + 1
-    logger.debug(f"worker_count: {worker_count}")
+    logger.debug(f"🔍 Worker count: {worker_count}")
     return worker_count
 
 
@@ -179,10 +148,7 @@ if __name__ == "__main__":
     # ASGI server with appropriate configuration for different platforms.
 
     # Log the current platform for debugging purposes
-    logger.debug(f"current platform {sys.platform}")
-
-    # Load environment configuration
-    set_env()
+    logger.debug(f"🔍 Current platform: {sys.platform}")
 
     # Start the Uvicorn ASGI server with platform-specific configuration
     uvicorn.run(
@@ -191,7 +157,7 @@ if __name__ == "__main__":
         port=int(os.getenv("SERVICE_PORT", "7880")),  # Default port 7880
         workers=_get_worker_count(),
         reload=(
-            bool(os.getenv("RELOAD", "False"))
+            os.getenv("RELOAD", "false").lower() == "true"
         ),  # Enable auto-reload for development
         log_level=os.getenv(
             "LOG_LEVEL", "error"

@@ -6,6 +6,7 @@ const transition = {
     successCopyLink: '分享链接复制成功',
     cannotShareWechat: '无法分享到微信，换一个试试~',
     serverError: '服务器开小差了~请稍后再试',
+    successCopyWechatLink: '复制链接成功，快发给你的微信好友分享吧~',
     shareText:
       '我发现了{{botName}}，快试试和ta对话吧！{{origin}}/chat/{{botId}}?sharekey={{shareKey}}',
   },

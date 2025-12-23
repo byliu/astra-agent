@@ -9,6 +9,7 @@ import classNames from 'classnames';
 import defaultUploadIcon from '@/assets/imgs/space/upload.png';
 import { FormattedMessage } from 'react-intl';
 import { useImageCropUpload } from '@/hooks/use-image-crop-upload';
+import { useTranslation } from 'react-i18next';
 
 interface ImageCropUploadProps {
   name: string;
@@ -29,7 +30,7 @@ const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-
+  const { t } = useTranslation();
   const {
     inputRef,
     triggerFileSelectPopup,
@@ -71,22 +72,6 @@ const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-    }
-  };
-
-  // ai生成图片
-  const aiGenerateCoverFn = async () => {
-    if (!botDesc || !name) {
-      message.error('请填写智能体名称、功能描述后生成');
-      return;
-    }
-    try {
-      setLoading(true);
-      const avatarRes = await aiGenerateCover({ botDesc, name });
-      setCoverUrl(avatarRes);
-      setLoading(false);
-    } catch (error: any) {
-      setLoading(false);
     }
   };
 
@@ -141,16 +126,20 @@ const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
         width={600}
         maskClosable={false}
         okButtonProps={{ disabled: !isFormReady || isUploading }}
-        okText={isUploading ? `上传中... ${uploadProgress}%` : '确定'}
+        okText={
+          isUploading
+            ? `${t('space.uploading')} ... ${uploadProgress}%`
+            : t('space.confirm')
+        }
         onOk={async () => {
           if (!formData) {
-            message.info('图片处理未完成，请稍候...');
+            message.info(t('space.imageProcessingNotCompleted'));
             return;
           }
 
           const file = convertFormDataToFile(formData);
           if (!file) {
-            message.error('无法获取图片文件');
+            message.error(t('space.cannotGetImageFile'));
             return;
           }
 
@@ -158,7 +147,7 @@ const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
             const uploadedUrl = await handleUploadToS3(file);
             setCoverUrl(uploadedUrl);
             closeModal();
-            message.success('上传成功');
+            message.success(t('space.uploadSuccess'));
           } catch (error) {
             // Error already handled in handleUploadToS3
           }
@@ -182,7 +171,7 @@ const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
           >
             <PulseLoader color="#425CFF" size={14} />
             <div style={{ marginTop: 16, fontSize: 14, color: '#666' }}>
-              上传中... {uploadProgress}%
+              {t('space.uploading')} ... {uploadProgress}%
             </div>
           </div>
         )}

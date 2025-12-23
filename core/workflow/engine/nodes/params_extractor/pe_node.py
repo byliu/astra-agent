@@ -3,6 +3,7 @@ import json
 import re
 from typing import Any
 
+from common.utils.json_schema.json_schema_validator import JsonSchemaValidator
 from pydantic import Field
 
 from workflow.engine.callbacks.callback_handler import ChatCallBacks
@@ -21,7 +22,6 @@ from workflow.extensions.otlp.log_trace.node_log import NodeLog
 from workflow.extensions.otlp.trace.span import Span
 from workflow.infra.providers.llm.iflytek_spark.schemas import Function
 from workflow.infra.providers.llm.iflytek_spark.spark_fc_llm import SparkFunctionCallAi
-from workflow.utils.json_schema.json_schema_validator import JsonSchemaValidator
 
 
 class ParamsExtractorNode(BaseLLMNode):

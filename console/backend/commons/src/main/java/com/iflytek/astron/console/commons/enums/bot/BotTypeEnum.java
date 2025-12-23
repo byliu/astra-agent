@@ -6,7 +6,8 @@ package com.iflytek.astron.console.commons.enums.bot;
 public enum BotTypeEnum {
 
     SYSTEM_BOT(1, "Command Bot"),
-    WORKFLOW_BOT(3, "Workflow Bot");
+    WORKFLOW_BOT(3, "Workflow Bot"),
+    TALK(4, "Conversational assistant");
 
     private final Integer type;
 

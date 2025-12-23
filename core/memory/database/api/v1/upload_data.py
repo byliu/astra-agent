@@ -6,14 +6,15 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from common.otlp.trace.span import Span
 from common.service import get_otlp_metric_service, get_otlp_span_service
+from common.utils.snowfake import get_id
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from memory.database.api.schemas.upload_data_types import UploadDataInput
 from memory.database.domain.entity.views.http_resp import format_response
 from memory.database.exceptions.e import CustomException
 from memory.database.exceptions.error_code import CodeEnum
 from memory.database.repository.middleware.getters import get_session
-from memory.database.utils.snowfake import get_id
 from sqlalchemy import text
+from sqlalchemy.sql import quoted_name
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
@@ -104,7 +105,9 @@ async def insert_in_batches(
     keys.extend(INSERT_EXTRA_COLUMNS)
     columns = ", ".join(f'"{k}"' for k in keys)
     placeholders = ", ".join(f":{k}" for k in keys)
-    sql_text = f'INSERT INTO "{table_name}" ({columns}) VALUES ({placeholders})'
+    # Use SQLAlchemy's quoted_name to safely escape table identifier
+    safe_table = quoted_name(table_name, quote=True)
+    sql_text = f'INSERT INTO "{safe_table}" ({columns}) VALUES ({placeholders})'
     sql = text(sql_text)
 
     if span_context:
@@ -178,7 +181,9 @@ async def upload_data(
             schema = f"{env}_{uid}_{database_id}"
             span_context.add_info_event(f"schema: {schema}")
             try:
-                await db.execute(text(f'SET search_path TO "{schema}"'))  # type: ignore[call-overload]
+                # Use SQLAlchemy's quoted_name to safely escape schema identifier
+                safe_schema = quoted_name(schema, quote=True)
+                await db.execute(text(f'SET search_path TO "{safe_schema}"'))  # type: ignore[call-overload]
             except Exception as schema_error:  # pylint: disable=broad-except
                 span_context.record_exception(schema_error)
                 raise CustomException(

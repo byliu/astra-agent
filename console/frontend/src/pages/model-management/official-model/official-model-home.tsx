@@ -20,15 +20,9 @@ const OfficialModelContent: React.FC = () => {
   const filters = useModelFilters();
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full h-screen flex flex-col page-container-inner-UI">
       {/* 1️⃣ 头部：高度用 rem 写法，避免缩放错位 */}
-      <div
-        className="flex-none pt-4 pb-2 sm:pt-4 sm:pb-2 lg:pt-5 lg:pb-2 mt-1"
-        style={{
-          paddingLeft: '7%',
-          paddingRight: '7%',
-        }}
-      >
+      <div className="flex-none mb-5">
         <ModelManagementHeader
           activeTab="officialModel"
           shelfOffModel={state.shelfOffModels}
@@ -40,7 +34,7 @@ const OfficialModelContent: React.FC = () => {
       </div>
 
       {/* 2️⃣ 内容区 */}
-      <div className="flex-1 overflow-hidden pl-[7%]">
+      <div className="flex-1 overflow-hidden">
         {/* 响应式容器 */}
         <div className="mx-auto h-full w-full flex gap-6 lg:gap-2">
           {/* 左侧分类 */}

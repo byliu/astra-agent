@@ -292,7 +292,7 @@ const ImportDataModal = (props: ImportDataModalProps): JSX.Element => {
       <div className="pb-[24px]">
         <div className="w-full mt-4 text-right">
           <div
-            className="inline-flex items-center text-[#275EFF] cursor-pointer"
+            className="inline-flex items-center text-[#6356EA] cursor-pointer"
             onClick={downloadTemplate}
           >
             <img src={downloadSvg} className="mr-[6px]" alt="" />
@@ -304,7 +304,7 @@ const ImportDataModal = (props: ImportDataModalProps): JSX.Element => {
             <img src={upload} className="w-8 h-8" alt="" />
             <div className="mt-6 font-medium">
               {t('database.dragFileHere')}
-              <span className="text-[#275EFF]">{t('database.selectFile')}</span>
+              <span className="text-[#6356EA]">{t('database.selectFile')}</span>
             </div>
             <p className="mt-2 text-desc">
               {t('database.fileFormatDescription')}

@@ -8,26 +8,17 @@ class NodeType(Enum):
 
     START = "node-start"
     END = "node-end"
-    ANSWER = "answer"
     LLM = "spark-llm"
     KNOWLEDGE_BASE = "knowledge-base"
-    KNOWLEDGE_RETRIEVAL = "knowledge-retrieval"
     KNOWLEDGE_PRO = "knowledge-pro-base"
     IF_ELSE = "if-else"
     CODE = "ifly-code"
-    TEMPLATE_TRANSFORM = "template-transform"
     DECISION_MAKING = "decision-making"
-    HTTP_REQUEST = "http-request"
-    TOOL = "tool"
-    VARIABLE_AGGREGATOR = "variable-aggregator"
-    VARIABLE_ASSIGNER = "variable-assigner"
-    LOOP = "loop"
     ITERATION = "iteration"
     ITERATION_START = "iteration-node-start"
     ITERATION_END = "iteration-node-end"
     PARAMETER_EXTRACTOR = "extractor-parameter"
     TEXT_JOINER = "text-joiner"
-    VARIABLE_STORAGE = "node-variable"
     FLOW = "flow"
     MESSAGE = "message"
     AGENT = "agent"
@@ -35,6 +26,7 @@ class NodeType(Enum):
     QUESTION_ANSWER = "question-answer"
     DATABASE = "database"
     RPA = "rpa"
+    MCP = "mcp"
 
     @classmethod
     def value_of(cls, value: str) -> "NodeType":
@@ -97,6 +89,7 @@ CONTINUE_ON_ERROR_NOT_STREAM_NODE_TYPE = [
     NodeType.DECISION_MAKING.value,
     NodeType.KNOWLEDGE_BASE.value,
     NodeType.PARAMETER_EXTRACTOR.value,
+    NodeType.MCP.value,
 ]
 
 # Node types that continue execution on error with streaming

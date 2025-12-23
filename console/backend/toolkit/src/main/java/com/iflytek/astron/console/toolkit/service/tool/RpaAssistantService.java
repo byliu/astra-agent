@@ -10,9 +10,12 @@ import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.entity.user.UserInfo;
 import com.iflytek.astron.console.commons.entity.workflow.Workflow;
 import com.iflytek.astron.console.commons.exception.BusinessException;
+import com.iflytek.astron.console.commons.util.SseEmitterUtil;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
+import com.iflytek.astron.console.toolkit.config.properties.ApiUrl;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowData;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowNode;
+import com.iflytek.astron.console.toolkit.entity.dto.rpa.StartReq;
 import com.iflytek.astron.console.toolkit.entity.table.ConfigInfo;
 import com.iflytek.astron.console.toolkit.entity.table.tool.*;
 import com.iflytek.astron.console.toolkit.entity.tool.*;
@@ -21,11 +24,17 @@ import com.iflytek.astron.console.toolkit.handler.UserInfoManagerHandler;
 import com.iflytek.astron.console.toolkit.mapper.ConfigInfoMapper;
 import com.iflytek.astron.console.toolkit.mapper.tool.*;
 import com.iflytek.astron.console.toolkit.service.workflow.WorkflowService;
+import com.iflytek.astron.console.toolkit.util.JacksonUtil;
+import com.iflytek.astron.console.toolkit.util.OkHttpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -49,6 +58,7 @@ public class RpaAssistantService {
     private final WorkflowService workflowService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ConfigInfoMapper configInfoMapper;
+    private final ApiUrl apiUrl;
 
     /**
      * Create an RPA assistant with plaintext credentials.
@@ -495,5 +505,88 @@ public class RpaAssistantService {
                 .eq(RpaUserAssistant::getUserId, userId)
                 .like(StringUtils.isNoneBlank(name), RpaUserAssistant::getAssistantName, name)
                 .orderByDesc(RpaUserAssistant::getUpdateTime));
+    }
+
+    public SseEmitter debug(StartReq startReq, String apiToken) {
+        try {
+            String url = apiUrl.getToolRpaUrl() + "/rpa/v1/exec";
+            Map<String, String> headerMap = new HashMap<>();
+            headerMap.put(HttpHeaders.AUTHORIZATION, apiToken);
+
+            String sseId = UserInfoManagerHandler.getUserId();
+            if (StringUtils.isBlank(startReq.getProjectId())) {
+                return SseEmitterUtil.newSseAndSendMessageClose("project_id is required");
+            }
+
+            SseEmitter emitter = SseEmitterUtil.create(sseId, 1_800_000L);
+            Map<String, Object> body = new HashMap<>();
+            body.put("project_id", startReq.getProjectId());
+            body.put("exec_position",
+                    (startReq.getExecPosition() == null || startReq.getExecPosition().isBlank()) ? "EXECUTOR" : startReq.getExecPosition());
+            body.put("params", startReq.getParams() == null ? Map.of() : startReq.getParams());
+            String reqBody = JacksonUtil.toJSONString(body, JacksonUtil.NON_NULL_OBJECT_MAPPER);
+            log.info("[SSE] rpa debug url={}, headers={}, reqBody={}", url, headerMap, reqBody);
+
+            EventSourceListener listener = new EventSourceListener() {
+                @Override
+                public void onOpen(EventSource es, okhttp3.Response response) {
+                    log.info("[SSE][{}] open, code={}", sseId, response.code());
+                    SseEmitterUtil.EVENTSOURCE_MAP.put(sseId, es);
+                    try {
+                        emitter.send(SseEmitter.event().name("open").data("ok"));
+                    } catch (Exception e) {
+                        log.warn("[SSE][{}] send open event failed: {}", sseId, e.getMessage(), e);
+                        SseEmitterUtil.completeWithError(emitter, "send open event failed: " + e.getMessage());
+                        if (es != null) {
+                            es.cancel();
+                        }
+                        SseEmitterUtil.EVENTSOURCE_MAP.remove(sseId);
+                    }
+                }
+
+                @Override
+                public void onEvent(EventSource es, String id, String type, String data) {
+                    try {
+                        String event = (type == null || type.isBlank()) ? "data" : type;
+                        if ("data".equals(event)) {
+                            emitter.send(SseEmitter.event().name("data").data(data));
+                        } else if ("ping".equals(event)) {
+                            emitter.send(SseEmitter.event().name("ping").data(data));
+                        } else if ("finish".equals(event)) {
+                            emitter.send(SseEmitter.event().name("finish").data(data));
+                            SseEmitterUtil.sendEndAndComplete(emitter);
+                        } else {
+                            emitter.send(SseEmitter.event().name("data").data(data));
+                        }
+                    } catch (Exception e) {
+                        log.warn("[SSE][{}] forward event failed: {}", sseId, e.getMessage(), e);
+                    }
+                }
+
+                @Override
+                public void onClosed(EventSource es) {
+                    log.info("[SSE][{}] downstream closed", sseId);
+                    SseEmitterUtil.sendEndAndComplete(emitter);
+                    SseEmitterUtil.EVENTSOURCE_MAP.remove(sseId);
+                }
+
+                @Override
+                public void onFailure(EventSource es, Throwable t, okhttp3.Response resp) {
+                    String msg = (t != null) ? t.getMessage() : (resp != null ? ("http " + resp.code()) : "unknown");
+                    log.error("[SSE][{}] downstream failure: {}", sseId, msg, t);
+                    SseEmitterUtil.completeWithError(emitter, msg);
+                    if (es != null)
+                        es.cancel();
+                    SseEmitterUtil.EVENTSOURCE_MAP.remove(sseId);
+                }
+            };
+
+            EventSource es = OkHttpUtil.connectRealEventSourceReturn(url, headerMap, reqBody, listener);
+            SseEmitterUtil.EVENTSOURCE_MAP.put(sseId, es);
+            return emitter;
+        } catch (Exception e) {
+            log.error("SSE debug error: {}", e.getMessage(), e);
+            return SseEmitterUtil.newSseAndSendMessageClose(e.getMessage());
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import back from '@/assets/imgs/common/back.png';
 import { useNavigate } from 'react-router-dom';
@@ -9,11 +9,15 @@ import { useRpaDetail } from './hooks/use-rpa-detail';
 import { RpaRobot } from '@/types/rpa';
 import dayjs from 'dayjs';
 import { ModalDetail } from '@/components/workflow/modal/modal-detail';
+import { ModalRpaRun } from '@/components/workflow/modal/modal-rpa-run';
 
 export const RpaDetail = () => {
   const { t } = useTranslation();
   const { rpaDetail, loading } = useRpaDetail();
   const modalDetailRef = useRef<{ showModal: (values?: RpaRobot) => void }>(
+    null
+  );
+  const modalRpaRunRef = useRef<{ showModal: (values?: RpaRobot) => void }>(
     null
   );
   const columns: ColumnsType<RpaRobot> = [
@@ -44,14 +48,34 @@ export const RpaDetail = () => {
     {
       title: t('rpa.parameters'),
       dataIndex: 'parameters',
-      width: 100,
+      width: 80,
+      render: (_, record) => {
+        return (
+          <div
+            className="text-[#6356EA] cursor-pointer"
+            onClick={() => modalDetailRef.current?.showModal(record)}
+          >
+            {t('rpa.detail')}
+          </div>
+        );
+      },
+    },
+    {
+      title: t('rpa.operation'),
+      dataIndex: 'operation',
+      width: 80,
       render: (_, record) => {
         return (
           <div
             className="text-[#275EFF] cursor-pointer"
-            onClick={() => modalDetailRef.current?.showModal(record)}
+            onClick={() =>
+              modalRpaRunRef.current?.showModal({
+                ...record,
+                apiKey: rpaDetail?.fields?.apiKey,
+              })
+            }
           >
-            {t('rpa.detail')}
+            {t('rpa.run')}
           </div>
         );
       },
@@ -106,6 +130,7 @@ export const RpaDetail = () => {
         </div>
       )}
       <ModalDetail ref={modalDetailRef} />
+      <ModalRpaRun ref={modalRpaRunRef} />
     </div>
   );
 };

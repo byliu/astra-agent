@@ -56,12 +56,12 @@
 }
 .version-feedback-tabs .ant-tabs-nav .ant-tabs-ink-bar {
   border-radius: 4px;
-  background: #275eff;
+  background: #6356EA;
 }
 .version-feedback-tabs .ant-tabs-nav .ant-tabs-tab {
   padding: 6px 0;
   color: #7f7f7f;
 }
 .version-feedback-tabs .ant-tabs-nav .ant-tabs-tab:hover {
-  color: #275eff;
+  color: #6356EA;
 }

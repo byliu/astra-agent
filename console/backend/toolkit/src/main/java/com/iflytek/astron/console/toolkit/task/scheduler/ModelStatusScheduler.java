@@ -8,13 +8,10 @@ import com.iflytek.astron.console.toolkit.service.model.ModelService;
 import com.iflytek.astron.console.toolkit.util.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,11 +29,9 @@ public class ModelStatusScheduler {
     @Resource
     private RedisUtil redisUtil;
 
-    // Unified scheduling thread pool provided by "Plan B" AppSchedulingConfig
-    @Resource
-    private TaskScheduler taskScheduler;
-
-    /** Execute every 3 minutes */
+    /**
+     * Execute every 3 minutes
+     */
     @Scheduled(cron = "0 */3 * * * ?")
     public void flushNonRunningLocalModelsCron() {
         // 1) Distributed lock (with token)
@@ -45,19 +40,6 @@ public class ModelStatusScheduler {
             log.debug("[flushNonRunningLocalModelsCron] another instance is running, skip.");
             return;
         }
-
-        // 2) Heartbeat renewal (using unified TaskScheduler; cancel before this task ends)
-        Runnable renewTask = () -> {
-            try {
-                // Only renew if the lock still belongs to "me"
-                redisUtil.renew(LOCK_KEY, LOCK_TTL_SEC, token);
-            } catch (Throwable t) {
-                log.warn("[flushStatusCron] heartbeat renew failed: {}", t.getMessage());
-            }
-        };
-        ScheduledFuture<?> heartbeatFuture =
-                taskScheduler.scheduleAtFixedRate(renewTask, Duration.ofSeconds(HEARTBEAT_SEC));
-
         long startTs = System.currentTimeMillis();
         int pageNo = 1, pageSize = 500;
         int totalHandled = 0, totalUpdated = 0;
@@ -106,18 +88,6 @@ public class ModelStatusScheduler {
         } catch (Throwable ex) {
             log.error("[flushStatusCron] unexpected error: {}", ex.getMessage(), ex);
         } finally {
-            // 3) Cancel heartbeat and release lock (only if holder is me)
-            try {
-                if (heartbeatFuture != null) {
-                    heartbeatFuture.cancel(true);
-                }
-            } catch (Throwable ignore) {
-            }
-            try {
-                redisUtil.unlock(LOCK_KEY, token);
-            } catch (Throwable unlockEx) {
-                log.warn("[flushStatusCron] unlock failed: {}", unlockEx.getMessage());
-            }
             log.info("[flushStatusCron] done, handled={}, updated={}, cost={}ms",
                     totalHandled, totalUpdated, (System.currentTimeMillis() - startTs));
         }

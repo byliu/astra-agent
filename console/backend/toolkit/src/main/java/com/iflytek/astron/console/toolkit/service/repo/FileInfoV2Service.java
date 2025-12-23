@@ -60,11 +60,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import okhttp3.HttpUrl;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -917,7 +919,19 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
             knowledges = knowledgeMapper.findByFileIdInAndAuditType(fileUuIds, auditType);
         }
 
-        long count = knowledgeMapper.countByFileIdIn(fileUuIds);
+        // Fix totalCount calculation to match filtering logic
+        long count;
+        if (auditType != null && auditType == 1) {
+            // Count filtered by audit type
+            count = knowledgeMapper.countByFileIdInAndAuditType(fileUuIds, auditType);
+        } else if (!StringUtils.isEmpty(queryContent)) {
+            // Count filtered by content query
+            count = knowledgeMapper.countByFileIdInAndContentLike(fileUuIds, queryContent);
+        } else {
+            // Count all records for the file IDs
+            count = knowledgeMapper.countByFileIdIn(fileUuIds);
+        }
+
         long auditBlockCount = knowledgeMapper.findByFileIdInAndAuditType(fileUuIds, 1).size();
         Map<String, Object> extMap = new HashMap<>();
         extMap.put("auditBlockCount", auditBlockCount);
@@ -937,24 +951,7 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
                 FileInfoV2 fileInfoV2 = this.getOnly(new QueryWrapper<FileInfoV2>().eq("uuid", fileId));
                 String source = fileInfoV2.getSource();
                 MysqlKnowledge knowledgeTemp = new MysqlKnowledge();
-                if (ProjectContent.isCbgRagCompatible(source)) {
-                    BeanUtils.copyProperties(knowledge, knowledgeTemp);
-                    ChunkInfo chunkInfo = knowledgeTemp.getContent().toJavaObject(ChunkInfo.class);
-                    JSONObject references = chunkInfo.getReferences();
-                    Set<String> referenceUnusedSet = new HashSet<>();
-                    if (!CollectionUtils.isEmpty(references)) {
-                        referenceUnusedSet = references.keySet();
-                    }
-                    if (!CollectionUtils.isEmpty(referenceUnusedSet)) {
-                        JSONObject newReference = new JSONObject();
-                        for (String referenceUnused : referenceUnusedSet) {
-                            buildNewMode(referenceUnused, references, newReference);
-                        }
-                        chunkInfo.setReferences(newReference);
-                        JSONObject updatedContent = (JSONObject) JSON.toJSON(chunkInfo);
-                        knowledgeTemp.setContent(updatedContent);
-                    }
-                }
+                checkSourceFixed(knowledge, source, knowledgeTemp);
                 KnowledgeDto knowledgeDto = new KnowledgeDto();
                 knowledgeDtoList.add(knowledgeDto);
                 if (ProjectContent.isCbgRagCompatible(source)) {
@@ -975,6 +972,27 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
         pageData.setExtMap(extMap);
         pageData.setTotalCount(count);
         return pageData;
+    }
+
+    private static void checkSourceFixed(MysqlKnowledge knowledge, String source, MysqlKnowledge knowledgeTemp) {
+        if (ProjectContent.isCbgRagCompatible(source)) {
+            BeanUtils.copyProperties(knowledge, knowledgeTemp);
+            ChunkInfo chunkInfo = knowledgeTemp.getContent().toJavaObject(ChunkInfo.class);
+            JSONObject references = chunkInfo.getReferences();
+            Set<String> referenceUnusedSet = new HashSet<>();
+            if (!CollectionUtils.isEmpty(references)) {
+                referenceUnusedSet = references.keySet();
+            }
+            if (!CollectionUtils.isEmpty(referenceUnusedSet)) {
+                JSONObject newReference = new JSONObject();
+                for (String referenceUnused : referenceUnusedSet) {
+                    buildNewMode(referenceUnused, references, newReference);
+                }
+                chunkInfo.setReferences(newReference);
+                JSONObject updatedContent = (JSONObject) JSON.toJSON(chunkInfo);
+                knowledgeTemp.setContent(updatedContent);
+            }
+        }
     }
 
     private static void buildNewMode(String referenceUnused, JSONObject references, JSONObject newReference) {
@@ -1807,11 +1825,11 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
      */
     public void createFolder(CreateFolderVO folderVO) {
         String name = folderVO.getName();
-        String regex = ".*[\\\\/:*?\"<>|].*";
+        Pattern pattern = Pattern.compile("[\\\\/:*?\"<>|]");
         if (ObjectIsNull.check(name)) {
             throw new BusinessException(ResponseEnum.REPO_FILE_NAME_CANNOT_EMPTY);
         } else {
-            boolean flag = name.matches(regex);
+            boolean flag = pattern.matcher(name).find();
             if (flag) {
                 throw new BusinessException(ResponseEnum.REPO_FOLDER_NAME_ILLEGAL);
             }
@@ -1851,11 +1869,11 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
      */
     public void updateFolder(CreateFolderVO folderVO) {
         String name = folderVO.getName();
-        String regex = ".*[\\\\/:*?\"<>|].*";
+        Pattern pattern = Pattern.compile("[\\\\/:*?\"<>|]");
         if (ObjectIsNull.check(name)) {
             throw new BusinessException(ResponseEnum.REPO_FILE_NAME_CANNOT_EMPTY);
         } else {
-            boolean flag = name.matches(regex);
+            boolean flag = pattern.matcher(name).find();
             if (flag) {
                 throw new BusinessException(ResponseEnum.REPO_FOLDER_NAME_ILLEGAL);
             }
@@ -1946,18 +1964,39 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
 
     /* ======================== Spark Branch ======================== */
     private void streamSparkSearch(SseEmitter emitter, Long repoId, String fileName, HttpServletRequest request) throws IOException {
-        String url = apiUrl.getDatasetFileUrl() + "?datasetId="
-                .concat(repoId.toString())
-                .concat("&searchValue=")
-                .concat(fileName);
-        log.info("searchFile request url: {}", url);
+        // Use HttpUrl.Builder to construct URL safely and prevent SSRF attacks
+        HttpUrl url;
+        try {
+            HttpUrl base = HttpUrl.parse(apiUrl.getDatasetFileUrl());
+            if (base == null) {
+                log.error("Failed to parse base URL: {}", apiUrl.getDatasetFileUrl());
+                throw new IOException("Invalid base URL configuration");
+            }
+
+            url = base.newBuilder()
+                    .addQueryParameter("datasetId", repoId.toString())
+                    .addQueryParameter("searchValue", fileName)
+                    .build();
+
+            // Validate that the constructed URL has the same host as the base URL
+            String expectedHost = base.host();
+            if (!url.host().equals(expectedHost)) {
+                log.error("Refusing to send request to unexpected host: {}", url.host());
+                throw new IOException("Refusing to send request to untrusted host");
+            }
+
+            log.info("searchFile request url: {}", url);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid URL format", e);
+            throw new IOException("Invalid URL format", e);
+        }
 
         Map<String, String> header = new HashMap<>();
         String authorization = request.getHeader("Authorization");
         if (StringUtils.isNotBlank(authorization)) {
             header.put("Authorization", authorization);
         }
-        String resp = OkHttpUtil.get(url, header);
+        String resp = OkHttpUtil.get(url.toString(), header);
         JSONObject obj = JSON.parseObject(resp);
         log.info("searchFile response data: {}", resp);
 
@@ -2090,7 +2129,6 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
     @Transactional
     public void enableFile(Long id, Integer enabled) {
         FileDirectoryTree fileDirectoryTree = fileDirectoryTreeService.getById(id);
-        Long spaceId = SpaceInfoUtil.getSpaceId();
         if (fileDirectoryTree == null || fileDirectoryTree.getIsFile() != 1) {
             throw new BusinessException(ResponseEnum.REPO_FILE_NOT_EXIST);
         }
@@ -2098,8 +2136,23 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
         if (fileInfoV2 == null) {
             throw new BusinessException(ResponseEnum.REPO_FILE_NOT_EXIST);
         }
-        if (null == spaceId) {
+
+        Repo repo = repoService.getById(fileInfoV2.getRepoId());
+        if (repo != null) {
+            try {
+                dataPermissionCheckTool.checkRepoBelong(repo);
+            } catch (Exception e) {
+                log.warn("Unauthorized operation detected, uid={}, fileDirectoryTreeId={}", UserInfoManagerHandler.getUserId(), id);
+                throw new BusinessException(ResponseEnum.REPO_FILE_NOT_EXIST);
+            }
+        }
+
+        try {
             dataPermissionCheckTool.checkFileBelong(fileInfoV2);
+        } catch (Exception e) {
+            log.warn("Unauthorized file access detected, uid={}, fileDirectoryTreeId={}, fileId={}",
+                    UserInfoManagerHandler.getUserId(), id, fileInfoV2.getId());
+            throw new BusinessException(ResponseEnum.REPO_FILE_NOT_EXIST);
         }
 
         fileInfoV2.setEnabled(enabled);
@@ -2107,6 +2160,11 @@ public class FileInfoV2Service extends ServiceImpl<FileInfoV2Mapper, FileInfoV2>
         this.updateById(fileInfoV2);
 
         knowledgeService.enableDoc(fileInfoV2.getId(), enabled);
+        log.info("File {} operation performed by user {}, fileId={}, enabled={}",
+                enabled == 1 ? "enable" : "disable",
+                UserInfoManagerHandler.getUserId(),
+                fileInfoV2.getId(),
+                enabled);
     }
 
 

@@ -126,7 +126,7 @@ function OperationResult({
               onClick={() => checkFlow()}
             >
               <img src={icons.restart} className="w-3 h-3" alt="" />
-              <span className="text-[#275EFF]">
+              <span className="text-[#6356EA]">
                 {t('workflow.nodes.operationResult.rerun')}
               </span>
             </div>

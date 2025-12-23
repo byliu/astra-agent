@@ -17,7 +17,9 @@ const PersonalModel = lazy(
 const ModelDetail = lazy(() => import('@/pages/model-management/model-detail'));
 const ResourceManagement = lazy(() => import('@/pages/resource-management'));
 const WorkFlow = lazy(() => import('@/pages/workflow'));
-const WorkFlowAnalysis = lazy(() => import ('@/pages/workflow/workflow-analysis'))
+const WorkFlowAnalysis = lazy(
+  () => import('@/pages/workflow/workflow-analysis')
+);
 
 const ChatPage = lazy(() => import('@/pages/chat-page'));
 const PersonalSpace = lazy(() => import('@/pages/space/personal'));
@@ -28,9 +30,8 @@ const TeamCreate = lazy(() => import('@/pages/space/team-create'));
 // const SmartRedirect = lazy(() => import('@/pages/smart-redirect'));
 const ReleaseManagement = lazy(() => import('@/pages/release-management'));
 const BotApi = lazy(() => import('@/pages/bot-api/api'));
-const ApiHistory = lazy(() => import('@/pages/bot-api/api-history'));
 const SharePage = lazy(() => import('@/pages/share-page'));
-import AppListPage from '@/pages/bot-api/app-list';
+const AppListPage = lazy(() => import('@/pages/bot-api/app-list'));
 
 const routes = [
   {
@@ -59,14 +60,6 @@ const routes = [
           <Suspense fallback={<Loading />}>
             <BotApi />
             {/* <BotApiPublish /> */}
-          </Suspense>
-        ),
-      },
-      {
-        path: '/management/bot-api/history',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <ApiHistory />
           </Suspense>
         ),
       },

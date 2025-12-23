@@ -80,7 +80,7 @@ const FlowUpload: React.FC<FlowUploadProps> = ({
       <div className="flex flex-col justify-center items-center gap-2">
         <img src={uploadAct} className="w-8 h-8" alt="" />
         <div className="font-medium mt-6">
-          拖拽文件至此，或者<span className="text-[#275EFF]">选择文件</span>
+          拖拽文件至此，或者<span className="text-[#6356EA]">选择文件</span>
         </div>
         <span className="text-desc mt-2">
           文件支持{uploadType?.join('、')}格式，大小不超过{maxSize}MB

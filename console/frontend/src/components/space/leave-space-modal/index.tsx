@@ -2,6 +2,7 @@ import React from 'react';
 import { message, Modal } from 'antd';
 import ButtonGroup from '@/components/button-group/button-group';
 import type { ButtonConfig } from '@/components/button-group/types';
+import { useTranslation } from 'react-i18next';
 
 import styles from './index.module.scss';
 
@@ -20,6 +21,7 @@ const LeaveSpaceModal: React.FC<LeaveSpaceModalProps> = ({
   onClose,
   spaceInfo,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { deleteSpaceCb } = useSpaceType(navigate);
   const handleClose = () => {
@@ -29,7 +31,7 @@ const LeaveSpaceModal: React.FC<LeaveSpaceModalProps> = ({
   const handleLeaveSpace = () => {
     leaveSpace()
       .then(() => {
-        message.success('离开空间成功');
+        message.success(t('space.leaveSpaceSuccess'));
         deleteSpaceCb();
         onClose();
       })
@@ -41,13 +43,13 @@ const LeaveSpaceModal: React.FC<LeaveSpaceModalProps> = ({
   const buttons: ButtonConfig[] = [
     {
       key: 'cancel',
-      text: '取消',
+      text: t('space.cancel'),
       type: 'default',
       onClick: () => handleClose(),
     },
     {
       key: 'submit',
-      text: '确认',
+      text: t('space.confirm'),
       type: 'primary',
       onClick: () => handleLeaveSpace(),
     },
@@ -55,7 +57,7 @@ const LeaveSpaceModal: React.FC<LeaveSpaceModalProps> = ({
 
   return (
     <Modal
-      title="离开空间"
+      title={t('space.leaveSpaceTitle')}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -70,7 +72,9 @@ const LeaveSpaceModal: React.FC<LeaveSpaceModalProps> = ({
         <div className={styles.warningIcon}>
           <img src={warningImg} alt="warning" />
         </div>
-        <div className={styles.warningText}>确认离开 {spaceInfo?.name} 吗?</div>
+        <div className={styles.warningText}>
+          {t('space.leaveSpaceConfirm', { name: spaceInfo?.name })}
+        </div>
       </div>
 
       <div className={styles.modalFooter}>

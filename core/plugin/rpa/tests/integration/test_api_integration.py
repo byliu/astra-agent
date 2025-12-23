@@ -266,6 +266,7 @@ class TestRPASchemaIntegration:
             # Verify default values were applied
             call_args = mock_monitoring.call_args[1]
             assert call_args["sid"] == ""  # Default value
+            assert call_args["version"] is None  # Default value
             assert call_args["exec_position"] == "EXECUTOR"  # Default value
             assert call_args["params"] is None  # Default value
 
@@ -278,6 +279,14 @@ class TestEndToEndIntegration:
         """Fixture providing a test client for the FastAPI application."""
         app = rpa_server_app()
         return TestClient(app)
+
+    @pytest.fixture
+    def mock_span_and_trace(self) -> Dict[str, MagicMock]:
+        """Fixture providing mock span and trace objects."""
+        mock_span = MagicMock()
+        mock_span.sid = "test-span-sid"
+        mock_node_trace = MagicMock()
+        return {"span": mock_span, "node_trace": mock_node_trace}
 
     @patch("plugin.rpa.service.xiaowu.process.create_task")
     @patch("plugin.rpa.service.xiaowu.process.query_task_status")
@@ -331,6 +340,7 @@ class TestEndToEndIntegration:
         mock_create_task.assert_called_once_with(
             access_token="e2e-test-token",
             project_id="e2e-test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"test_data": "e2e_value"},
         )

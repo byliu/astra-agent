@@ -242,7 +242,7 @@ export const VersionItem: FC<{
     <div
       className="w-full rounded-lg p-3.5 flex flex-col cursor-pointer relative "
       style={{
-        border: version === type ? '1px solid #275EFF' : '1px solid #E2E8FF',
+        border: version === type ? '1px solid #6356EA' : '1px solid #E2E8FF',
       }}
       onClick={() => setVersion(type)}
     >
@@ -250,7 +250,7 @@ export const VersionItem: FC<{
         className="text-sm"
         style={{
           fontWeight: version === type ? 500 : 400,
-          color: version === type ? '#275EFF' : '',
+          color: version === type ? '#6356EA' : '',
         }}
       >
         {t(`knowledge.${title}`)}

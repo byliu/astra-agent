@@ -27,11 +27,11 @@ import java.util.Map;
 @RequestMapping(value = "/rtasr")
 public class RtasrController {
 
-    @Value("${spark.lfasr-appId}")
+    @Value("${spark.rtasr-appId}")
     private String appId;
 
-    @Value("${spark.lfasr-key}")
-    private String lfasrApikey;
+    @Value("${spark.rtasr-key}")
+    private String rtasrApikey;
 
     private static final String RTASR_URL = "wss://rtasr.xfyun.cn/v1/ws";
 
@@ -48,7 +48,7 @@ public class RtasrController {
         Map<String, String> resultMap = new HashMap<>(6);
         resultMap.put("appid", appId);
         resultMap.put("ts", ts);
-        resultMap.put("signa", getSign(ts, lfasrApikey, appId));
+        resultMap.put("signa", getSign(ts, rtasrApikey, appId));
         resultMap.put("url", RTASR_URL);
         return ApiResult.success(resultMap);
     }
@@ -57,13 +57,13 @@ public class RtasrController {
      * Get signature
      *
      * @param ts Timestamp
-     * @param lfasrApikey API key
+     * @param rtasrApikey API key
      * @param appId Application ID
      * @return Signature string
      */
-    public String getSign(String ts, String lfasrApikey, String appId) {
+    public String getSign(String ts, String rtasrApikey, String appId) {
         try {
-            String sign = CryptTools.hmacEncrypt(CryptTools.HMAC_SHA1, CryptTools.md5Encrypt(appId + ts), lfasrApikey);
+            String sign = CryptTools.hmacEncrypt(CryptTools.HMAC_SHA1, CryptTools.md5Encrypt(appId + ts), rtasrApikey);
             return URLEncoder.encode(sign, StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.error("Exception occurred while getting authorization token for real-time speech recognition", e);

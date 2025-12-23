@@ -1,32 +1,28 @@
 .appListPage {
   width: 100%;
-  padding: 24px;
+  height: 100%;
+
   .title {
     display: flex;
     align-items: flex-end;
-    margin-bottom: 15px;
-
-    .aff {
-      height: 34px;
-      font-weight: 500;
-      text-align: justify;
-      margin-right: 9px;
-      font-family: 苹方-简;
-      font-size: 20px;
-      font-weight: 500;
-      line-height: normal;
-      letter-spacing: normal;
-      color: #333333;
-    }
+    margin-bottom: 20px;
+    font-family: 'PingFang-Sim';
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 26px;
+    text-align: center;
+    letter-spacing: normal;
+    /* 字体主色 */
+    color: #222529;
   }
   .tableArea {
-    background: #ffffff;
-    border-radius: 18px;
-    margin: 12px auto auto;
-    padding: 20px 20px;
     :global {
       .ant-table-body {
         height: max(120px, calc(100vh - 340px));
+
+        .ant-table-placeholder {
+          height: max(110px, calc(100vh - 350px));
+        }
       }
     }
     :global {
@@ -50,13 +46,14 @@
       .ant-table-header,
       .ant-table-thead {
         .ant-table-cell {
-          background: #f2f5fe;
+          background: #F1F0FF;
           font-family: PingFang SC;
           font-size: 14px;
-          font-weight: 500;
-          line-height: normal;
+          font-weight: normal;
+          line-height: 16px;
           letter-spacing: normal;
-          color: #7f7f7f;
+          /* 字体二级颜色 */
+          color: #676773;
           border-bottom: none;
           .froms {
             display: flex;
@@ -69,18 +66,26 @@
             display: none;
           }
         }
-        border-bottom: 1px solid #e4eaff;
-        border-radius: 16px 16px 0 0;
+        border-bottom: 1px solid #E7E7F0;
+        border-radius: 10px 10px 0 0;
       }
       .ant-table-thead {
         tr {
           :first-child {
-            padding-left: 24px;
+            padding-left: 20px;
           }
         }
       }
       .ant-table-tbody > tr > td {
+        padding: 20px;
         border-bottom: 1px solid rgba(#d0d9f1, 0.56);
+        font-family: 'PingFang-Sim';
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: normal;
+        /* 字体主色 */
+        color: #222529;
       }
 
       .ant-table-body {
@@ -133,8 +138,8 @@
         }
 
         &.ant-pagination-item-active {
-          background: #275eff;
-          border: 1px solid #275eff;
+          background: #6356EA;
+          border: 1px solid #6356EA;
           color: #fff;
           a {
             color: #fff;
@@ -155,8 +160,13 @@
     .tableOperation{
       display: flex;
       flex-direction: row-reverse;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+
+      :global {
+        .ant-btn-primary {
+          box-shadow: none;
+        }
+      }
     }
   }
-  
 }

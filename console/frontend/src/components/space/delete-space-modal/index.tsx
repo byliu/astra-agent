@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, message } from 'antd';
 import ButtonGroup from '@/components/button-group/button-group';
 import type { ButtonConfig } from '@/components/button-group/types';
+import { useTranslation } from 'react-i18next';
 
 import styles from './index.module.scss';
 
@@ -19,6 +20,7 @@ const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { deleteSpace, spaceId, deleteSpaceCb } = useSpaceType(navigate);
 
@@ -31,7 +33,7 @@ const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
         mobile: '',
         verifyCode: '',
       });
-      message.success('删除空间成功');
+      message.success(t('space.deleteSpaceSuccess'));
       deleteSpaceCb();
       onSubmit();
     } catch (error: any) {
@@ -46,13 +48,13 @@ const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
   const buttons: ButtonConfig[] = [
     {
       key: 'cancel',
-      text: '取消',
+      text: t('space.cancel'),
       type: 'default',
       onClick: () => handleClose(),
     },
     {
       key: 'submit',
-      text: '确认',
+      text: t('space.confirm'),
       type: 'primary',
       onClick: () => handleSubmit(),
       disabled: false,
@@ -61,7 +63,7 @@ const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
 
   return (
     <Modal
-      title="删除空间"
+      title={t('space.deleteSpaceTitle')}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -78,13 +80,13 @@ const DeleteSpaceModal: React.FC<DeleteSpaceModalProps> = ({
             <img src={warningImg} alt="warning" />
           </div>
           <div className={styles.warningText}>
-            请谨慎删除！删除后，空间内的所有数据都将丢失，已分配的权益量将被扣除。
+            {t('space.deleteSpaceWarning')}
           </div>
         </div>
 
         <div className={styles.formSection}>
           <div className={styles.confirmText}>
-            确认删除空间？此操作不可撤销，空间内的所有数据都将永久丢失。
+            {t('space.deleteSpaceConfirm')}
           </div>
         </div>
       </div>

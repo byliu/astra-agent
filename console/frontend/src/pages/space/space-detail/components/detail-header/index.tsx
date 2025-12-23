@@ -20,6 +20,7 @@ import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
 import { ModuleType, OperationType } from '@/types/permission';
 import { useSpaceType } from '@/hooks/use-space-type';
 import { roleToRoleType } from '@/pages/space/config';
+import { useTranslation } from 'react-i18next';
 
 interface SpaceInfo {
   id: string;
@@ -50,7 +51,7 @@ const DetailHeader: React.FC<DetailHeaderProps> = ({
   const { roleTextMap } = useSpaceI18n();
   const { goToSpaceManagement } = useSpaceType(navigate);
   const infoContentRef = useRef<HTMLDivElement>(null);
-
+  const { t } = useTranslation();
   const getRoleText = (role: string) => {
     return roleTextMap[role as keyof typeof roleTextMap] || role;
   };
@@ -63,7 +64,7 @@ const DetailHeader: React.FC<DetailHeaderProps> = ({
       icon: <EditOutlined />,
       type: 'text',
       size: 'small',
-      tooltip: '编辑空间信息',
+      tooltip: t('space.editSpaceInfo'),
       permission: {
         module: ModuleType.SPACE,
         operation: OperationType.SPACE_SETTINGS,
@@ -77,7 +78,7 @@ const DetailHeader: React.FC<DetailHeaderProps> = ({
   const actionButtons: ButtonConfig[] = [
     {
       key: 'share',
-      text: '分享',
+      text: t('space.share'),
       icon: <ShareAltOutlined />,
       type: 'default',
       permission: {
@@ -91,7 +92,7 @@ const DetailHeader: React.FC<DetailHeaderProps> = ({
     },
     {
       key: 'addMember',
-      text: '添加成员',
+      text: t('space.addMember'),
       icon: <UserAddOutlined />,
       type: 'primary',
       permission: {
@@ -112,7 +113,7 @@ const DetailHeader: React.FC<DetailHeaderProps> = ({
           <div className={styles.avatar}>
             <img
               src={spaceInfo.avatarUrl || spaceAvatar}
-              alt="空间头像"
+              alt=""
               className={styles.avatarImage}
             />
           </div>

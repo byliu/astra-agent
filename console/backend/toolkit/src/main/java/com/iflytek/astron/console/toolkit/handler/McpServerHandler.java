@@ -68,10 +68,12 @@ public class McpServerHandler {
                 url = url + "&page_size=" + pageSize;
             }
             if (StringUtils.isNotBlank(categoryId)) {
-                url = url + "&category_id=" + categoryId;
+                // URL encode to prevent parameter injection
+                url = url + "&category_id=" + URLEncoder.encode(categoryId, StandardCharsets.UTF_8);
             }
             if (uid != null) {
-                url = url + "&user_id=" + uid;
+                // URL encode to prevent parameter injection
+                url = url + "&user_id=" + URLEncoder.encode(uid, StandardCharsets.UTF_8);
             }
             log.info("getMcpToolList request url:{}", url);
             String resp = OkHttpUtil.get(url);

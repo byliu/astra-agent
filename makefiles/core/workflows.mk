@@ -37,43 +37,6 @@ smart_install_tools:
 	done
 
 # =============================================================================
-# Intelligent Formatting - format
-# =============================================================================
-smart_format: ## ✨ Intelligent code formatting (detects active projects)
-	@if [ -z "$(ACTIVE_PROJECTS)" ]; then \
-		echo "$(RED)❌ No active projects detected$(RESET)"; \
-		exit 1; \
-	fi
-	@echo "$(BLUE)✨ Intelligent formatting: $(GREEN)$(ACTIVE_PROJECTS)$(RESET)"
-	@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-		echo "$(YELLOW)Using configuration: $(LOCALCI_CONFIG)$(RESET)"; \
-		for lang in $(ACTIVE_PROJECTS); do \
-			apps="$$(makefiles/parse_localci.sh enabled $$lang $(LOCALCI_CONFIG) | cut -d'|' -f2)"; \
-			if [ -n "$$apps" ]; then \
-				for dir in $$apps; do \
-					echo "  - Formatting($$lang): $$dir"; \
-					case $$lang in \
-						go) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory fmt-go; fi ;; \
-						java) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory fmt-java; fi ;; \
-						python) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory fmt-python; fi ;; \
-						typescript) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory fmt-typescript; fi ;; \
-					esac; \
-				done; \
-			fi; \
-		done; \
-	else \
-		for project in $(ACTIVE_PROJECTS); do \
-			case $$project in \
-				go) echo "  - Formatting Go code..." && $(MAKE) --no-print-directory fmt-go ;; \
-				java) echo "  - Formatting Java code..." && $(MAKE) --no-print-directory fmt-java ;; \
-				python) echo "  - Formatting Python code..." && $(MAKE) --no-print-directory fmt-python ;; \
-				typescript) echo "  - Formatting TypeScript code..." && $(MAKE) --no-print-directory fmt-typescript ;; \
-			esac; \
-		done; \
-	fi
-	@echo "$(GREEN)✅ Formatting complete: $(ACTIVE_PROJECTS)$(RESET)"
-
-# =============================================================================
 # Intelligent Quality Check - check
 # =============================================================================
 smart_check: ## 🔍 Intelligent code quality check (detect active projects)
@@ -82,45 +45,23 @@ smart_check: ## 🔍 Intelligent code quality check (detect active projects)
 		exit 1; \
 	fi
 	@echo "$(BLUE)🔍 Intelligent quality check: $(GREEN)$(ACTIVE_PROJECTS)$(RESET)"
-	@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-		echo "$(YELLOW)Using configuration: $(LOCALCI_CONFIG)$(RESET)"; \
-		for lang in $(ACTIVE_PROJECTS); do \
-			apps="$$(makefiles/parse_localci.sh enabled $$lang $(LOCALCI_CONFIG) | cut -d'|' -f2)"; \
-			if [ -n "$$apps" ]; then \
-				for dir in $$apps; do \
-					echo "  - Checking($$lang): $$dir"; \
-					case $$lang in \
-						go) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory check-go; fi ;; \
-						java) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory check-java; fi ;; \
-						python) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory check-python; fi ;; \
-						typescript) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory check-typescript; fi ;; \
-					esac; \
-				done; \
-			fi; \
-		done; \
-	else \
-		for project in $(ACTIVE_PROJECTS); do \
-			case $$project in \
-				go) echo "  - Checking Go code..." && $(MAKE) --no-print-directory check-go ;; \
-				java) echo "  - Checking Java code..." && $(MAKE) --no-print-directory check-java ;; \
-				python) echo "  - Checking Python code..." && $(MAKE) --no-print-directory check-python ;; \
-				typescript) echo "  - Checking TypeScript code..." && $(MAKE) --no-print-directory check-typescript ;; \
-			esac; \
-		done; \
-	fi
+	@for project in $(ACTIVE_PROJECTS); do \
+		case $$project in \
+			go) echo "  - Checking Go code..." && $(MAKE) --no-print-directory check-go ;; \
+			java) echo "  - Checking Java code..." && $(MAKE) --no-print-directory check-java ;; \
+			python) echo "  - Checking Python code..." && $(MAKE) --no-print-directory check-python ;; \
+			typescript) echo "  - Checking TypeScript code..." && $(MAKE) --no-print-directory check-typescript ;; \
+		esac; \
+	done
 	@echo "$(YELLOW)Checking comment language compliance...$(RESET)"
-	@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-		for lang in $(ACTIVE_PROJECTS); do \
-			case $$lang in \
-				go) $(MAKE) --no-print-directory check-comments-go ;; \
-				java) $(MAKE) --no-print-directory check-comments-java ;; \
-				python) $(MAKE) --no-print-directory check-comments-python ;; \
-				typescript) $(MAKE) --no-print-directory check-comments-typescript ;; \
-			esac; \
-		done; \
-	else \
-		$(MAKE) --no-print-directory check-comments; \
-	fi
+	@for lang in $(ACTIVE_PROJECTS); do \
+		case $$lang in \
+			go) $(MAKE) --no-print-directory check-comments-go ;; \
+			java) $(MAKE) --no-print-directory check-comments-java ;; \
+			python) $(MAKE) --no-print-directory check-comments-python ;; \
+			typescript) $(MAKE) --no-print-directory check-comments-typescript ;; \
+		esac; \
+	done
 	@echo "$(GREEN)✅ Quality check complete: $(ACTIVE_PROJECTS)$(RESET)"
 
 # =============================================================================
@@ -132,31 +73,14 @@ smart_test: ## 🧪 Intelligent test execution (detect active projects)
 		exit 1; \
 	fi
 	@echo "$(BLUE)🧪 Intelligent testing: $(GREEN)$(ACTIVE_PROJECTS)$(RESET)"
-	@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-		for lang in $(ACTIVE_PROJECTS); do \
-			apps="$$(makefiles/parse_localci.sh enabled $$lang $(LOCALCI_CONFIG) | cut -d'|' -f2)"; \
-			if [ -n "$$apps" ]; then \
-				for dir in $$apps; do \
-					echo "  - Testing($$lang): $$dir"; \
-					case $$lang in \
-						go) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory test-go; fi ;; \
-						java) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory test-java; fi ;; \
-						python) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory test-python; fi ;; \
-						typescript) echo "    Skipping TypeScript tests (not configured yet)" ;; \
-					esac; \
-				done; \
-			fi; \
-		done; \
-	else \
-		for project in $(ACTIVE_PROJECTS); do \
-			case $$project in \
-				go) echo "  - Running Go tests..." && $(MAKE) --no-print-directory test-go ;; \
-				java) echo "  - Running Java tests..." && $(MAKE) --no-print-directory test-java ;; \
-				python) echo "  - Running Python tests..." && $(MAKE) --no-print-directory test-python ;; \
-				typescript) echo "  - Skipping TypeScript tests (not configured yet)" ;; \
-			esac; \
-		done; \
-	fi
+	@for project in $(ACTIVE_PROJECTS); do \
+		case $$project in \
+			go) echo "  - Running Go tests..." && $(MAKE) --no-print-directory test-go ;; \
+			java) echo "  - Running Java tests..." && $(MAKE) --no-print-directory test-java ;; \
+			python) echo "  - Running Python tests..." && $(MAKE) --no-print-directory test-python ;; \
+			typescript) echo "  - Skipping TypeScript tests (not configured yet)" ;; \
+		esac; \
+	done
 	@echo "$(GREEN)✅ Testing complete: $(ACTIVE_PROJECTS)$(RESET)"
 
 # =============================================================================
@@ -168,31 +92,14 @@ smart_build: ## 📦 Intelligent project build (detect active projects)
 		exit 1; \
 	fi
 	@echo "$(BLUE)📦 Intelligent build: $(GREEN)$(ACTIVE_PROJECTS)$(RESET)"
-	@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-		for lang in $(ACTIVE_PROJECTS); do \
-			apps="$$(makefiles/parse_localci.sh enabled $$lang $(LOCALCI_CONFIG) | cut -d'|' -f2)"; \
-			if [ -n "$$apps" ]; then \
-				for dir in $$apps; do \
-					echo "  - Building($$lang): $$dir"; \
-					case $$lang in \
-						go) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory build-go; fi ;; \
-						java) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory build-java; fi ;; \
-						python) echo "    (Python doesn't need building)" ;; \
-						typescript) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory build-typescript; fi ;; \
-					esac; \
-				done; \
-			fi; \
-		done; \
-	else \
-		for project in $(ACTIVE_PROJECTS); do \
-			case $$project in \
-				go) echo "  - Building Go project..." && $(MAKE) --no-print-directory build-go ;; \
-				java) echo "  - Building Java project..." && $(MAKE) --no-print-directory build-java ;; \
-				python) echo "  - Python doesn't need building (interpreted execution)" ;; \
-				typescript) echo "  - Building TypeScript project..." && cd frontend-ts && npm run build ;; \
-			esac; \
-		done; \
-	fi
+	@for project in $(ACTIVE_PROJECTS); do \
+		case $$project in \
+			go) echo "  - Building Go project..." && $(MAKE) --no-print-directory build-go ;; \
+			java) echo "  - Building Java project..." && $(MAKE) --no-print-directory build-java ;; \
+			python) echo "  - Python doesn't need building (interpreted execution)" ;; \
+			typescript) echo "  - Building TypeScript project..." && $(MAKE) --no-print-directory build-typescript ;; \
+		esac; \
+	done
 	@echo "$(GREEN)✅ Build complete: $(ACTIVE_PROJECTS)$(RESET)"
 
 # (dev series commands have been removed)
@@ -205,7 +112,6 @@ smart_push: ## 📤 Intelligent safe push (branch check + quality check)
 	@echo "$(YELLOW)Checking branch naming convention...$(RESET)"
 	@$(MAKE) --no-print-directory check-branch
 	@echo "$(YELLOW)Running pre-push quality check...$(RESET)"
-	@$(MAKE) --no-print-directory smart_format
 	@$(MAKE) --no-print-directory smart_check
 	@echo "$(YELLOW)Pushing to remote repository...$(RESET)"
 	@$(MAKE) --no-print-directory safe-push
@@ -216,55 +122,25 @@ smart_push: ## 📤 Intelligent safe push (branch check + quality check)
 # =============================================================================
 smart_clean: ## 🧹 Intelligent cleanup of build artifacts
 	@echo "$(BLUE)🧹 Intelligent cleanup: $(GREEN)$(ACTIVE_PROJECTS)$(RESET)"
-		@if [ -n "$(LOCALCI_CONFIG)" ]; then \
-			for lang in $(ACTIVE_PROJECTS); do \
-			apps="$$(makefiles/parse_localci.sh enabled $$lang $(LOCALCI_CONFIG) | cut -d'|' -f2)"; \
-			if [ -n "$$apps" ]; then \
-				for dir in $$apps; do \
-					echo "  - Cleaning($$lang): $$dir"; \
-					case $$lang in \
-						go) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory clean-go; fi ;; \
-						java) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory clean-java; fi ;; \
-						python) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory clean-python; fi ;; \
-						typescript) if [ -d "$$dir" ]; then $(MAKE) --no-print-directory clean-typescript; fi ;; \
-					esac; \
-				done; \
-			fi; \
-		done; \
-	else \
-		for project in $(ACTIVE_PROJECTS); do \
-			case $$project in \
-				go) echo "  - Cleaning Go build artifacts..." && \
-					if [ -d "backend-go" ]; then cd backend-go && go clean && rm -f bin/* || true; else echo "    Go directory does not exist"; fi ;; \
-				java) echo "  - Cleaning Java build artifacts..." && \
-					if [ -d "backend-java" ]; then $(MAKE) --no-print-directory clean-java; else echo "    Java directory does not exist"; fi ;; \
-				python) echo "  - Cleaning Python cache..." && \
-						if [ -d "backend-python" ]; then find backend-python -type d -name "__pycache__" -exec rm -rf {} \; 2>/dev/null || true; else echo "    Python directory does not exist"; fi ;; \
-				typescript) echo "  - Cleaning TypeScript build artifacts..." && \
-					if [ -d "frontend-ts" ]; then cd frontend-ts && rm -rf dist node_modules/.cache || true; else echo "    TypeScript directory does not exist"; fi ;; \
-			esac; \
-		done; \
-	fi
+	@for project in $(ACTIVE_PROJECTS); do \
+		case $$project in \
+			go) echo "  - Cleaning Go build artifacts..." && $(MAKE) --no-print-directory clean-go ;; \
+			java) echo "  - Cleaning Java build artifacts..." && $(MAKE) --no-print-directory clean-java ;; \
+			python) echo "  - Cleaning Python cache..." && $(MAKE) --no-print-directory clean-python ;; \
+			typescript) echo "  - Cleaning TypeScript build artifacts..." && $(MAKE) --no-print-directory clean-typescript ;; \
+		esac; \
+	done
 	@echo "$(GREEN)✅ Cleanup complete: $(ACTIVE_PROJECTS)$(RESET)"
 
 # =============================================================================
 # Intelligent CI Pipeline - ci
 # =============================================================================
-smart_ci: ## 🤖 Complete CI pipeline (format + check + test + build)
+smart_ci: ## 🤖 Complete CI pipeline (check + test + build)
 	@echo "$(BLUE)🤖 Complete CI pipeline starting$(RESET)"
-	@$(MAKE) --no-print-directory smart_format
-	@$(MAKE) --no-print-directory smart_check  
+	@$(MAKE) --no-print-directory smart_check
 	@$(MAKE) --no-print-directory smart_test
 	@$(MAKE) --no-print-directory smart_build
 	@echo "$(GREEN)✅ CI pipeline complete$(RESET)"
-
-# =============================================================================
-# Intelligent Fix - fix  
-# =============================================================================
-smart_fix: ## 🛠️ Intelligent code fix (formatting + partial auto-fixes)
-	@echo "$(BLUE)🛠️ Intelligent code fix$(RESET)"
-	@$(MAKE) --no-print-directory smart_format
-	@echo "$(GREEN)✅ Auto-fix complete (mainly formatting)$(RESET)"
 
 # =============================================================================
 # Utility Functions

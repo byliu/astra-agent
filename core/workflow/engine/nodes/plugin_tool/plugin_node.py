@@ -137,7 +137,6 @@ class PluginNode(BaseNode):
                 )
             span.add_info_events({"action_input": f"{action_inputs}"})
             inputs = action_inputs
-            status = self.run_s
 
             # Find and execute the matching tool operation
             for tool in link.tools:
@@ -178,30 +177,41 @@ class PluginNode(BaseNode):
             else:
                 # Handle case where plugin operation is not found
                 span.add_error_event(f"Error : plugin not found: {self.operationId}")
-                status = self.run_f
+                raise CustomException(
+                    CodeEnum.PLUGIN_NODE_EXECUTION_ERROR,
+                    err_msg=f"plugin not found: {self.operationId}",
+                )
 
             # Return successful execution result
             return NodeRunResult(
-                status=status,
+                status=WorkflowNodeExecutionStatus.SUCCEEDED,
                 inputs=inputs,
                 outputs=outputs,
                 node_id=self.node_id,
                 node_type=self.node_type,
                 alias_name=self.alias_name,
             )
-        except Exception as e:
-            # Handle execution errors and return failure result
-            status = self.run_f
+        except CustomException as e:
             span.record_exception(e)
             return NodeRunResult(
-                status=status,
+                status=WorkflowNodeExecutionStatus.FAILED,
+                error=e,
+                node_id=self.node_id,
+                alias_name=self.alias_name,
+                node_type=self.node_type,
+            )
+        except Exception as e:
+            # Handle execution errors and return failure result
+            span.record_exception(e)
+            return NodeRunResult(
+                status=WorkflowNodeExecutionStatus.FAILED,
                 error=CustomException(
                     CodeEnum.PLUGIN_NODE_EXECUTION_ERROR,
                     cause_error=e,
                 ),
                 node_id=self.node_id,
-                node_type=self.node_type,
                 alias_name=self.alias_name,
+                node_type=self.node_type,
             )
 
     async def async_execute(

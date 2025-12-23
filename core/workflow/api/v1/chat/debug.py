@@ -9,6 +9,7 @@ validation and audit policies and should not be used in production environments.
 import json
 from typing import Annotated, Optional, Union
 
+from common.utils.snowfake import get_id
 from fastapi import APIRouter, Header
 from starlette.responses import JSONResponse, StreamingResponse
 
@@ -24,7 +25,6 @@ from workflow.extensions.middleware.getters import get_session
 from workflow.extensions.otlp.metric.meter import Meter
 from workflow.extensions.otlp.trace.span import Span
 from workflow.service import app_service, audit_service, chat_service, flow_service
-from workflow.utils.snowfake import get_id
 
 router = APIRouter(tags=["SSE_DEBUG_CHAT"])
 
@@ -51,12 +51,9 @@ async def chat_debug(
         try:
             session = next(get_session())
 
-            if chat_vo.version:
-                db_flow = flow_service.get_latest_published_flow_by(
-                    chat_vo.flow_id, app_id, session, span_context, chat_vo.version
-                )
-            else:
-                db_flow = flow_service.get(chat_vo.flow_id, session, span)
+            db_flow = flow_service.get_flow_by_version(
+                chat_vo.flow_id, session, span_context, chat_vo.version
+            )
 
             app_info = app_service.get_info(app_id, session, span)
 

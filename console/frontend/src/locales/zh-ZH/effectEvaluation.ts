@@ -316,7 +316,7 @@ export default {
 
       // 状态文本
       success: '成功',
-      failed: '失败（错误码：{code}）',
+      failed: '失败（错误码：{{code}}）',
 
       // 验证消息
       uploadFileEmpty: '上传文件不能为空！',
@@ -386,7 +386,7 @@ export default {
 
     // 状态文本
     success: '成功',
-    failed: '失败（错误码：{code}）',
+    failed: '失败（错误码：{{code}}）',
 
     // 表单字段
     taskName: '任务名称：',
@@ -678,7 +678,7 @@ export default {
     firstFrameCost: '首帧耗时',
     statusValue: '状态值',
     success: '成功',
-    failed: '失败（错误码：{code}）',
+    failed: '失败（错误码：{{code}}）',
 
     // 子表格列标题
     nodeName: '节点名称',

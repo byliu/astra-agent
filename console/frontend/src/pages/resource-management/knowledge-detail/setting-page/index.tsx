@@ -142,7 +142,7 @@ const SettingPage: FC<{
                 执行嵌入预估消耗 <span className='text-[#1F2A37]' style={{ fontFamily: 'SF Pro Text, SF Pro Text-500' }}>8,665 tokens(<span className='text-[#13A10E]'>$0.0008665</span>)</span>
               </p> */}
             </div>
-            <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+            <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
               <img src={check} className="w-4 h-4" alt="" />
             </div>
           </div>

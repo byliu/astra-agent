@@ -53,8 +53,8 @@ const PluginCreate: FC = () => {
             <div
               className="w-[28px] h-[28px] rounded-full text-center text-base leading-none"
               style={{
-                color: step >= 1 ? '#275EFF' : '#7F7F7F',
-                border: step >= 1 ? '2px solid #275EFF' : '2px solid #7F7F7F',
+                color: step >= 1 ? '#6356EA' : '#7F7F7F',
+                border: step >= 1 ? '2px solid #6356EA' : '2px solid #7F7F7F',
                 lineHeight: '24px',
               }}
             >
@@ -62,7 +62,7 @@ const PluginCreate: FC = () => {
             </div>
             <div
               className="font-medium text-base"
-              style={{ color: step >= 1 ? '#275EFF' : '#7F7F7F' }}
+              style={{ color: step >= 1 ? '#6356EA' : '#7F7F7F' }}
             >
               {t('plugin.fillBasicInfo')}
             </div>
@@ -76,8 +76,8 @@ const PluginCreate: FC = () => {
             <div
               className="w-[28px] h-[28px] rounded-full text-center text-base leading-none"
               style={{
-                color: step >= 2 ? '#275EFF' : '#7F7F7F',
-                border: step >= 2 ? '2px solid #275EFF' : '2px solid #7F7F7F',
+                color: step >= 2 ? '#6356EA' : '#7F7F7F',
+                border: step >= 2 ? '2px solid #6356EA' : '2px solid #7F7F7F',
                 lineHeight: '24px',
               }}
             >
@@ -85,7 +85,7 @@ const PluginCreate: FC = () => {
             </div>
             <div
               className="font-medium text-base"
-              style={{ color: step >= 2 ? '#275EFF' : '#7F7F7F' }}
+              style={{ color: step >= 2 ? '#6356EA' : '#7F7F7F' }}
             >
               {t('plugin.addPlugin')}
             </div>
@@ -99,8 +99,8 @@ const PluginCreate: FC = () => {
             <div
               className="w-[28px] h-[28px] rounded-full text-center text-base leading-none"
               style={{
-                color: step === 3 ? '#275EFF' : '#7F7F7F',
-                border: step === 3 ? '2px solid #275EFF' : '2px solid #7F7F7F',
+                color: step === 3 ? '#6356EA' : '#7F7F7F',
+                border: step === 3 ? '2px solid #6356EA' : '2px solid #7F7F7F',
                 lineHeight: '24px',
               }}
             >
@@ -108,7 +108,7 @@ const PluginCreate: FC = () => {
             </div>
             <div
               className="font-medium"
-              style={{ color: step === 3 ? '#275EFF' : '#7F7F7F' }}
+              style={{ color: step === 3 ? '#6356EA' : '#7F7F7F' }}
             >
               {t('plugin.debugAndValidate')}
             </div>

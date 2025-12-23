@@ -5,6 +5,7 @@ const transition = {
     allTypes: 'All Types',
     instructionType: 'Command Type',
     workflowType: 'Workflow',
+    voiceVirtualType: 'Digital Vocal Agent',
     sortByCreateTime: 'Sort by Creation Time',
     sortByUpdateTime: 'Sort by Update Time',
     allStatus: 'All Status',
@@ -29,6 +30,10 @@ const transition = {
     export: 'Export',
     delete: 'Delete',
     copySuccess: 'Copy successful!',
+    createAgent: 'Create Agent',
+    copyToVirtualAgent: 'Copy as Digital Vocal Agent',
+    noAgentsYet: 'No agents yet, create one now~',
+    copyToVirtualSuccess: 'Copy successful',
   },
   deleteBot: {
     confirmDelete: 'Confirm deletion of agent?',
@@ -44,6 +49,20 @@ const transition = {
   },
   agentSumModal: {
     learnMore: 'Learn More',
+  },
+  createBot: {
+    noAvailableModel: 'No available model',
+    successMessage: 'Success',
+    createBotStep: 'Create Bot',
+    authBindingStep: 'Bot Authorization Binding',
+    botName: 'Bot Name',
+    pleaseEnter: 'Please enter',
+    botDescription: 'Bot Description',
+    botDescriptionTip:
+      'The following text will be displayed on the client to explain the function of the application and provide basic guidance to users.',
+    submit: 'Submit',
+    cancel: 'Cancel',
+    previousStep: 'Previous',
   },
 };
 

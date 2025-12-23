@@ -7,6 +7,10 @@ const transition = {
     success: '删除成功',
     failed: '删除失败',
   },
+  update: {
+    success: '修改成功',
+    failed: '修改失败',
+  },
 };
 
 export default transition;

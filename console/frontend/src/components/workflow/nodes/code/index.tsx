@@ -42,7 +42,7 @@ export const CodeDetail = memo((props: CodeDetailProps) => {
                 {t('workflow.nodes.codeNode.code')}
               </div>
               <div
-                className="flex items-center gap-0.5 cursor-pointer text-[#275EFF] text-xs"
+                className="flex items-center gap-0.5 cursor-pointer text-[#6356EA] text-xs"
                 onClick={e => handleOpenIDEA(e)}
               >
                 <img src={Icons.code.editCode} className="w-3 h-3" alt="" />

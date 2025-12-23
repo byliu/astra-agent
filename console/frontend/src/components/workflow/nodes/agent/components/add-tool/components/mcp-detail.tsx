@@ -316,20 +316,20 @@ export function MCPDetail({
         <div className="flex flex-col w-full">
           <div className="bg-[#F6F9FF] rounded-lg p-1 inline-flex items-center gap-4 mb-3 w-fit">
             <div
-              className="px-5 py-2 text-[#7F7F7F] rounded-lg cursor-pointer hover:bg-[#fff] hover:text-[#275EFF]"
+              className="px-5 py-2 text-[#7F7F7F] rounded-lg cursor-pointer hover:bg-[#fff] hover:text-[#6356EA]"
               style={{
                 background: currentTab === 'content' ? '#fff' : '',
-                color: currentTab === 'content' ? '#275EFF' : '',
+                color: currentTab === 'content' ? '#6356EA' : '',
               }}
               onClick={() => setCurrentTab('content')}
             >
               Content
             </div>
             <div
-              className="px-5 py-2 text-[#7F7F7F] rounded-lg cursor-pointer hover:bg-[#fff] hover:text-[#275EFF]"
+              className="px-5 py-2 text-[#7F7F7F] rounded-lg cursor-pointer hover:bg-[#fff] hover:text-[#6356EA]"
               style={{
                 background: currentTab === 'tools' ? '#fff' : '',
-                color: currentTab === 'tools' ? '#275EFF' : '',
+                color: currentTab === 'tools' ? '#6356EA' : '',
               }}
               onClick={() => setCurrentTab('tools')}
             >
@@ -365,7 +365,7 @@ export function MCPDetail({
                       onClick={() => handleOpenTool(toolIndex)}
                     >
                       <div className="flex flex-col gap-2">
-                        <div className="text-sm text-[#275EFF] font-medium">
+                        <div className="text-sm text-[#6356EA] font-medium">
                           {tool?.name}
                         </div>
                         <p className="text-desc">{tool?.description}</p>
@@ -398,7 +398,7 @@ export function MCPDetail({
                     {tool?.open && (
                       <div className="flex gap-2 mt-6 overflow-hidden">
                         <div className="flex flex-col gap-6 bg-[#F2F5FE] rounded-lg p-4 flex-1 min-h-[100px] flex-shrink-0">
-                          <div className="text-base text-[#275EFF] font-medium">
+                          <div className="text-base text-[#6356EA] font-medium">
                             {t('workflow.nodes.codeIDEA.inputTest')}
                           </div>
                           {tool?.args?.map((arg, index) => (
@@ -419,7 +419,7 @@ export function MCPDetail({
                           ))}
                         </div>
                         <div className="flex flex-col gap-6 bg-[#F2F5FE] rounded-lg p-4 flex-1 min-h-[100px] flex-shrink-0">
-                          <div className="text-base text-[#275EFF] font-medium">
+                          <div className="text-base text-[#6356EA] font-medium">
                             {t('workflow.nodes.codeIDEA.outputResult')}
                           </div>
                           {tool.textResult !== undefined && (

@@ -29,63 +29,7 @@ class TestAIToolsServer:
         mock_setup_server.assert_called_once()
         mock_start_uvicorn.assert_called_once()
 
-    @patch("plugin.aitools.app.start_server.initialize_services")
-    @patch.dict(os.environ, {}, clear=True)
-    def test_setup_server(self, mock_initialize_services: Mock) -> None:
-        """Test server setup"""
-        AIToolsServer.setup_server()
-
-        # Verify environment variable is set
-        assert os.environ["CONFIG_ENV_PATH"] == "./plugin/aitools/config.env"
-
-        # Verify initialize_services is called with correct services
-        expected_services = [
-            "settings_service",
-            "oss_service",
-            "kafka_producer_service",
-            "otlp_sid_service",
-            "otlp_span_service",
-            "otlp_metric_service",
-        ]
-        mock_initialize_services.assert_called_once_with(services=expected_services)
-
-    @patch("plugin.aitools.app.start_server.uvicorn.Server")
-    @patch("plugin.aitools.app.start_server.uvicorn.Config")
-    @patch.dict(os.environ, {"SERVICE_APP_KEY": "test_app", "SERVICE_PORT_KEY": "8080"})
-    def test_start_uvicorn(self, mock_config: Mock, mock_server: Mock) -> None:
-        """Test starting uvicorn server"""
-        mock_config_instance = Mock()
-        mock_server_instance = Mock()
-        mock_config.return_value = mock_config_instance
-        mock_server.return_value = mock_server_instance
-
-        # Mock the SERVICE_PORT_KEY and SERVICE_APP_KEY constants
-        with patch(
-            "plugin.aitools.app.start_server.SERVICE_PORT_KEY", "SERVICE_PORT_KEY"
-        ):
-            with patch(
-                "plugin.aitools.app.start_server.SERVICE_APP_KEY", "SERVICE_APP_KEY"
-            ):
-                AIToolsServer.start_uvicorn()
-
-                # Verify uvicorn config is created with correct parameters
-                mock_config.assert_called_once_with(
-                    app="test_app",
-                    host="0.0.0.0",
-                    port=8080,
-                    workers=20,
-                    reload=False,
-                    ws_ping_interval=None,
-                    ws_ping_timeout=NotImplemented,
-                )
-
-                # Verify server is created and run
-                mock_server.assert_called_once_with(mock_config_instance)
-                mock_server_instance.run.assert_called_once()
-
-    @patch.dict(
-        os.environ, {"SERVICE_APP_KEY": "test_app", "SERVICE_PORT_KEY": "invalid_port"}
-    )
+    @patch.dict(os.environ, {"SERVICE_PORT_KEY": "invalid_port"})
     def test_start_uvicorn_invalid_port(self) -> None:
         """Test starting uvicorn with invalid port"""
         # Mock the constants

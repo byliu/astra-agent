@@ -24,6 +24,8 @@ go.work.sum
 bin/
 pkg/
 vendor/
+.gocache/
+.golangci-cache/
 
 # Java/Maven
 target/
@@ -44,6 +46,8 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
 build/
 develop-eggs/
 dist/
@@ -56,9 +60,13 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
 
 # =============================================================================
 # Build & Output Directories
@@ -79,6 +87,15 @@ tmp/
 .cursor/
 *.swp
 *.swo
+*.swn
+*~
+.project
+.classpath
+.c9/
+.settings/
+.loadpath
+.vimrc.local
+.exrc
 
 # Claude Code (user-specific)
 .claude/
@@ -96,6 +113,14 @@ tmp/
 ._*
 .Spotlight-V100
 .Trashes
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
 
 # Windows
 Thumbs.db
@@ -154,7 +179,7 @@ pids
 # Configuration files that might contain secrets
 config.local.*
 secrets.yml
-secrets.yaml
+
 
 # =============================================================================
 # Backup & Archive Files
@@ -174,13 +199,47 @@ coverage.out
 core/.serena/project.yml
 
 
+# Python Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
 *.venv*
+.python-version
+
+# Python Tools Cache
+.ruff_cache/
+.uv/
+.pdm-python
+.pdm-build/
+.tox/
+.nox/
+.hypothesis/
+.pytype/
 
 # local ci
 .localci.toml
 
 # =============================================================================
-# cache
+# Cache & Testing
 # =============================================================================
-.mypy_cache
-.pytest_cache
+.mypy_cache/
+.pytest_cache/
+.cache/
+.benchmarks/
+htmlcov/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# =============================================================================
+# Docker & Containers
+# =============================================================================
+docker-compose.override.yml
+.dockerignore.local
+*.dockerignore.local

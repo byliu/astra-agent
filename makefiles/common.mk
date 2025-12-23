@@ -29,7 +29,7 @@ project-status: ## Show detected project status
 	@if [ -d "backend-python" ]; then echo "  $(GREEN)✓ Python Backend$(RESET)    (backend-python/)"; else echo "  $(RED)✗ Python Backend$(RESET)    (backend-python/)"; fi
 
 # Multi-language tool installation aggregate command
-install-tools: ## Install formatting and checking tools for all languages
+install-tools: ## Install development and checking tools for all languages
 	@echo "$(YELLOW)Installing multi-language development tools...$(RESET)"
 	@make --no-print-directory install-tools-go
 	@make --no-print-directory install-tools-typescript
@@ -46,17 +46,6 @@ check-tools: ## Check if development tools for all languages are installed
 	@make --no-print-directory check-tools-python
 	@echo "$(GREEN)Multi-language tools check completed!$(RESET)"
 
-# Multi-language formatting aggregate command
-fmt: fmt-all ## Format all project code
-
-fmt-all: ## Format code for all language projects
-	@echo "$(YELLOW)Formatting all projects...$(RESET)"
-	@make --no-print-directory fmt-go
-	@make --no-print-directory fmt-typescript
-	@make --no-print-directory fmt-console-backend
-	@make --no-print-directory fmt-python
-	@echo "$(GREEN)All projects formatted!$(RESET)"
-
 check-all: ## Check code quality for all language projects
 	@echo "$(YELLOW)Running code quality checks for all projects...$(RESET)"
 	@make --no-print-directory check-go
@@ -64,15 +53,6 @@ check-all: ## Check code quality for all language projects
 	@make --no-print-directory check-console-backend
 	@make --no-print-directory check-python
 	@echo "$(GREEN)All code quality checks completed!$(RESET)"
-
-# Format check (without modifying files)
-fmt-check: ## Check if code format meets standards (without modifying files)
-	@echo "$(YELLOW)Checking code formatting...$(RESET)"
-	@make --no-print-directory fmt-check-go
-	@make --no-print-directory fmt-check-typescript
-	@make --no-print-directory fmt-check-console-backend
-	@make --no-print-directory fmt-check-python
-	@echo "$(GREEN)Code formatting checks passed$(RESET)"
 
 # Development environment setup
 dev-setup: install-tools hooks-install branch-setup ## Setup complete development environment
@@ -87,11 +67,9 @@ dev-setup: install-tools hooks-install branch-setup ## Setup complete developmen
 	@echo ""
 	@echo "$(BLUE)Available Git Hook commands:$(RESET)"
 	@echo "  Installation commands:"
-	@echo "    make hooks-install       - Install all hooks (recommended)"
-	@echo "    make hooks-install-basic - Install basic hooks (lightweight)"
-	@echo "    make hooks-check-all     - Pre-commit only (full checks)"
-	@echo "    make hooks-fmt           - Pre-commit only (formatting)"
+	@echo "    make hooks-install       - Install all hooks (check-only mode)"
 	@echo "    make hooks-commit-msg    - Commit-msg validation only"
+	@echo "    make hooks-pre-push      - Pre-push branch validation"
 	@echo "  Uninstall commands:"
 	@echo "    make hooks-uninstall     - Uninstall all hooks"
 	@echo "    make hooks-uninstall-pre - Uninstall pre-commit hook"

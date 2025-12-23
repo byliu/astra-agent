@@ -61,7 +61,7 @@ def _setup_observability(params: Any, run_params_list: Any, func_name: Any) -> T
             uid=span_context.uid,
             chat_id=span_context.sid,
             sub="spark-link",
-            caller=params["caller"],
+            caller=str(func_name),
             log_caller=params["tool_type"],
             question=json.dumps(run_params_list, ensure_ascii=False),
         )
@@ -74,7 +74,7 @@ def _send_error_telemetry(
     meter: Any, node_trace: Any, error_code: Any, error_msg: Any
 ) -> None:
     """Send error telemetry data."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         meter.in_error_count(error_code)
         node_trace.answer = error_msg
         node_trace.status = Status(code=error_code, message=error_msg)
@@ -87,7 +87,7 @@ def _send_success_telemetry(
     meter: Any, node_trace: Any, response_data: Any, service_id: Any = None
 ) -> None:
     """Send success telemetry data."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         meter.in_success_count()
         node_trace.answer = json.dumps(response_data, ensure_ascii=False)
         if service_id:
@@ -364,7 +364,7 @@ def delete_tools(
     :return:
     """
     uid = new_uid()
-    caller = ""
+    caller = "delete_tools"
     tool_type = ""
     span = Span(
         app_id=app_id if app_id else os.getenv(const.DEFAULT_APPID_KEY),
@@ -539,7 +539,7 @@ def read_tools(
     :return:
     """
     uid = new_uid()
-    caller = ""
+    caller = "read_tools"
     tool_type = ""
     span = Span(
         app_id=app_id if app_id else os.getenv(const.DEFAULT_APPID_KEY),

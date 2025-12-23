@@ -46,12 +46,27 @@ const useFlowContainerEffect = ({
   const setEdges = useFlowStore(state => state.setEdges);
   const edges = useFlowStore(state => state.edges);
   const canPublishSetNot = useFlowsManager(state => state.canPublishSetNot);
-  const lastCopiedSelection = useFlowStore(state => state.lastCopiedSelection);
+  const nodes = useFlowStore(state => state.nodes);
+  const reactFlowInstance = useFlowStore(state => state.reactFlowInstance);
+  const setZoom = useFlowStore(state => state.setZoom);
   const position = useRef({ x: 0, y: 0 });
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    if (!isMounted.current && nodes?.length > 0) {
+      reactFlowInstance?.fitView();
+      const zoom = reactFlowInstance?.getViewport()?.zoom
+        ? Math.round(reactFlowInstance?.getViewport()?.zoom * 100)
+        : 80;
+      setZoom(zoom);
+      isMounted.current = true;
+    }
+  }, [nodes, reactFlowInstance]);
+
   const handleDelete = useCallback(() => {
     takeSnapshot();
     lastSelection.nodes = lastSelection?.nodes?.filter(
-      node => node.type !== '开始节点' && node.type !== '结束节点'
+      node => node.nodeType !== 'node-start' && node.nodeType !== 'node-end'
     );
     const edgeIds = lastSelection?.edges?.map(edge => edge?.id);
     const leftEdges = edges.filter(edge => !edgeIds?.includes(edge?.id));
@@ -91,7 +106,7 @@ const useFlowContainerEffect = ({
           );
           message.success('复制成功');
         } catch {
-          message.error('[Clipboard] 复制失败');
+          message.error('复制失败');
         }
       } else if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
         event.preventDefault();
@@ -117,7 +132,7 @@ const useFlowContainerEffect = ({
         window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [lastSelection, lastCopiedSelection, startWorkflowKeydownEvent, edges]);
+  }, [lastSelection, startWorkflowKeydownEvent, edges]);
 };
 
 function Index({ zoom, setZoom }: IndexProps): React.ReactElement {

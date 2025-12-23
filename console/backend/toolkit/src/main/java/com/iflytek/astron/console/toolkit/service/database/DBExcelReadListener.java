@@ -112,7 +112,7 @@ public class DBExcelReadListener extends AnalysisEventListener<Map<Integer, Stri
         }
     }
 
-    // —— Helper: Parse and default values —— //
+    // Helper: Parse and default values
 
     private Object parseByType(String s, String type) {
         String t = StringUtils.lowerCase(type);

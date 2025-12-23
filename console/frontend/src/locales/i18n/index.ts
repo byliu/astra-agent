@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { zh } from '../zh';
 import { en } from '../en';
+import { DEFAULT_LANG, getBrowserLanguage } from '@/utils/lang';
 
 // Try to get the language from localStorage
 const getSavedLanguage = (): string | null => {
@@ -30,7 +31,7 @@ const getSavedLanguage = (): string | null => {
       return directLanguage;
     }
 
-    return null;
+    return getBrowserLanguage();
   } catch (error) {
     return null;
   }
@@ -58,7 +59,7 @@ i18n
       lookupLocalStorage: 'locale-storage',
       caches: ['localStorage'],
     },
-    lng: getSavedLanguage() || 'zh', // Use saved language if available
+    lng: getSavedLanguage() || DEFAULT_LANG, // Use saved language if available
     // 确保使用简单的语言代码
     load: 'languageOnly',
     lowerCaseLng: true,

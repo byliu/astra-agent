@@ -29,4 +29,11 @@ ENV LC_ALL=zh_CN.UTF-8
 
 COPY --from=build /backend/hub/target/hub-server.jar /app/app.jar
 EXPOSE 8080
-ENTRYPOINT ["java","-XX:+UseContainerSupport","-XX:MaxRAMPercentage=75.0","-jar","/app/app.jar"]
+
+# Optimized JVM parameters for reduced memory usage:
+ENTRYPOINT ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+UseG1GC", \
+    "-XX:+UseStringDeduplication", \
+    "-jar", "/app/app.jar"]

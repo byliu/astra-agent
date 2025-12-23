@@ -1,5 +1,7 @@
 const translation = {
   createDatabase: 'Create Database',
+  emptyDescription: 'No databases yet, create one now~',
+  noSearchResults: 'No databases found',
   goToEdit: 'Edit',
   copy: 'Copy',
   delete: 'Delete',

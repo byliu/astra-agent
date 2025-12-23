@@ -9,14 +9,7 @@ from typing import Any
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
-from plugin.link.consts import const
-from plugin.link.main import (
-    load_env_file,
-    load_polaris,
-    main,
-    setup_python_path,
-    start_service,
-)
+from plugin.link.main import load_env_file, main, setup_python_path, start_service
 
 
 @pytest.mark.unit
@@ -116,27 +109,29 @@ EMPTY_LINE_ABOVE=value"""
         assert "Loading configuration file: test.env" in captured.out
         assert "TEST_VAR=test_value" in captured.out
 
-    def test_load_env_file_triggers_polaris_when_enabled(self) -> None:
-        """Test load_env_file triggers Polaris loading when USE_POLARIS=true"""
+    def test_load_env_file_sets_env_variables(self) -> None:
+        """Test load_env_file correctly sets environment variables"""
         env_content = "USE_POLARIS=true"
 
         with patch("builtins.open", mock_open(read_data=env_content)):
             with patch("os.path.exists", return_value=True):
-                with patch("plugin.link.main.load_polaris") as mock_load_polaris:
+                with patch.dict(os.environ, {}, clear=True):
                     load_env_file("test.env")
 
-        mock_load_polaris.assert_called_once()
+                    # Verify that CONFIG_ENV_PATH is set
+                    assert os.environ.get("CONFIG_ENV_PATH") == "test.env"
 
-    def test_load_env_file_skips_polaris_when_disabled(self) -> None:
-        """Test load_env_file skips Polaris loading when USE_POLARIS=false"""
+    def test_load_env_file_processes_config_variables(self) -> None:
+        """Test load_env_file processes various configuration variables"""
         env_content = "USE_POLARIS=false"
 
         with patch("builtins.open", mock_open(read_data=env_content)):
             with patch("os.path.exists", return_value=True):
-                with patch("plugin.link.main.load_polaris") as mock_load_polaris:
+                with patch.dict(os.environ, {}, clear=True):
                     load_env_file("test.env")
 
-        mock_load_polaris.assert_not_called()
+                    # Verify that CONFIG_ENV_PATH is set
+                    assert os.environ.get("CONFIG_ENV_PATH") == "test.env"
 
     def test_load_env_file_handles_malformed_lines(self, capsys: Any) -> None:
         """Test load_env_file handles malformed configuration lines"""
@@ -150,94 +145,6 @@ ANOTHER_VALID=value2"""
 
         captured = capsys.readouterr()
         assert "Line 2 format error" in captured.out
-
-    @patch("plugin.link.main.os.getenv")
-    @patch("common.settings.polaris.ConfigFilter")
-    def test_load_polaris_missing_required_params(
-        self, mock_config_filter: Any, mock_getenv: Any
-    ) -> None:
-        """Test load_polaris returns early when required parameters are missing"""
-        # Mock missing required parameters
-        mock_getenv.side_effect = lambda key, default=None: {
-            const.POLARIS_URL_KEY: None,
-            const.POLARIS_USERNAME_KEY: "user",
-            const.POLARIS_PASSWORD_KEY: "pass",
-            const.POLARIS_CLUSTER_KEY: None,
-            const.PROJECT_NAME_KEY: "test_project",
-            const.SERVICE_NAME_KEY: "spark-link",
-            const.VERSION_KEY: "1.0.0",
-            const.CONFIG_FILE_KEY: "config.env",
-        }.get(key, default)
-
-        mock_filter_instance = Mock()
-        mock_config_filter.return_value = mock_filter_instance
-
-        with patch("common.settings.polaris.Polaris") as mock_polaris_class:
-            load_polaris()
-
-        # ConfigFilter is created but Polaris class should not be called due to missing params
-        mock_config_filter.assert_called_once()
-        mock_polaris_class.assert_not_called()
-
-    @patch("plugin.link.main.os.getenv")
-    @patch("common.settings.polaris.ConfigFilter")
-    def test_load_polaris_successful_config_load(
-        self, mock_config_filter: Any, mock_getenv: Any
-    ) -> None:
-        """Test load_polaris successfully loads configuration"""
-        # Mock all required parameters
-        mock_getenv.side_effect = lambda key, default=None: {
-            const.POLARIS_URL_KEY: "http://polaris.example.com",
-            const.POLARIS_USERNAME_KEY: "test_user",
-            const.POLARIS_PASSWORD_KEY: "test_pass",
-            const.POLARIS_CLUSTER_KEY: "test_cluster",
-            const.PROJECT_NAME_KEY: "test_project",
-            const.SERVICE_NAME_KEY: "test_service",
-            const.VERSION_KEY: "1.0.0",
-            const.CONFIG_FILE_KEY: "config.env",
-        }.get(key, default)
-
-        mock_filter_instance = Mock()
-        mock_config_filter.return_value = mock_filter_instance
-
-        with patch("common.settings.polaris.Polaris") as mock_polaris_class:
-            mock_polaris = Mock()
-            mock_polaris_class.return_value = mock_polaris
-
-            load_polaris()
-
-            mock_polaris.pull.assert_called_once()
-
-    @patch("plugin.link.main.os.getenv")
-    @patch("common.settings.polaris.ConfigFilter")
-    def test_load_polaris_handles_connection_error(
-        self, mock_config_filter: Any, mock_getenv: Any, capsys: Any
-    ) -> None:
-        """Test load_polaris handles connection errors gracefully"""
-        # Mock all required parameters
-        mock_getenv.side_effect = lambda key, default=None: {
-            const.POLARIS_URL_KEY: "http://polaris.example.com",
-            const.POLARIS_USERNAME_KEY: "test_user",
-            const.POLARIS_PASSWORD_KEY: "test_pass",
-            const.POLARIS_CLUSTER_KEY: "test_cluster",
-            const.PROJECT_NAME_KEY: "test_project",
-            const.SERVICE_NAME_KEY: "test_service",
-            const.VERSION_KEY: "1.0.0",
-            const.CONFIG_FILE_KEY: "config.env",
-        }.get(key, default)
-
-        mock_filter_instance = Mock()
-        mock_config_filter.return_value = mock_filter_instance
-
-        with patch("common.settings.polaris.Polaris") as mock_polaris_class:
-            mock_polaris = Mock()
-            mock_polaris.pull.side_effect = ConnectionError("Connection failed")
-            mock_polaris_class.return_value = mock_polaris
-
-            load_polaris()
-
-            captured = capsys.readouterr()
-            assert "Polaris configuration loading failed" in captured.out
 
     def test_start_service_missing_server_file(self) -> None:
         """Test start_service handles missing server file"""

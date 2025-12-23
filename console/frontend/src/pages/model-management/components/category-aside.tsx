@@ -48,7 +48,7 @@ const renderCategoryNode = ({
         {!hasChild ? (
           <input
             type="checkbox"
-            className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#275EFF] focus:ring-2 focus:ring-blue-500/20"
+            className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#6356EA] focus:ring-2 focus:ring-blue-500/20"
             checked={checkedLeafMap.has(node.id)}
             onChange={(e): void => handleCheck(node, e.target.checked)}
           />
@@ -219,7 +219,7 @@ const CategoryAside = forwardRef<CategoryAsideRef, CategoryAsideProps>(
             <div className="flex items-center py-2 pl-8">
               <input
                 type="checkbox"
-                className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#275EFF] focus:ring-2 focus:ring-blue-500/20"
+                className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#6356EA] focus:ring-2 focus:ring-blue-500/20"
                 onChange={(e): void => {
                   const checked = e.target.checked;
                   // 这里把"已下架"当作一个特殊节点 id = -1
@@ -241,7 +241,7 @@ const CategoryAside = forwardRef<CategoryAsideRef, CategoryAsideProps>(
             <div className="flex items-center py-2 pl-8">
               <input
                 type="checkbox"
-                className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#275EFF] focus:ring-2 focus:ring-blue-500/20"
+                className="mr-2 h-4 w-4 rounded-[3px] bg-white border border-[#E4EAFF] accent-[#6356EA] focus:ring-2 focus:ring-blue-500/20"
                 onChange={(e): void => {
                   const checked = e.target.checked;
                   // 把"即将下架"当作一个特殊节点 id = -2

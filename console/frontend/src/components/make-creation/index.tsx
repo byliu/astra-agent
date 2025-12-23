@@ -33,7 +33,6 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
     pageSize: number;
   }>({ pageIndex: 1, pageSize: 20000 });
   const [addAgentTemplateLoading, setAddAgentTemplateLoading] = useState(false);
-  const [form] = Form.useForm();
   const [createButton, setCreateButton] = useState(-1);
   const mouseNowPageRef = useRef<Array<HTMLDivElement | null>>([]);
   const { isDefaultPersonalSpace } = useSpaceType(navigate);
@@ -54,7 +53,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
       req['name'] = item.title + Date.now();
       await createFromTemplate(req)
         .then((res: any) => {
-          navigate(`/work_flow/${res.maasId}/arrange`);
+          navigate(`/work_flow/${res.flowId}/arrange`);
         })
         .catch(e => {
           message.error(e?.message || '创建失败');
@@ -101,7 +100,11 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
   //获取模板分类列表
   const getTemplateTypeList = async () => {
     const res = await getStarTemplateGroup();
-    res.unshift({ id: null, groupName: t('createAgent1.allTemplates') }); // 添加“所有模板”选项
+    res.unshift({
+      id: null,
+      groupName: t('createAgent1.allTemplates'),
+      groupNameEn: t('createAgent1.allTemplates'),
+    }); // 添加“所有模板”选项
     setModalList(res);
   };
   // 根据分类进行查询
@@ -158,11 +161,14 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                     transition duration-75`}
                     onClick={() => handleTabChange(item.id)}
                   >
-                    <Tooltip title={item.groupName} placement="top">
+                    <Tooltip
+                      title={isEnglish ? item.groupNameEn : item.groupName}
+                      placement="top"
+                    >
                       <div
                         className={`${styles.agent_Template_Tab_item_content}`}
                       >
-                        {item.groupName}
+                        {isEnglish ? item.groupNameEn : item.groupName}
                       </div>
                     </Tooltip>
                   </div>
@@ -174,7 +180,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                         {modalList.slice(isEnglish ? 5 : 8).map(item => (
                           <div
                             key={item.id}
-                            className={`cursor-pointer font-medium text-[14px] leading-4 transition duration-75 font-[苹方-简] px-4 py-2 ${activeTab == item.id ? 'text-[#275EFF] bg-[#fff]' : ''}`}
+                            className={`cursor-pointer font-medium text-[14px] leading-4 transition duration-75 font-[苹方-简] px-4 py-2 ${activeTab == item.id ? 'text-[#6356EA] bg-[#fff]' : ''}`}
                             onClick={() => {
                               handleTabChange(item.id);
                             }}
@@ -220,7 +226,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                   className="w-[14px] h-[14px]"
                   alt=""
                 />
-                <span className="text-sm text-[#275EFF]">
+                <span className="text-sm text-[#6356EA]">
                   {t('createAgent1.importWorkflow')}
                 </span>
               </div>
@@ -238,7 +244,7 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                         style={{
                           width: '48px',
                           height: '48px',
-                          backgroundColor: '#275EFF',
+                          backgroundColor: '#6356EA',
                           borderRadius: '50%',
                           display: 'flex',
                           justifyContent: 'center',
@@ -322,7 +328,6 @@ const MakeCreateModal: React.FC<MakeCreateModalProps> = ({
                                     color: '#7f7f7f',
                                     lineHeight: '18px',
                                     paddingTop: '2px',
-                                    // height: '60px',
                                     width: '100%',
                                   }}
                                 >

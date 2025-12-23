@@ -43,6 +43,7 @@ async def exec_fun(
                 sid=request.sid,
                 access_token=acctss_token,
                 project_id=request.project_id,
+                version=request.version,
                 exec_position=request.exec_position,
                 params=request.params,
             ),

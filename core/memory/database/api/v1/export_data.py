@@ -15,6 +15,7 @@ from memory.database.exceptions.e import CustomException
 from memory.database.exceptions.error_code import CodeEnum
 from memory.database.repository.middleware.getters import get_session
 from sqlalchemy import text
+from sqlalchemy.sql import quoted_name
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
@@ -133,7 +134,9 @@ async def _set_search_path_and_exec(
     span_context.add_info_event(f"schema: {schema}")
 
     try:
-        await db.execute(text(f'SET search_path TO "{schema}"'))  # type: ignore[call-overload]
+        # Use SQLAlchemy's quoted_name to safely escape schema identifier
+        safe_schema = quoted_name(schema, quote=True)
+        await db.execute(text(f'SET search_path TO "{safe_schema}"'))  # type: ignore[call-overload]
     except Exception as schema_error:  # pylint: disable=broad-except
         span_context.record_exception(schema_error)
         m.in_error_count(
@@ -150,8 +153,10 @@ async def _set_search_path_and_exec(
         )
 
     try:
+        # Use SQLAlchemy's quoted_name to safely escape table identifier
+        safe_table = quoted_name(table_name, quote=True)
         result = await db.execute(  # type: ignore[call-overload]
-            text(f'SELECT * FROM "{table_name}" WHERE uid = :uid'), {"uid": uid}
+            text(f'SELECT * FROM "{safe_table}" WHERE uid = :uid'), {"uid": uid}
         )
         rows = result.fetchall()
         columns = result.keys()

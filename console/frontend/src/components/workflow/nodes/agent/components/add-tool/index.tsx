@@ -552,7 +552,7 @@ const ListItem = ({
               title={renderParamsTooltip(item)}
               overlayClassName="white-tooltip tool-params-tooltip"
             >
-              <div className="flex items-center cursor-pointer gap-1.5 text-[#275EFF] text-sm font-medium">
+              <div className="flex items-center cursor-pointer gap-1.5 text-[#6356EA] text-sm font-medium">
                 <span>{t('workflow.nodes.toolNode.parameters')}</span>
               </div>
             </Tooltip>
@@ -565,7 +565,7 @@ const ListItem = ({
           >
             {currentTab !== 'mcp' && (
               <div
-                className="flex items-center gap-1 bg-[#fff] border border-[#E5E5E5] py-1 px-6 rounded-lg hover:text-[#FFF] hover:bg-[#275EFF]"
+                className="flex items-center gap-1 bg-[#fff] border border-[#E5E5E5] py-1 px-6 rounded-lg hover:text-[#FFF] hover:bg-[#6356EA]"
                 onClick={e => {
                   e.stopPropagation();
                   setCurrentToolInfo({

@@ -7,6 +7,8 @@ const translation = {
   fileParsingEmbedding: 'File parsing, embedding...',
   knowledgeBaseCreated: 'Knowledge Base Created!',
   createNewKnowledge: 'Create Knowledge Base',
+  emptyDescription: 'No knowledge bases yet, create one now~',
+  noSearchResults: 'No knowledge bases found',
   documentCount: 'Documents',
   totalCharacters: 'Chars (K)',
   relatedAgents: 'Related Agents',

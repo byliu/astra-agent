@@ -37,7 +37,6 @@ export function downloadExcel(
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(excelUrl);
-    message.success('下载成功');
   });
 }
 

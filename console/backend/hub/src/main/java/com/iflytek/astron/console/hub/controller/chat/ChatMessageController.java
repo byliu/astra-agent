@@ -14,6 +14,7 @@ import com.iflytek.astron.console.commons.service.data.ChatListDataService;
 import com.iflytek.astron.console.commons.util.SseEmitterUtil;
 import com.iflytek.astron.console.hub.dto.chat.BotDebugRequest;
 import com.iflytek.astron.console.commons.dto.bot.ChatBotReqDto;
+import com.iflytek.astron.console.commons.dto.bot.DebugChatBotReqDto;
 import com.iflytek.astron.console.hub.dto.chat.StopStreamResponse;
 import com.iflytek.astron.console.commons.entity.chat.ChatList;
 import com.iflytek.astron.console.commons.entity.chat.ChatReqRecords;
@@ -387,10 +388,22 @@ public class ChatMessageController {
         } else {
             maasDatasetList = new ArrayList<>();
         }
+
+        // Build DTO object
+        DebugChatBotReqDto debugChatReqDto = new DebugChatBotReqDto();
+        debugChatReqDto.setText(debugRequest.getText());
+        debugChatReqDto.setPrompt(debugRequest.getPrompt());
+        debugChatReqDto.setMessages(messageList);
+        debugChatReqDto.setUid(uid);
+        debugChatReqDto.setOpenedTool(debugRequest.getOpenedTool());
+        debugChatReqDto.setModel(debugRequest.getModel());
+        debugChatReqDto.setModelId(debugRequest.getModelId());
+        debugChatReqDto.setMaasDatasetList(maasDatasetList);
+        debugChatReqDto.setPersonalityConfig(debugRequest.getPersonalityConfig());
+
         try {
             sendStartSignal(sseEmitter, sseId, new ChatContext(uid, 0L, 0));
-            botChatService.debugChatMessageBot(debugRequest.getText(), debugRequest.getPrompt(), messageList,
-                    uid, debugRequest.getOpenedTool(), debugRequest.getModel(), debugRequest.getModelId(), maasDatasetList, sseEmitter, sseId);
+            botChatService.debugChatMessageBot(debugChatReqDto, sseEmitter, sseId);
             return sseEmitter;
         } catch (Exception e) {
             log.error("Bot debug error, sseId: {}", sseId, e);

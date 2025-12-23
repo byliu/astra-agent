@@ -95,3 +95,17 @@ export const getBotInfoByBotId = (
 ): Promise<BotDetailResponse> => {
   return http.get(`/bot/detail/${botId}`);
 };
+
+export const getTalkAgentConfig = (
+  type: string,
+  botId: number,
+  version?: string
+): Promise<any> => {
+  return http.get('/workflow/get-talk-agent-config', {
+    params: {
+      botId,
+      version,
+      type,
+    },
+  });
+};

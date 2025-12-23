@@ -19,6 +19,13 @@ public class Knowledge {
     private String id;
     // @Indexed
     private String fileId;
+
+    /**
+     * Auto-increment sequence ID to preserve insertion order This field ensures that data order remains
+     * consistent during queries
+     */
+    private Long seqId;
+
     // Knowledge point
     private JSONObject content;
     private Long charCount;

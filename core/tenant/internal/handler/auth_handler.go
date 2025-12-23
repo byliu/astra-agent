@@ -140,12 +140,12 @@ func (h *AuthHandler) GetAppByAPIKey(c *gin.Context) {
 	if err != nil {
 		var appErr service.BizErr
 		if errors.As(err, &appErr) {
-			log.Printf("request query app_id by api_key[%s] error: %s", apiKey, appErr.Msg())
+			log.Printf("request query app_id error: %s", appErr.Msg())
 			resp := newErrResp(appErr.Code(), appErr.Msg(), sid)
 			c.JSON(http.StatusOK, resp)
 			return
 		}
-		log.Printf("request query app_id by api_key[%s] error: %s", apiKey, err.Error())
+		log.Printf("request query app_id error: %s", err.Error())
 		resp := newErrResp(service.ErrCodeSystem, err.Error(), sid)
 		c.JSON(http.StatusOK, resp)
 		return

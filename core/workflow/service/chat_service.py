@@ -4,26 +4,15 @@ import json
 import time
 from asyncio import Queue
 from datetime import datetime
-from typing import (
-    Any,
-    AsyncGenerator,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    cast,
-)
+from typing import Any, AsyncGenerator, AsyncIterator, Dict, List, Optional, Tuple, cast
 
 from loguru import logger
 
-from workflow.cache.engine import get_engine, set_engine
 from workflow.cache.event_registry import Event, EventRegistry
 from workflow.consts.app_audit import AppAuditPolicy
 from workflow.consts.engine.chat_status import ChatStatus
 from workflow.consts.engine.model_provider import ModelProviderEnum
+from workflow.consts.engine.timeout import QueueTimeout
 from workflow.domain.entities.chat import ChatVo
 from workflow.domain.entities.response import Streaming
 from workflow.engine.callbacks.callback_handler import (
@@ -37,7 +26,6 @@ from workflow.engine.callbacks.openai_types_sse import (
     WorkflowStep,
 )
 from workflow.engine.dsl_engine import WorkflowEngine, WorkflowEngineFactory
-from workflow.engine.entities.file import File
 from workflow.engine.entities.msg_or_end_dep_info import MsgOrEndDepInfo
 from workflow.engine.entities.node_entities import NodeType
 from workflow.engine.entities.variable_pool import ParamKey, VariablePool
@@ -148,12 +136,9 @@ def _init_workflow_trace(
     return wl
 
 
-async def _get_or_build_workflow_engine(
+def _get_or_build_workflow_engine(
     is_release: bool,
-    chat_vo: ChatVo,
-    app_alias_id: str,
     workflow_dsl: Dict,
-    workflow_dsl_update_time: datetime,
     span_context: Span,
 ) -> WorkflowEngine:
     """
@@ -170,63 +155,29 @@ async def _get_or_build_workflow_engine(
     :param span_context: Distributed tracing span context
     :return: WorkflowEngine instance ready for execution
     """
-
     sparkflow_engine: WorkflowEngine
-    need_rebuild = True
+    start_time = time.time() * 1000
+    sparkflow_engine = WorkflowEngineFactory.create_engine(
+        WorkflowDSL.model_validate(workflow_dsl.get("data", {})), span_context
+    )
+    span_context.add_info_event("Engine not found in cache, rebuilding from DSL")
 
-    # Attempt to retrieve engine from cache
-    sparkflow_engine_cache_obj = get_engine(
-        is_release, chat_vo.flow_id, chat_vo.version, app_alias_id
+    for key in sparkflow_engine.engine_ctx.built_nodes:
+        if key.startswith(NodeType.FLOW.value):
+            set_flow_node_output_mode(
+                variable_pool=sparkflow_engine.engine_ctx.variable_pool,
+                node_instance=sparkflow_engine.engine_ctx.built_nodes[
+                    key
+                ].node_instance,
+                span=span_context,
+            )
+    sparkflow_engine.engine_ctx.variable_pool.system_params.set(
+        ParamKey.IsRelease, is_release
     )
 
-    if sparkflow_engine_cache_obj:
-        engine_cache_entity, build_timestamp = WorkflowEngine.loads(
-            sparkflow_engine_cache_obj, span_context
-        )
-        if (
-            engine_cache_entity
-            and int(workflow_dsl_update_time.timestamp() * 1000) < build_timestamp
-        ):
-            sparkflow_engine = engine_cache_entity
-            need_rebuild = False
-            span_context.add_info_event(
-                f"Retrieved Workflow engine from cache, "
-                f"DSL update time: {workflow_dsl_update_time}, "
-                f"engine build time: {build_timestamp}"
-            )
-
-    # Rebuild engine if cache miss or outdated
-    if need_rebuild:
-        start_time = time.time() * 1000
-        sparkflow_engine = WorkflowEngineFactory.create_engine(
-            WorkflowDSL.model_validate(workflow_dsl.get("data", {})), span_context
-        )
-        span_context.add_info_event("Engine not found in cache, rebuilding from DSL")
-
-        for key in sparkflow_engine.engine_ctx.built_nodes:
-            if key.startswith(NodeType.FLOW.value):
-                set_flow_node_output_mode(
-                    variable_pool=sparkflow_engine.engine_ctx.variable_pool,
-                    node_instance=sparkflow_engine.engine_ctx.built_nodes[
-                        key
-                    ].node_instance,
-                    span=span_context,
-                )
-        sparkflow_engine.engine_ctx.variable_pool.system_params.set(
-            ParamKey.IsRelease, is_release
-        )
-        set_engine(
-            is_release,
-            chat_vo.flow_id,
-            chat_vo.version,
-            app_alias_id,
-            sparkflow_engine,
-            span_context,
-        )
-
-        span_context.add_info_events(
-            {"rebuild_sparkflow_engine_cache_obj": f"{time.time() * 1000 - start_time}"}
-        )
+    span_context.add_info_events(
+        {"rebuild_sparkflow_engine_cache_obj": f"{time.time() * 1000 - start_time}"}
+    )
 
     return sparkflow_engine
 
@@ -310,6 +261,8 @@ async def _validate_file_inputs(
     :raises CustomException: When file validation fails or
                              required parameters are missing
     """
+    from workflow.engine.entities.file import File
+
     file_info_list, has_file = File.has_file_in_dsl(workflow_dsl, span_context)
     if not has_file:
         return
@@ -517,21 +470,22 @@ async def _run(
         try:
 
             # Get or build workflow engine
-            src_sparkflow_engine = await _get_or_build_workflow_engine(
+            sparkflow_engine = await asyncio.to_thread(
+                _get_or_build_workflow_engine,
                 is_release,
-                chat_vo,
-                app_alias_id,
                 workflow_dsl,
-                workflow_dsl_update_time,
                 span_context,
             )
-            sparkflow_engine = copy.deepcopy(src_sparkflow_engine)
-
             # Initialize streaming processing components
             need_order_stream_result_q: asyncio.Queue[Any] = asyncio.Queue()
             structured_data: dict[Any, Any] = {}
             support_stream_node_id_queue: asyncio.Queue[Any] = asyncio.Queue()
 
+            sparkflow_engine.engine_ctx.variable_pool.system_params.set(
+                ParamKey.FlowId, chat_vo.flow_id
+            ).set(ParamKey.ChatId, chat_vo.chat_id).set(ParamKey.Uid, chat_vo.uid).set(
+                ParamKey.AppId, app_alias_id
+            )
             # Initialize model content output queues
             await _init_stream_q(
                 sparkflow_engine.engine_ctx.msg_or_end_node_deps,
@@ -590,7 +544,7 @@ async def _run(
         except Exception as err:
             llm_resp = LLMGenerate.workflow_end_error(
                 sid=span.sid,
-                code=CodeEnum.PROTOCOL_VALIDATION_ERROR.code,
+                code=CodeEnum.OPEN_API_ERROR.code,
                 message=str(err),
             )
             await response_queue.put(llm_resp)
@@ -686,20 +640,6 @@ def change_dsl_triplets(
     return dsl
 
 
-async def _get_response_or_ping(
-    sid: str,
-    node_info: NodeInfo,
-    getter: Callable[[], Awaitable[LLMGenerate]],
-    timeout: float = 30.0,
-) -> LLMGenerate:
-    response: LLMGenerate
-    try:
-        response = await asyncio.wait_for(getter(), timeout=timeout)
-    except asyncio.TimeoutError:
-        response = LLMGenerate._ping(sid=sid, node_info=node_info)
-    return response
-
-
 async def _get_response(
     app_audit_policy: AppAuditPolicy,
     audit_strategy: Optional[AuditStrategy],
@@ -723,19 +663,23 @@ async def _get_response(
         last_response.workflow_step if last_response else None
     )
     node: Optional[NodeInfo] = step.node if step else None
-    if last_response and node and node.id.startswith(NodeType.RPA.value):
-        response = await _get_response_or_ping(
-            sid=last_response.id, node_info=node, getter=lambda: response_queue.get()
+    try:
+        if app_audit_policy == AppAuditPolicy.AGENT_PLATFORM and audit_strategy:
+            frame_audit_result: FrameAuditResult = await asyncio.wait_for(
+                audit_strategy.context.output_queue.get(),
+                timeout=QueueTimeout.PingQT.value,
+            )
+            if frame_audit_result.error:
+                raise frame_audit_result.error
+            response = cast(LLMGenerate, frame_audit_result.source_frame)
+        else:
+            response = await asyncio.wait_for(
+                response_queue.get(), timeout=QueueTimeout.PingQT.value
+            )
+    except asyncio.TimeoutError:
+        response = LLMGenerate._ping(
+            sid=last_response.id if last_response else "", node_info=node
         )
-    elif app_audit_policy == AppAuditPolicy.AGENT_PLATFORM and audit_strategy:
-        frame_audit_result: FrameAuditResult = await asyncio.wait_for(
-            audit_strategy.context.output_queue.get(), timeout=120
-        )
-        if frame_audit_result.error:
-            raise frame_audit_result.error
-        response = cast(LLMGenerate, frame_audit_result.source_frame)
-    else:
-        response = await asyncio.wait_for(response_queue.get(), timeout=120)
     return response
 
 
@@ -745,7 +689,8 @@ async def _get_resume_response(
     response: LLMGenerate
     if audit_strategy:
         frame_audit_result: FrameAuditResult = await asyncio.wait_for(
-            audit_strategy.context.output_queue.get(), timeout=100
+            audit_strategy.context.output_queue.get(),
+            timeout=QueueTimeout.AsyncQT.value,
         )
         if frame_audit_result.error:
             raise frame_audit_result.error
@@ -802,8 +747,12 @@ def _filter_response_frame(
     is_stop = choice.finish_reason == ChatStatus.FINISH_REASON.value
     is_content_empty = not delta.content and not delta.reasoning_content
     is_interrupted = choice.finish_reason == ChatStatus.INTERRUPT.value
+    is_ping = choice.finish_reason == ChatStatus.PING.value
 
     response_frame.workflow_step.node = None
+
+    if is_ping and is_stream:
+        return response_frame
 
     if is_stop:
         response_frame.workflow_step.seq = last_workflow_step.seq + 1
@@ -947,11 +896,7 @@ async def _chat_response_stream(
                 node: Optional[NodeInfo] = (
                     response.workflow_step.node if response.workflow_step else None
                 )
-                last_response = (
-                    response
-                    if node and node.id.startswith(NodeType.RPA.value)
-                    else last_response
-                )
+                last_response = response if node else last_response
 
                 response = _filter_response_frame(
                     response_frame=response,
@@ -995,7 +940,9 @@ async def _chat_response_stream(
 
                 if response.choices[0].finish_reason == ChatStatus.FINISH_REASON.value:
                     # Exit condition met
-                    EventRegistry().on_finished(event_id=event_id)
+                    await asyncio.to_thread(
+                        EventRegistry().on_finished, event_id=event_id
+                    )
                     return
 
         except asyncio.TimeoutError:
@@ -1028,7 +975,8 @@ async def _chat_response_stream(
             )
             yield Streaming.generate_data(llm_resp.model_dump(exclude_none=True))
             return
-        except Exception:
+        except Exception as err:
+            span_context.record_exception(err)
             llm_resp = LLMGenerate.workflow_end_open_error(
                 code=CodeEnum.OPEN_API_ERROR.code,
                 message=CodeEnum.OPEN_API_ERROR.msg,
@@ -1082,7 +1030,7 @@ async def _forward_queue_messages(
             node: Optional[NodeInfo] = (
                 response.workflow_step.node if response.workflow_step else None
             )
-            if node and node.id.startswith(NodeType.RPA.value):
+            if node:
                 last_response = response
             event = EventRegistry().get_event(event_id=event_id)
             data = json.dumps(response.dict(), ensure_ascii=False)

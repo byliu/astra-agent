@@ -272,10 +272,15 @@ export interface UseNodeCommonReturn {
     }>;
   }>;
   isThinkModel: boolean;
+  inputLabel: string;
+  outputLabel: string;
+  allowAddInput: boolean;
+  allowAddOutput: boolean;
 }
 
 export interface UseFlowCommonReturn {
   startWorkflowKeydownEvent: boolean;
+  startIterativeWorkflowKeydownEvent: boolean;
   handleAddNode: (
     addNode: AddNodeType,
     position: PositionType

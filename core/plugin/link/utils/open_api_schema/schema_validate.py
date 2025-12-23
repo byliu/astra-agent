@@ -10,10 +10,10 @@ import re
 from typing import Dict, List, Optional
 
 import jsonschema
+from common.otlp.trace.span import Span
 from openapi_spec_validator import validate
 from openapi_spec_validator.validation.exceptions import OpenAPIValidationError
 from plugin.link.utils.open_api_schema.common_schema import open_api_schema_template
-from plugin.link.utils.otlp.trace.span import Span
 from yaml import safe_load  # type: ignore
 
 

@@ -53,6 +53,7 @@ class TestCreateTask:
         result = await create_task(
             access_token="test-token",
             project_id="project-123",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -88,6 +89,7 @@ class TestCreateTask:
             await create_task(
                 access_token="test-token",
                 project_id="project-123",
+                version=None,
                 exec_position="EXECUTOR",
                 params={"key": "value"},
             )
@@ -121,6 +123,7 @@ class TestCreateTask:
             await create_task(
                 access_token="test-token",
                 project_id="invalid-project",
+                version=None,
                 exec_position="EXECUTOR",
                 params={},
             )
@@ -155,6 +158,7 @@ class TestCreateTask:
             await create_task(
                 access_token="test-token",
                 project_id="project-123",
+                version=None,
                 exec_position="EXECUTOR",
                 params={},
             )
@@ -189,6 +193,7 @@ class TestCreateTask:
             await create_task(
                 access_token="test-token",
                 project_id="project-123",
+                version=None,
                 exec_position="EXECUTOR",
                 params={},
             )
@@ -218,6 +223,7 @@ class TestCreateTask:
             await create_task(
                 access_token="test-token",
                 project_id="project-123",
+                version=None,
                 exec_position="EXECUTOR",
                 params={},
             )
@@ -251,6 +257,7 @@ class TestCreateTask:
         result = await create_task(
             access_token="test-token",
             project_id="project-123",
+            version=None,
             exec_position=None,
             params=None,
         )

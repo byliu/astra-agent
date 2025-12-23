@@ -8,6 +8,10 @@ const transition = {
     success: 'Delete Success',
     failed: 'Delete Failed',
   },
+  update: {
+    success: 'Update Success',
+    failed: 'Update Failed',
+  },
 };
 
 export default transition;

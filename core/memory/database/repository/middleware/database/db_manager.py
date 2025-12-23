@@ -34,8 +34,8 @@ class DatabaseService(Service):
         self,
         database_url: str,
         connect_timeout: int = 10,
-        pool_size: int = 200,
-        max_overflow: int = 800,
+        pool_size: int = 20,
+        max_overflow: int = 20,
         pool_recycle: int = 3600,
     ):
         """Initialize database service with connection parameters.
@@ -60,8 +60,8 @@ class DatabaseService(Service):
         cls,
         database_url: str,
         connect_timeout: int = 10,
-        pool_size: int = 200,
-        max_overflow: int = 800,
+        pool_size: int = 20,
+        max_overflow: int = 20,
         pool_recycle: int = 3600,
     ) -> "DatabaseService":
         """Create and initialize database service instance.

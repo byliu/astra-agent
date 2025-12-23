@@ -13,11 +13,12 @@ import AudioAnimate from './audio-animate';
 import { ReactSVG } from 'react-svg';
 
 // 录音状态类型
-type RecorderStatus = 'ready' | 'start' | 'end';
+type RecorderStatus = 'ready' | 'start' | 'end' | 'play';
 
 // 组件Props类型
 interface RecorderProps {
   send: (value: string) => void;
+  changeStatus: (status: RecorderStatus) => void;
   disabled?: boolean;
 }
 
@@ -28,7 +29,7 @@ export interface RecorderRef {
 
 let timer: NodeJS.Timeout | null = null;
 const RecorderCom = forwardRef<RecorderRef, RecorderProps>(
-  ({ send, disabled = false }, ref) => {
+  ({ send, changeStatus, disabled = false }, ref) => {
     const [status, setStatus] = useState<RecorderStatus>('ready');
     const record = useRef<any>(
       new (Media as any)({ resetText: (text: any) => handleRecord(text) })
@@ -42,6 +43,21 @@ const RecorderCom = forwardRef<RecorderRef, RecorderProps>(
       },
       [send]
     );
+
+    // 停止录音
+    const stopAudio = useCallback((): void => {
+      try {
+        record.current?.recStop();
+        changeStatus && changeStatus('end');
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        setStatus('end');
+      } catch (error) {
+        console.warn('停止录音失败:', error);
+      }
+    }, [changeStatus]);
 
     // 开始录音事件处理
     const handleStartRecord = useCallback(async (): Promise<void> => {
@@ -58,10 +74,11 @@ const RecorderCom = forwardRef<RecorderRef, RecorderProps>(
 
         await record.current.recStart(tokenResponse);
         setStatus('start');
-
+        changeStatus && changeStatus('play');
         // 设置60秒超时
         timer = setTimeout(() => {
           stopAudio();
+          changeStatus && changeStatus('end');
         }, 60 * 1000);
       } catch (error) {
         console.warn('录音启动失败:', error);
@@ -82,23 +99,7 @@ const RecorderCom = forwardRef<RecorderRef, RecorderProps>(
         message.error(errorMsg);
         record.current?.recStop();
       }
-    }, [status, disabled]);
-
-    // 停止录音
-    const stopAudio = useCallback((): void => {
-      try {
-        record.current?.recStop();
-
-        if (timer) {
-          clearTimeout(timer);
-          timer = null;
-        }
-
-        setStatus('end');
-      } catch (error) {
-        console.warn('停止录音失败:', error);
-      }
-    }, []);
+    }, [status, disabled, changeStatus, stopAudio]);
 
     // 暴露给父组件的方法
     useImperativeHandle(
@@ -119,7 +120,7 @@ const RecorderCom = forwardRef<RecorderRef, RecorderProps>(
               disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
             }`}
           >
-            <AudioAnimate isPlaying={true} />
+            <AudioAnimate isPlaying={true} type="record" />
           </div>
         )}
 

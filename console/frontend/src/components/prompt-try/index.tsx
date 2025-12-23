@@ -59,6 +59,11 @@ const PromptTry = forwardRef<
     findModelOptionByUniqueKey: (
       uniqueKey: string
     ) => ModelListData | undefined;
+    personalityConfig?: {
+      personality?: string;
+      sceneType?: 1 | 2;
+      sceneInfo?: string;
+    } | null;
   }
 >(
   (
@@ -73,6 +78,7 @@ const PromptTry = forwardRef<
       supportContext,
       choosedAlltool,
       findModelOptionByUniqueKey,
+      personalityConfig,
     },
     ref
   ) => {
@@ -175,6 +181,12 @@ const PromptTry = forwardRef<
             .join(',')
         );
       }
+
+      // 添加人设配置信息
+      if (personalityConfig) {
+        form.append('personalityConfig', JSON.stringify(personalityConfig));
+      }
+
       handleFetchSSE(esURL, form);
     };
     const handleFetchSSE = (esURL: string, form: FormData) => {

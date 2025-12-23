@@ -123,7 +123,7 @@ const ToolInputParameters: FC<{
               {t('workflow.nodes.toolNode.configureInputParameters')}
             </span>
             {/* {!selectedCard?.id && <div
-              className='flex items-center gap-1.5 text-[#275eff] cursor-pointer'
+              className='flex items-center gap-1.5 text-[#6356EA] cursor-pointer'
               onClick={handleAddData}
             >
               <img src={inputAddIcon} className='w-2.5 h-2.5' alt="" />
@@ -136,7 +136,7 @@ const ToolInputParameters: FC<{
                 }}
                 placement="bottomLeft"
               >
-                <div className="flex items-center gap-1.5 text-[#275eff] cursor-pointer">
+                <div className="flex items-center gap-1.5 text-[#6356EA] cursor-pointer">
                   <img src={inputAddIcon} className="w-2.5 h-2.5" alt="" />
                   <span>{t('workflow.nodes.common.add')}</span>
                 </div>

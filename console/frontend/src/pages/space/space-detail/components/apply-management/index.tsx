@@ -20,6 +20,7 @@ import {
 } from '@/services/space';
 import { STATUS_THEME_MAP_APPLY, PENDING_STATUS } from '@/pages/space/config';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
+import { useTranslation } from 'react-i18next';
 
 interface Invitation {
   id: string;
@@ -55,6 +56,7 @@ interface UseApplyTableConfigReturn {
 
 // 数据查询Hook
 const useApplyData = (): UseApplyDataReturn => {
+  const { t } = useTranslation();
   // 查询申请数据的函数
   const queryApply = async (
     params: QueryParams
@@ -101,7 +103,7 @@ const useApplyData = (): UseApplyDataReturn => {
   // 校验id是否存在
   const checkId = (id: string): boolean => {
     if (!id) {
-      message.warning('申请id不存在');
+      message.warning(t('common.applyIdNotExist'));
       return false;
     }
     return true;
@@ -118,12 +120,13 @@ const useApplyActions = (
   tableRef: React.RefObject<SpaceTableRef>,
   checkId: (id: string) => boolean
 ): UseApplyActionsReturn => {
+  const { t } = useTranslation();
   const handleReject = (invitationId: string, username: string): void => {
     Modal.confirm({
-      title: '确认拒绝',
-      content: `是否拒绝该用户？`,
-      okText: '确定',
-      cancelText: '取消',
+      title: t('common.confirmReject'),
+      content: t('common.confirmRejectUser'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: async () => {
         try {
           if (!checkId(invitationId)) {
@@ -132,10 +135,10 @@ const useApplyActions = (
 
           await refuseEnterpriseSpace({ applyId: invitationId });
 
-          message.success('拒绝成功');
+          message.success(t('common.rejectSuccess'));
           tableRef?.current?.reload();
         } catch (error) {
-          message.error('拒绝失败');
+          message.error(t('common.rejectFailed'));
         }
       },
     });
@@ -143,10 +146,10 @@ const useApplyActions = (
 
   const handlePass = (invitationId: string, username: string): void => {
     Modal.confirm({
-      title: '确认通过',
-      content: `是否确认通过申请？`,
-      okText: '确定',
-      cancelText: '取消',
+      title: t('common.confirmApprove'),
+      content: t('common.confirmApproveApplication'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: async () => {
         if (!checkId(invitationId)) {
           return;
@@ -155,10 +158,10 @@ const useApplyActions = (
         try {
           await agreeEnterpriseSpace({ applyId: invitationId });
 
-          message.success('通过成功');
+          message.success(t('common.approveSuccess'));
           tableRef?.current?.reload();
         } catch (error) {
-          message.error('通过失败');
+          message.error(t('common.approveFailed'));
         }
       },
     });
@@ -190,7 +193,8 @@ const renderStatusTag = (
 const generateActionButtons = (
   invitation: Invitation,
   handleReject: (invitationId: string, username: string) => void,
-  handlePass: (invitationId: string, username: string) => void
+  handlePass: (invitationId: string, username: string) => void,
+  t: (key: string) => string
 ): ButtonConfig[] => {
   if (invitation.status !== Number(PENDING_STATUS)) {
     return [];
@@ -199,7 +203,7 @@ const generateActionButtons = (
   return [
     {
       key: 'reject',
-      text: '拒绝',
+      text: t('common.reject'),
       type: 'link',
       size: 'small',
       permission: {
@@ -210,7 +214,7 @@ const generateActionButtons = (
     },
     {
       key: 'pass',
-      text: '通过',
+      text: t('common.approve'),
       type: 'link',
       size: 'small',
       permission: {
@@ -228,6 +232,7 @@ const useApplyTableConfig = (
   handleReject: (invitationId: string, username: string) => void,
   handlePass: (invitationId: string, username: string) => void
 ): UseApplyTableConfigReturn => {
+  const { t } = useTranslation();
   const getStatusTag = useCallback(
     (status: number) => renderStatusTag(status, applyStatusTextMap),
     [applyStatusTextMap]
@@ -235,14 +240,14 @@ const useApplyTableConfig = (
 
   const getActionButtons = useCallback(
     (invitation: Invitation) =>
-      generateActionButtons(invitation, handleReject, handlePass),
-    [handleReject, handlePass]
+      generateActionButtons(invitation, handleReject, handlePass, t),
+    [handleReject, handlePass, t]
   );
 
   // 列配置
   const columns: SpaceColumnConfig<Invitation>[] = [
     {
-      title: '用户名',
+      title: t('common.username'),
       dataIndex: 'applyNickname',
       key: 'applyNickname',
       render: (text: string, record: Invitation) => (
@@ -252,13 +257,13 @@ const useApplyTableConfig = (
       ),
     },
     {
-      title: '申请时间',
+      title: t('common.applyTime'),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => <span className={styles.joinTime}>{text}</span>,
     },
     {
-      title: '申请状态',
+      title: t('common.applyStatus'),
       dataIndex: 'status',
       key: 'status',
       render: (status: number) => getStatusTag(status),
@@ -267,7 +272,7 @@ const useApplyTableConfig = (
 
   // 操作列配置
   const actionColumn: ActionColumnConfig<Invitation> = {
-    title: '操作',
+    title: t('common.action'),
     width: 200,
     getActionButtons: (record: Invitation) => getActionButtons(record),
   };

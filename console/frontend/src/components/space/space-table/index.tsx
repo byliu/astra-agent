@@ -7,6 +7,7 @@ import React, {
   useRef,
 } from 'react';
 import { Table, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import ButtonGroup, { ButtonConfig } from '@/components/button-group';
 import Empty from '@/components/space/empty';
@@ -110,6 +111,7 @@ export interface SpaceTableRef {
 const SpaceTable = forwardRef(function SpaceTable<
   T extends Record<string, any> = any,
 >(props: SpaceTableProps<T>, ref: React.ForwardedRef<SpaceTableRef>) {
+  const { t } = useTranslation();
   const {
     initLoad = true,
     queryData,
@@ -139,7 +141,7 @@ const SpaceTable = forwardRef(function SpaceTable<
     total: 0,
     showSizeChanger: true,
     showQuickJumper: false,
-    showTotal: (total, range) => `共 ${total} 项数据`,
+    showTotal: (total, range) => t('space.totalDataCount', { total }),
     pageSizeOptions: ['10', '20', '50'],
     position: ['bottomCenter'],
     ...paginationConfig,
@@ -163,7 +165,6 @@ const SpaceTable = forwardRef(function SpaceTable<
         };
 
         const result = await queryData(params);
-        console.log(result, '============= space => loadData ===========');
         if (result.success !== false) {
           setData(result.data);
           setPagination(prev => ({
@@ -174,7 +175,7 @@ const SpaceTable = forwardRef(function SpaceTable<
 
           onSuccess?.(result.data, result.total);
         } else {
-          throw new Error('查询失败');
+          throw new Error(t('space.queryFailed'));
         }
       } catch (error) {
         onError?.(error);
@@ -189,6 +190,7 @@ const SpaceTable = forwardRef(function SpaceTable<
       onError,
       pagination.current,
       pagination.pageSize,
+      t,
     ]
   );
 
@@ -240,7 +242,7 @@ const SpaceTable = forwardRef(function SpaceTable<
     ...(actionColumn
       ? [
           {
-            title: actionColumn.title || '操作',
+            title: actionColumn.title || t('space.operation'),
             key: 'action',
             width: actionColumn.width || 200,
             fixed: actionColumn.fixed,

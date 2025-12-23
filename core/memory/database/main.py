@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from memory.database.api import router
 from memory.database.domain.entity.views.http_resp import format_response
+from memory.database.exceptions.e import CustomException
 from memory.database.exceptions.error_code import CodeEnum
 from starlette.middleware.cors import CORSMiddleware
 
@@ -35,8 +36,9 @@ async def initialize_extensions() -> None:
     ]
     initialize_services(services=need_init_services)
 
+    # pylint: disable=import-outside-toplevel
     from repository.middleware.initialize import (
-        initialize_services as rep_initialize_services,  # pylint: disable=import-outside-toplevel
+        initialize_services as rep_initialize_services,
     )
 
     await rep_initialize_services()
@@ -139,8 +141,6 @@ def create_app() -> FastAPI:
             )
 
         # Register custom exception handler
-        from api import CustomException  # pylint: disable=import-outside-toplevel
-
         @app.exception_handler(CustomException)
         async def custom_exception_handler(_request: Request, exc: Any) -> JSONResponse:
             """Custom exception handler.
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         workers=(
             None
             if sys.platform in ["win", "win32", "darwin"]
-            else int(os.getenv("WORKERS", "20"))
+            else int(os.getenv("WORKERS", "1"))
         ),
         reload=False,
         log_level="error",

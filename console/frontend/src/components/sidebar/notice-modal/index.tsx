@@ -1,4 +1,3 @@
-/* eslint-disable no-debugger */
 import React, { useState, useEffect } from 'react';
 import {
   getAllMessage,
@@ -15,9 +14,11 @@ import { useSparkCommonStore } from '@/store/spark-store/spark-common';
 import BotCard from './bot-card';
 import { useTranslation } from 'react-i18next';
 import messageSpace from '@/assets/imgs/share-page/message_space.svg';
+import { getTextContent, createSafeHTML } from '@/utils/sanitizer';
 interface NoticeModalProps {
   open: boolean;
   onClose: () => void;
+  onMessageRead?: () => void;
 }
 
 const initCoverImg = (messageItem: Notification): string => {
@@ -69,7 +70,7 @@ const renderNotificationItem = (
         <h3 className={styles.ni_title}>{item.title}</h3>
         <span>{item.createdAt.split('T')[0]}</span>
       </div>
-      <p>{item.body.replace(/<[^>]*>/g, '')}</p>
+      <p>{getTextContent(item.body)}</p>
     </div>
     <span
       className={styles.del}
@@ -150,7 +151,11 @@ const messageTypeList = [
   },
 ];
 
-const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
+const NoticeModal: React.FC<NoticeModalProps> = ({
+  open,
+  onClose,
+  onMessageRead,
+}) => {
   const [selectType, setSelectType] = useState<string>('0');
   const myMessage = useSparkCommonStore(state => state.myMessage);
   const setMyMessage = useSparkCommonStore(state => state.setMyMessage);
@@ -208,6 +213,8 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
     }
 
     getMessages(selectType);
+    // 调用父组件的回调，更新消息数量
+    onMessageRead?.();
   };
 
   const delMessage = async (messageItem: Notification, e: any) => {
@@ -215,6 +222,8 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
       .then(res => {
         message.success(t('systemMessage.deleteSuccess'));
         getMessages(selectType);
+        // 调用父组件的回调，更新消息数量
+        onMessageRead?.();
       })
       .catch(() => {
         message.error(t('systemMessage.deleteFail'));
@@ -231,6 +240,8 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
     })
       .then(res => {
         getMessages(selectType);
+        // 调用父组件的回调，更新消息数量
+        onMessageRead?.();
       })
       .catch(e => {
         message.error(t('systemMessage.historyAudioLoading'));
@@ -289,7 +300,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ open, onClose }) => {
               className={`${styles.notice_detail} ${
                 !messageDetail || messageDetail === '' ? styles.nd_empty : ''
               }`}
-              dangerouslySetInnerHTML={{ __html: messageDetail }}
+              dangerouslySetInnerHTML={createSafeHTML(messageDetail)}
             />
             {renderSpecialMsg(selectMessageObj)}
           </div>

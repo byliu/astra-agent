@@ -358,8 +358,7 @@ export const RpaNodeOneClickUpdate = ({ id, data }): React.ReactElement => {
   const handleOneClickUpdate = useCallback(() => {
     const rpaId = data?.nodeParam?.assistantId;
     const robotName = data?.nodeParam?.projectId;
-
-    getRpaDetail(rpaId, { name: robotName }).then(res => {
+    getRpaDetail(rpaId).then(res => {
       const robot = res?.robots?.find(r => r.project_id === robotName);
       if (!robot) return;
 

@@ -6,6 +6,8 @@ const transition = {
     successCopyLink: 'Share link copied successfully',
     cannotShareWechat: 'Cannot share to WeChat, try another one~',
     serverError: 'Server is busy~ Please try again later',
+    successCopyWechatLink:
+      'Link copied successfully, share it with your WeChat friends now~',
     shareText:
       'I found {{botName}}, try chatting with it! {{origin}}/chat/{{botId}}?sharekey={{shareKey}}',
   },

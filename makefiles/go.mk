@@ -63,35 +63,6 @@ check-tools-go: ## ✅ Check Go development tools availability
 		echo "  Go version: $$($(GO) version)"; \
 	fi
 
-fmt-go: ## ✨ Format Go code
-	@if [ -n "$(GO_DIRS)" ]; then \
-		echo "$(YELLOW)Formatting Go code in: $(GO_DIRS)$(RESET)"; \
-		for dir in $(GO_DIRS); do \
-			if [ -d "$$dir" ]; then \
-				echo "$(YELLOW)  Processing $$dir...$(RESET)"; \
-				gofiles="$$(find $$dir -name "*.go" 2>/dev/null || true)"; \
-				if [ -n "$$gofiles" ]; then \
-					if command -v $(GOIMPORTS) >/dev/null 2>&1; then \
-						$(GOIMPORTS) -w $$gofiles >/dev/null 2>&1 || true; \
-					fi; \
-					if command -v $(GOFUMPT) >/dev/null 2>&1; then \
-						$(GOFUMPT) -w $$gofiles >/dev/null 2>&1 || true; \
-					fi; \
-					if command -v $(GOLINES) >/dev/null 2>&1; then \
-						$(GOLINES) -w -m 120 $$gofiles >/dev/null 2>&1 || true; \
-					fi; \
-				else \
-					echo "$(BLUE)    No Go files found in $$dir$(RESET)"; \
-				fi; \
-			else \
-				echo "$(RED)    Directory $$dir does not exist$(RESET)"; \
-			fi; \
-		done; \
-		echo "$(GREEN)Go code formatting completed$(RESET)"; \
-	else \
-		echo "$(BLUE)Skipping Go formatting (no Go projects configured)$(RESET)"; \
-	fi
-
 check-go: ## 🔍 Check Go code quality
 	@if [ -n "$(GO_DIRS)" ]; then \
 		echo "$(YELLOW)Checking Go code quality in: $(GO_DIRS)$(RESET)"; \
@@ -106,7 +77,7 @@ check-go: ## 🔍 Check Go code quality
 						unformatted="$$($(GOIMPORTS) -l $$gofiles)"; \
 						if [ -n "$$unformatted" ]; then \
 							echo "$(RED)    Files not formatted: $$unformatted$(RESET)"; \
-							echo "$(YELLOW)    Run 'make fmt-go' to fix$(RESET)"; \
+							echo "$(YELLOW)    Run 'goimports -w .' to fix formatting issues$(RESET)"; \
 							exit 1; \
 						fi; \
 					fi; \

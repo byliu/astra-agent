@@ -33,6 +33,12 @@ Based on the given note topic, write a creative Xiaohongshu-style product recomm
   publishSuccess: 'Publish success',
   updatePublish: 'Update publish',
   publish: 'Publish',
+  confirmLeavePrompt:
+    'Are you sure you want to leave?\\nThe system may not save your changes.',
+  settingCannotBeEmpty: 'Setting cannot be empty!',
+  createAgentBeforePublish: 'Create agent first',
+  inputHere: 'Input here',
+
   agentCategory: 'Agent Category',
   agentIntroduction: 'Agent Introduction',
   restoreDefaultDisplay: 'Restore Default Display',
@@ -45,6 +51,7 @@ Based on the given note topic, write a creative Xiaohongshu-style product recomm
   modelComparison: 'Model Comparison',
   sparkModel: 'Spark V4.0 Ultra',
   sparkX1Model: 'Spark X1',
+  rolePlayModel: 'Role Play',
   pleaseSelectModel: 'Please select model',
   highOrderConfig: 'High Order Config',
 
@@ -74,6 +81,12 @@ Based on the given note topic, write a creative Xiaohongshu-style product recomm
 
   //能力开发
   CapabilityDevelopment: {
+    backgroundImage: 'Background Image',
+    horizontalScreenDisplay: 'Horizontal Screen Display',
+    verticalScreenDisplay: 'Vertical Screen Display',
+    viewActualVerticalScreenEffect: 'View actual vertical screen effect',
+    modify: 'Modify',
+    upload: 'Upload',
     requireCreativeNovelty: 'Require creative novelty',
     pleaseWriteACreativeCommercialCopywriting:
       'Please write a creative commercial copywriting',
@@ -120,6 +133,32 @@ Based on the given note topic, write a creative Xiaohongshu-style product recomm
     xunfeiOpenPlatformServiceAgreement:
       'Xunfei Open Platform Service Agreement',
     privacyAgreement: 'Privacy Agreement',
+    personality: 'Character Personality',
+    personalityInfo: 'Personality Info',
+    scenarioInfo: 'Scenario Info',
+    personalityLibrary: 'Premium Personality Library',
+    personalityDescription: 'Please enter character personality',
+    aiGenerate: 'AI Generate',
+    aiPolish: 'AI Polish',
+    companionScenario: 'Companion Scenario',
+    trainingScenario: 'Training Scenario',
+    companionScenarioDesc:
+      'Suitable for casual companionship and entertainment',
+    trainingScenarioDesc:
+      'Suitable for interviews, work, and learning practice',
+    scenarioDescription: 'Content should be within 500 words',
+    personalityLibraryTitle: 'Premium Personality Library',
+    personalityDetail: 'Detail',
+    back: 'Back',
+    select: 'Select',
+    imageLoadError: 'Image load failed',
+    // AI personality parameter validation prompts
+    aiPersonalityBotNameRequired: 'Please fill in the agent name',
+    aiPersonalityBotTypeRequired: 'Please select the agent category',
+    aiPersonalityBotDescRequired: 'Please fill in the agent description',
+    aiPersonalityPromptRequired: 'Please fill in the agent prompt',
+    personalityRequired: 'Please enter character personality information',
+    sceneInfoRequired: 'Please enter scene description information',
   },
   promptTry: {
     promptTry: 'Please complete the verification',
@@ -137,52 +176,6 @@ Based on the given note topic, write a creative Xiaohongshu-style product recomm
     pleaseUploadDescriptionFileAndInterfaceDocumentAndVerify:
       'Please upload the description file and interface document and verify',
     pleaseUploadInterfaceDocumentAndVerify:
-      'Please upload the interface document and verify',
-    stopOutput: 'Stop',
-    answerInProgress: 'Answer in progress...',
-    hereIsTheAgentName: 'Here is the agent name',
-    hereIsTheAgentIntroduction: 'Here is the agent introduction',
-    clearHistory: 'Clear History',
-    send: 'Send',
-  },
-  promptTip: {
-    pleaseCompleteVerification: 'Please complete the verification',
-    pluginNeedsUserAuthorization: 'Plugin needs user authorization information',
-    answerPleaseTryAgainLater: 'Answer in progress, please try again later',
-    pleaseEnterQuestion: 'Please enter the question',
-    end: 'End',
-    networkError:
-      'Network seems to have a problem, you can refresh the page to try again.',
-    uploadDescriptionAndApiDocument:
-      'You have not uploaded the description file and interface document',
-    uploadApiDocumentAndVerify:
-      'You uploaded the interface document but it has not been verified',
-    uploadDescriptionAndApiDocumentAndVerify:
-      'Please upload the description file and interface document and verify',
-    uploadApiDocumentAndVerifyAndDebugPreview:
-      'Please upload the interface document and verify',
-    stopOutput: 'Stop',
-    answerInProgress: 'Answer in progress...',
-    hereIsTheAgentName: 'Here is the agent name',
-    hereIsTheAgentIntroduction: 'Here is the agent introduction',
-    clearHistory: 'Clear History',
-    send: 'Send',
-  },
-  promptModel: {
-    pleaseCompleteVerification: 'Please complete the verification',
-    pluginNeedsUserAuthorization: 'Plugin needs user authorization information',
-    answerPleaseTryAgainLater: 'Answer in progress, please try again later',
-    pleaseEnterQuestion: 'Please enter the question',
-    end: 'End',
-    networkError:
-      'Network seems to have a problem, you can refresh the page to try again.',
-    uploadDescriptionAndApiDocument:
-      'You have not uploaded the description file and interface document',
-    uploadApiDocumentAndVerify:
-      'You uploaded the interface document but it has not been verified',
-    uploadDescriptionAndApiDocumentAndVerify:
-      'Please upload the description file and interface document and verify',
-    uploadApiDocumentAndVerifyAndDebugPreview:
       'Please upload the interface document and verify',
     stopOutput: 'Stop',
     answerInProgress: 'Answer in progress...',

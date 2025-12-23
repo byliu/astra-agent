@@ -8,6 +8,7 @@ from typing import Any, Awaitable, Callable
 from workflow.cache import event_registry
 from workflow.cache.event_registry import Event, EventRegistry
 from workflow.consts.engine.chat_status import ChatStatus
+from workflow.consts.engine.timeout import QueueTimeout
 from workflow.engine.callbacks.openai_types_sse import LLMGenerate, WorkflowStep
 from workflow.exception.e import CustomException, CustomExceptionCM
 from workflow.exception.errors.err_code import CodeEnum
@@ -141,7 +142,9 @@ async def _common_response_audit(
         try:
             # Allow main coroutine to exit quickly when needed
             await asyncio.sleep(0)
-            response: LLMGenerate = await asyncio.wait_for(fetch_fn(), timeout=100)
+            response: LLMGenerate = await asyncio.wait_for(
+                fetch_fn(), timeout=QueueTimeout.AsyncQT.value
+            )
 
             # Ensure workflow step is properly initialized
             response.workflow_step = (

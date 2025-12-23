@@ -30,31 +30,31 @@ class AppServiceTest {
     private ApiUrl apiUrl;
     @Mock
     private RedisUtil redisUtil;
-    // RedisTemplate 未直接使用，保留默认 Mock 即可
+    // RedisTemplate not directly used, keep default Mock
     @Mock
     private CommonConfig commonConfig;
-    // ↑ 顶部补充这个 import
+    // Add this import at the top
 
     @Test
-    @DisplayName("getAkSk - 远程返回空数组：应抛BusinessException（包含APPID提示）")
+    @DisplayName("getAkSk - Remote returns empty array: Should throw BusinessException (containing APPID hint)")
     void getAkSk_shouldThrow_whenArrayEmpty() throws Exception {
         String appId = "APP-5";
 
-        // 走“远程分支”：缓存未命中，且不是“特殊APPID”
+        // Take the "remote branch": Cache miss and not a "special APPID"
         when(redisUtil.get("app_detail_cache:" + appId)).thenReturn(null);
         when(commonConfig.getAppId()).thenReturn("NOT-SPECIAL");
 
-        // URL 与鉴权参数必须打桩，避免出现 null/key/APP-5
+        // URL and auth parameters must be stubbed to avoid null/key/APP-5
         when(apiUrl.getAppUrl()).thenReturn("http://api");
         when(apiUrl.getApiKey()).thenReturn("ak");
         when(apiUrl.getApiSecret()).thenReturn("sk");
 
-        // ---- 关键：为 CommonTool 的静态初始化准备一个可用的 BeanFactory ----
+        // ---- Key: Prepare an available BeanFactory for CommonTool static initialization ----
         ConfigurableListableBeanFactory fakeBF = mock(ConfigurableListableBeanFactory.class, withSettings()
                 .defaultAnswer(invocation -> {
                     if ("getBean".equals(invocation.getMethod().getName())) {
                         Class<?> type = invocation.getArgument(0);
-                        // 返回任意类型的 mock，满足 CommonTool.<clinit> 的依赖
+                        // Return any type of mock to satisfy CommonTool.<clinit> dependencies
                         return Mockito.mock(type);
                     }
                     return RETURNS_DEFAULTS.answer(invocation);
@@ -66,7 +66,7 @@ class AppServiceTest {
         bfField.set(null, fakeBF);
         // ----------------------------------------------------------------------
 
-        // 静态 mock：HTTP 返回占位响应；解析返回空数组 "[]"
+        // Static mock: HTTP returns placeholder response; parsing returns empty array "[]"
         try (MockedStatic<HeaderAuthHttpTool> http = mockStatic(HeaderAuthHttpTool.class);
                 MockedStatic<CommonTool> common = mockStatic(CommonTool.class)) {
 
@@ -79,17 +79,18 @@ class AppServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("common.response.failed");
 
-            // 交互校验（提升 PIT 杀伤力）
+            // Interaction verification (improve PIT killing power)
             verify(redisUtil).get("app_detail_cache:" + appId);
             http.verify(() -> HeaderAuthHttpTool.get("http://api/key/" + appId, "ak", "sk"));
             common.verify(() -> CommonTool.checkSystemCallResponse("resp"));
         }
     }
 
-    // ================= getAkSk: HTTP 抛受检异常 → 包装成 RuntimeException =================
+    // ================= getAkSk: HTTP throws checked exception Wrapped as RuntimeException
+    // =================
 
     @Test
-    @DisplayName("getAkSk - HeaderAuthHttpTool.get 抛 IOException：应包装为 RuntimeException 并带有 cause")
+    @DisplayName("getAkSk - HeaderAuthHttpTool.get throws IOException: Should wrap as RuntimeException with cause")
     void getAkSk_shouldWrapHttpException() {
         String appId = "APP-6";
         when(redisUtil.get("app_detail_cache:" + appId)).thenReturn(null);

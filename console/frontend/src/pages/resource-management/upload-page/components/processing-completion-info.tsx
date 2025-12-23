@@ -71,7 +71,7 @@ export const ProcessingCompletionInfo: FC<{
                   onClick={reTry}
                 >
                   <img src={restart} className="w-4 h-4 ml-3" alt="" />
-                  <p className="text-desc text-[#275EFF] ml-1.5">
+                  <p className="text-desc text-[#6356EA] ml-1.5">
                     {t('knowledge.retry')}
                   </p>
                 </div>

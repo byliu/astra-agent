@@ -2,9 +2,7 @@ package com.iflytek.astron.console.toolkit.util;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -43,6 +41,8 @@ public class RedisUtil {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /* ========================= Constants & Precompiled Scripts ========================= */
 
@@ -84,10 +84,12 @@ public class RedisUtil {
         requireKey(key);
         long ttl = Math.max(1, ttlSeconds);
         String val = token != null ? token : UUID.randomUUID().toString();
-        Boolean ok = redisTemplate.opsForValue().setIfAbsent(key, val, ttl, TimeUnit.SECONDS);
+        Boolean ok = stringRedisTemplate.opsForValue()
+                .setIfAbsent(key, val, ttl, TimeUnit.SECONDS);
         log.debug("redis.tryLock key={}, ttl={}s, token={}, ok={}", key, ttl, safe(val), ok);
         return Boolean.TRUE.equals(ok);
     }
+
 
     /**
      * Acquire a distributed lock (with token).
@@ -116,11 +118,12 @@ public class RedisUtil {
     public boolean renew(String key, long ttlSeconds, String token) {
         requireKey(key);
         Objects.requireNonNull(token, "token must not be null");
-        long pttl = Math.max(1, ttlSeconds) * 1000L;
-        Long ret = redisTemplate.execute(LUA_RENEW,
+        String pttl = String.valueOf(Math.max(1, ttlSeconds) * 1000L);
+        Long ret = stringRedisTemplate.execute(
+                LUA_RENEW,
                 Collections.singletonList(key),
-                token,
-                pttl);
+                token, pttl // String types
+        );
         boolean ok = ret != null && ret > 0;
         log.debug("redis.renew key={}, ttl={}s, token={}, ok={}", key, ttlSeconds, safe(token), ok);
         return ok;
@@ -152,7 +155,10 @@ public class RedisUtil {
     public boolean unlock(String key, String token) {
         requireKey(key);
         Objects.requireNonNull(token, "token must not be null");
-        Long ret = redisTemplate.execute(LUA_UNLOCK, Collections.singletonList(key), token);
+        Long ret = stringRedisTemplate.execute(
+                LUA_UNLOCK,
+                Collections.singletonList(key),
+                token);
         boolean ok = ret != null && ret > 0;
         log.debug("redis.unlock key={}, token={}, ok={}", key, safe(token), ok);
         return ok;

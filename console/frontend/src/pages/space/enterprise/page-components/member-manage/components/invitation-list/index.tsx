@@ -21,6 +21,7 @@ import {
 } from '@/services/enterprise';
 import { STATUS_THEME_MAP_INVITE, PENDING_STATUS } from '@/pages/space/config';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
+import { useTranslation } from 'react-i18next';
 
 interface InvitationData {
   id: string;
@@ -43,6 +44,7 @@ const InvitationList = forwardRef<InvitationListRef, InvitationListProps>(
   ({ searchValue, statusFilter }, ref) => {
     const tableRef = useRef<SpaceTableRef>(null);
     const { invitationStatusTextMap } = useSpaceI18n();
+    const { t } = useTranslation();
     // 模拟查询邀请数据的函数
     const queryInvitationData = useCallback(
       async (params: QueryParams): Promise<QueryResult<InvitationData>> => {
@@ -114,55 +116,72 @@ const InvitationList = forwardRef<InvitationListRef, InvitationListProps>(
     const columns: SpaceColumnConfig<InvitationData>[] = useMemo(
       () => [
         {
-          title: '用户名',
+          title: t('common.username'),
           dataIndex: 'inviteeNickname',
           key: 'inviteeNickname',
           width: 200,
         },
         {
-          title: '邀请状态',
+          title: t('space.invitationStatus'),
           dataIndex: 'status',
           key: 'status',
           width: 120,
           render: (status: number) => getStatusTag(status),
         },
         {
-          title: '邀请时间',
+          title: t('space.joinTime'),
           dataIndex: 'createTime',
           key: 'createTime',
           width: 180,
         },
       ],
-      [getStatusTag]
+      [getStatusTag, t]
     );
 
     // 处理重发邀请
-    const handleResend = useCallback((record: InvitationData) => {
-      message.success(`已重新发送邀请给 ${record.inviteeNickname}`);
-    }, []);
+    const handleResend = useCallback(
+      (record: InvitationData) => {
+        message.success(
+          t('common.invitationResentToUser', {
+            username: record.inviteeNickname,
+          })
+        );
+      },
+      [t]
+    );
 
     // 处理取消邀请
-    const handleCancel = useCallback(async (record: InvitationData) => {
-      try {
-        await revokeEnterpriseInvite({ inviteId: record.id });
+    const handleCancel = useCallback(
+      async (record: InvitationData) => {
+        try {
+          await revokeEnterpriseInvite({ inviteId: record.id });
 
-        message.success(`已撤回邀请用户 ${record.inviteeNickname}`);
-      } catch (err: any) {
-        message.error(err?.msg || err?.desc);
-      } finally {
-        tableRef.current?.reload();
-      }
-    }, []);
+          message.success(t('space.revokeSuccess'));
+        } catch (err: any) {
+          message.error(err?.msg || err?.desc);
+        } finally {
+          tableRef.current?.reload();
+        }
+      },
+      [t]
+    );
 
     // 处理删除邀请记录
-    const handleDelete = useCallback((record: InvitationData) => {
-      message.success(`已删除 ${record.inviteeNickname} 的邀请记录`);
-    }, []);
+    const handleDelete = useCallback(
+      (record: InvitationData) => {
+        message.success(
+          t('common.invitationRecordDeleted', {
+            username: record.inviteeNickname,
+          })
+        );
+      },
+      [t]
+    );
 
     // 操作列配置
     const actionColumn: ActionColumnConfig<InvitationData> = useMemo(
       () => ({
-        title: '操作',
+        title: t('space.operation'),
         width: 100,
         getActionButtons: (record: InvitationData) => {
           if (record.status !== Number(PENDING_STATUS)) {
@@ -172,14 +191,16 @@ const InvitationList = forwardRef<InvitationListRef, InvitationListProps>(
           const buttons: ButtonConfig[] = [
             {
               key: 'cancel',
-              text: '撤回',
+              text: t('space.revoke'),
               type: 'link',
               onClick: () => {
                 Modal.confirm({
-                  title: '确认撤回邀请',
-                  content: '是否确认撤回邀请该用户？',
-                  okText: '确认',
-                  cancelText: '取消',
+                  title: t('space.confirmRevoke'),
+                  content: t('space.confirmRevokeInvitation', {
+                    nickname: record.inviteeNickname,
+                  }),
+                  okText: t('space.confirm'),
+                  cancelText: t('space.cancel'),
                   onOk: () => handleCancel(record),
                 });
               },
@@ -189,7 +210,7 @@ const InvitationList = forwardRef<InvitationListRef, InvitationListProps>(
           return buttons;
         },
       }),
-      [handleResend, handleCancel, handleDelete]
+      [handleResend, handleCancel, handleDelete, t]
     );
 
     return (
@@ -206,7 +227,7 @@ const InvitationList = forwardRef<InvitationListRef, InvitationListProps>(
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total, range) => `共 ${total} 项数据`,
+          showTotal: (total, range) => t('space.totalDataCount', { total }),
           pageSizeOptions: ['10', '20', '50'],
         }}
       />

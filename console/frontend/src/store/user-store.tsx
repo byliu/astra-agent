@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { getUserInfoMe } from '@/services/login';
-import { SpaceType, RoleType } from '@/types/permission';
+import { SpaceType, RoleType, EnterpriseServiceType } from '@/types/permission';
 import { tokenStorage } from '@/hooks/use-login';
 
 export interface User {
@@ -18,6 +18,7 @@ export interface User {
   spaceType?: SpaceType;
   roleType?: RoleType;
   spaceId?: string;
+  enterpriseServiceType?: EnterpriseServiceType;
   [key: string]: unknown;
 }
 

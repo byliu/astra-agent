@@ -109,5 +109,9 @@ public class BotInfoDto {
 
     private Long modelId;
 
+    private String vcnCn;
+
+    private String vcnEn;
+
     private BotModelDto botModelDto;
 }

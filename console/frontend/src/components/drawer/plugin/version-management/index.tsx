@@ -111,7 +111,7 @@ const VersionManagement: FC<{
                         borderColor:
                           selectedCard?.id === '' ||
                           selectedCard?.id === undefined
-                            ? '#275EFF'
+                            ? '#6356EA'
                             : '#e8e8e8',
                       }}
                       onClick={() =>
@@ -145,7 +145,7 @@ const VersionManagement: FC<{
                         style={{
                           borderColor:
                             selectedCard?.id === item.id
-                              ? '#275EFF'
+                              ? '#6356EA'
                               : '#e8e8e8',
                           cursor: 'pointer',
                         }}

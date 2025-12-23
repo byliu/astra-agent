@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form } from 'antd';
+import { Modal, Form, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { getLanguageCode } from '@/utils/http';
 import AgentCreationModal from '@/components/agent-creation';
@@ -8,7 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 import styles from './index.module.scss';
 import classNames from 'classnames';
-
+import VirtualConfig from '../virtual-config-modal';
+import { createTalkAgent } from '@/services/spark-common';
 interface HeaderFeedbackModalProps {
   visible: boolean;
   onCancel: () => void;
@@ -26,12 +27,15 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
   const [selectedBox, setSelectedBox] = useState('');
   const [AgentCreationModalVisible, IntelligentModalVisible] =
     useState<boolean>(false); //智能体创建
+  const [virtualModal, setVirtualModal] = useState<boolean>(false); //虚拟人创建
   const handleBoxClick = (boxName: string): void => {
     setSelectedBox(boxName);
     if (boxName === 'cueWord') {
       IntelligentModalVisible(true);
-    } else {
+    } else if (boxName === 'workflow') {
       setMakeModalVisible(true);
+    } else if (boxName === 'virtual') {
+      setVirtualModal(true);
     }
   };
 
@@ -49,7 +53,7 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
   return (
     <Modal
       wrapClassName={styles.open_source_modal}
-      width={820}
+      width="auto"
       open={visible}
       centered
       onCancel={handleCancel}
@@ -68,11 +72,7 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
             }`}
             onClick={() => handleBoxClick('cueWord')}
           >
-            <div className={styles.cueWord_img}>
-              <div className={styles.cueWord_left_top}>
-                {t('createAgent1.gettingStarted')}
-              </div>
-            </div>
+            <div className={styles.cueWord_img}></div>
             <p>{t('createAgent1.promptCreation')}</p>
             <span>{t('createAgent1.promptSetup')}</span>
           </div>
@@ -84,13 +84,21 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
           >
             <div
               className={classNames(styles.cueWord_img, styles.Workflow_img)}
-            >
-              <div className={styles.cueWord_left_top}>
-                {t('createAgent1.advanced')}
-              </div>
-            </div>
+            ></div>
             <p>{t('createAgent1.workflowCreation')}</p>
             <span>{t('createAgent1.workflowDesign')}</span>
+          </div>
+          <div
+            className={`${styles.virtual} ${
+              selectedBox === 'virtual' ? styles.selected : ''
+            }`}
+            onClick={() => handleBoxClick('virtual')}
+          >
+            <div
+              className={classNames(styles.cueWord_img, styles.virtual_img)}
+            ></div>
+            <p>{t('createAgent1.virtualCreation')}</p>
+            <span>{t('createAgent1.virtualCreationDesc')}</span>
           </div>
         </div>
       </div>
@@ -109,6 +117,27 @@ const HeaderFeedbackModal: React.FC<HeaderFeedbackModalProps> = ({
           IntelligentModalVisible(false);
         }}
       />
+      {virtualModal && (
+        <VirtualConfig
+          visible={virtualModal}
+          onSubmit={values => {
+            createTalkAgent(values)
+              .then((res: any) => {
+                message.success(t('createAgent1.createSuccess'));
+                navigate(
+                  `/work_flow/${res?.maasId}/arrange?botId=${res?.botId}`
+                );
+                setVirtualModal(false);
+              })
+              .catch((err: any) => {
+                // message.error(err?.message || err);
+              });
+          }}
+          onCancel={() => {
+            setVirtualModal(false);
+          }}
+        />
+      )}
     </Modal>
   );
 };

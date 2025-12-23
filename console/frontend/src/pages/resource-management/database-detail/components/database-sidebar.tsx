@@ -69,7 +69,7 @@ const DatabaseHeader: React.FC<DatabaseHeaderProps> = memo(
           {dbDetailData?.name}
         </div>
         <div
-          className="text-[#275EFF] text-sm flex items-center gap-2 cursor-pointer"
+          className="text-[#6356EA] text-sm flex items-center gap-2 cursor-pointer"
           onClick={onEditDatabase}
         >
           <img src={databaseEditIcon} className="w-[14px] h-[14px]" alt="" />
@@ -165,7 +165,7 @@ const TableList: React.FC<TableListProps> = memo(
         )}
         <div className="w-full pt-6">
           <div
-            className="w-full rounded-lg border border-[#275EFF] py-1 text-center text-[#275EFF] text-sm cursor-pointer"
+            className="w-full rounded-lg border border-[#6356EA] py-1 text-center text-[#6356EA] text-sm cursor-pointer"
             onClick={(): void =>
               navigate(`/resource/database/${dbDetailData?.id}/add`)
             }

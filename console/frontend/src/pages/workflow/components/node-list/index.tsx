@@ -110,7 +110,7 @@ const NodeList: React.FC<NodeListProps> = ({
                                         setCurrentNodeId(item?.idType);
                                       }}
                                     >
-                                      <span className="text-[#275EFF] text-xs flex-shrink-0 self-center">
+                                      <span className="text-[#6356EA] text-xs flex-shrink-0 self-center">
                                         {t('workflow.nodeList.details')}
                                       </span>
                                       <img

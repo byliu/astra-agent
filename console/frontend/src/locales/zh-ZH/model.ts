@@ -36,6 +36,8 @@ const translation = {
   // 模型管理页面
   modelManagement: '模型管理',
   createModel: '新建模型',
+  emptyDescription: '暂无模型，快去创建吧~',
+  searchNoResults: '未找到相关模型',
   edit: '编辑',
   view: '查看',
   deleteWarning: '确认删除该模型？',

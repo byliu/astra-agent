@@ -46,8 +46,8 @@ export async function createKnowledgeAPI(
     message.success('操作成功');
     return response as unknown as RepoItem;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -61,8 +61,8 @@ export async function deleteKnowledgeAPI(
     message.success('操作成功');
     return response as unknown as KnowledgeOperationResponse;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -75,8 +75,8 @@ export async function updateRepoAPI(
     message.success('操作成功');
     return response as unknown as RepoItem;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -154,8 +154,8 @@ export async function enableFlieAPI(
     message.success('操作成功');
     return response as unknown as KnowledgeOperationResponse;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -172,8 +172,8 @@ export async function deleteFileAPI(
     message.success('操作成功');
     return response as unknown as KnowledgeOperationResponse;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -186,8 +186,8 @@ export async function deleteFolderAPI(
     message.success('操作成功');
     return response as unknown as KnowledgeOperationResponse;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }
@@ -218,8 +218,8 @@ export async function updateKnowledgeAPI(
     message.success('操作成功');
     return response as unknown as KnowledgeOperationResponse;
   } catch (error: unknown) {
-    const errorMessage = (error as Error)?.message;
-    message.error(errorMessage);
+    // const errorMessage = (error as Error)?.message;
+    // message.error(errorMessage);
     throw error;
   }
 }

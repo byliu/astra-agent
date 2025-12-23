@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { message } from 'antd';
 import { DeleteIcon } from '@/components/svg-icons';
 import { useTranslation } from 'react-i18next';

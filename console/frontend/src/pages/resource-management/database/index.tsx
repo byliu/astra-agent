@@ -9,6 +9,7 @@ import DatabaseGrid from './components/database-grid';
 import { jumpToLogin } from '@/utils/http';
 import { DatabaseItem, CreateDbParams } from '@/types/database';
 import { useDatabaseList } from './hooks/use-database-list';
+import SiderContainer from '@/components/sider-container';
 
 // 数据库管理页面
 const DataBase = (): JSX.Element => {
@@ -39,12 +40,15 @@ const DataBase = (): JSX.Element => {
 
   // 搜索处理函数
   const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setSearchValue(e?.target?.value || '');
-      setPagination({
-        pageNum: 1,
-        pageSize: 20,
-      });
+    (event: CustomEvent): void => {
+      const { value, type } = event.detail;
+      if (type === 'database') {
+        setSearchValue(value);
+        setPagination({
+          pageNum: 1,
+          pageSize: 20,
+        });
+      }
     },
     [setSearchValue, setPagination]
   );
@@ -88,17 +92,51 @@ const DataBase = (): JSX.Element => {
     [createDatabaseOk]
   );
 
+  // 监听Header组件的搜索和新建事件
+  useEffect(() => {
+    const handleHeaderCreateDatabase = (event: CustomEvent) => {
+      const { type } = event.detail;
+      if (type === 'database') {
+        handleCreateDatabaseClick();
+      }
+    };
+
+    window.addEventListener(
+      'headerSearch',
+      handleSearchChange as EventListener
+    );
+    window.addEventListener(
+      'headerCreateDatabase',
+      handleHeaderCreateDatabase as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        'headerSearch',
+        handleSearchChange as EventListener
+      );
+      window.removeEventListener(
+        'headerCreateDatabase',
+        handleHeaderCreateDatabase as EventListener
+      );
+    };
+  }, [handleCreateDatabaseClick]);
+
   return (
     <>
-      <DatabaseGrid
-        dataSource={dataSource}
-        hasMore={hasMore}
-        loader={loader}
-        onSearchChange={handleSearchChange}
-        onCreateDatabaseClick={handleCreateDatabaseClick}
-        onDatabaseClick={handleDatabaseClick}
-        onDeleteClick={handleDeleteClick}
+      <SiderContainer
+        rightContent={
+          <DatabaseGrid
+            dataSource={dataSource}
+            hasMore={hasMore}
+            loader={loader}
+            onDatabaseClick={handleDatabaseClick}
+            onDeleteClick={handleDeleteClick}
+            onCreateDatabaseClick={handleCreateDatabaseClick}
+          />
+        }
       />
+
       {createDatabaseOpen && (
         <CreateDatabase
           open={createDatabaseOpen}

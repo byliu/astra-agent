@@ -6,7 +6,8 @@ creation, and management of middleware services using the factory pattern.
 """
 
 from typing import Dict, List, Optional
-from venv import logger
+
+from loguru import logger
 
 from workflow.extensions.middleware.base import Service
 from workflow.extensions.middleware.factory import ServiceFactory
@@ -74,12 +75,13 @@ class ServiceManager:
 
         :param service_name: The name of the service to create
         """
-        logger.debug(f"Create service {service_name}")
+        logger.info(f"🔍 Creating service: {service_name}")
         self._validate_service_creation(service_name)
 
         # Create the actual service
         self.services[service_name] = self.factories[service_name].create()
         self.services[service_name].set_ready()
+        logger.info(f"✅ Service {service_name} created successfully")
 
     def _validate_service_creation(self, service_name: ServiceType) -> None:
         """

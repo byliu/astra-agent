@@ -126,7 +126,7 @@ function index({ id, data, nodeParam }): React.ReactElement {
         {optionAnswer?.map(item => (
           <div key={item?.id} className="flex flex-col gap-1 relative">
             <div className="flex items-start gap-3 text-desc">
-              <div className="p-1.5 border border-[#E4EAFF] rounded-md text-[#275EFF] text-xs font-medium">
+              <div className="p-1.5 border border-[#E4EAFF] rounded-md text-[#6356EA] text-xs font-medium">
                 {item?.name}
               </div>
               <div className="w-[100px]">
@@ -180,7 +180,7 @@ function index({ id, data, nodeParam }): React.ReactElement {
         ))}
         {optionAnswer?.length <= 25 && (
           <div
-            className="text-[#275EFF] text-xs font-medium inline-flex items-center cursor-pointer gap-1.5 w-fit"
+            className="text-[#6356EA] text-xs font-medium inline-flex items-center cursor-pointer gap-1.5 w-fit"
             onClick={() => handleAddLine()}
           >
             <img src={inputAddIcon} className="w-3 h-3" alt="" />
@@ -189,7 +189,7 @@ function index({ id, data, nodeParam }): React.ReactElement {
         )}
         {optionDefaultAnswer && (
           <div className="relative flex items-center gap-2 mt-3">
-            <span className="text-[#275EFF] text-xs font-medium">
+            <span className="text-[#6356EA] text-xs font-medium">
               {t('workflow.nodes.questionAnswerNode.other')}
             </span>
             <div className="flex-1 border border-[#E4EAFF] rounded-lg px-3 py-1 text-[#CBCBCD] text-xs">

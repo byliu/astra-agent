@@ -236,7 +236,6 @@ public class ChatListServiceImpl implements ChatListService {
 
     /**
      * Logically delete user chat list
-     *
      */
     @Override
     public boolean logicDeleteChatList(Long chatListId, String uid) {
@@ -245,7 +244,6 @@ public class ChatListServiceImpl implements ChatListService {
 
     /**
      * Get chat information data based on botId
-     *
      */
     @Override
     public BotInfoDto getBotInfo(HttpServletRequest request, String uid, Integer botId, String workflowVersion) {
@@ -303,7 +301,6 @@ public class ChatListServiceImpl implements ChatListService {
 
     /**
      * Clear history button to recreate conversation
-     *
      */
     @Override
     public ChatListCreateResponse createRestartChat(String uid, String chatListName, Integer botId) {

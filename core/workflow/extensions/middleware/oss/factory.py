@@ -7,8 +7,6 @@ based on configuration environment variables.
 
 import os
 
-from loguru import logger
-
 from workflow.extensions.middleware.factory import ServiceFactory
 from workflow.extensions.middleware.oss.base import BaseOSSService
 from workflow.extensions.middleware.oss.manager import (
@@ -50,7 +48,6 @@ class OSSServiceFactory(ServiceFactory):
         :return: Configured OSS service instance
         :raises AssertionError: If client creation fails
         """
-        logger.debug("Creating OSS Service")
         oss_type = os.getenv("OSS_TYPE", "ifly_gateway_storage")
         if oss_type == "s3":
             self.client = S3Service(

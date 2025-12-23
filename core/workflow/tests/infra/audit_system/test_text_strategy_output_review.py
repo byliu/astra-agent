@@ -12,6 +12,7 @@ from typing import List, Tuple
 import pytest
 from pydantic import BaseModel
 
+from workflow.consts.engine.timeout import QueueTimeout
 from workflow.extensions.otlp.trace.span import Span
 from workflow.infra.audit_system.audit_api.base import AuditAPI, Stage
 from workflow.infra.audit_system.audit_api.iflytek.ifly_audit_api import IFlyAuditAPI
@@ -118,7 +119,8 @@ async def base_output_review(frames: list[Frame]) -> None:
         i = 0
         while True:
             frame_audit_result: FrameAuditResult = await asyncio.wait_for(
-                audit_strategy.context.output_queue.get(), timeout=100
+                audit_strategy.context.output_queue.get(),
+                timeout=QueueTimeout.AsyncQT.value,
             )
             audited_content += frame_audit_result.content
             if frame_audit_result.error:

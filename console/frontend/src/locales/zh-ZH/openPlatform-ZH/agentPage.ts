@@ -5,6 +5,7 @@ const transition = {
     allTypes: '全部类型',
     instructionType: '指令型',
     workflowType: '工作流',
+    voiceVirtualType: '语音*虚拟人',
     sortByCreateTime: '创建时间排序',
     sortByUpdateTime: '更新时间排序',
     allStatus: '全部状态',
@@ -25,6 +26,10 @@ const transition = {
     export: '导出',
     delete: '删除',
     copySuccess: '复制成功！',
+    createAgent: '新建智能体',
+    copyToVirtualAgent: '复制为语音*虚拟人智能体',
+    noAgentsYet: '暂无智能体，快去创建吧~',
+    copyToVirtualSuccess: '复制成功',
   },
   deleteBot: {
     confirmDelete: '确认删除智能体？',
@@ -40,6 +45,20 @@ const transition = {
   },
   agentSumModal: {
     learnMore: '了解详情',
+  },
+  createBot: {
+    noAvailableModel: '暂无可用模型',
+    successMessage: 'ok',
+    createBotStep: '创建Bot',
+    authBindingStep: 'Bot授权绑定',
+    botName: 'Bot名称',
+    pleaseEnter: '请输入',
+    botDescription: 'Bot描述',
+    botDescriptionTip:
+      '以下文字将展示在客户端中，用于对用户进行解释说明应用的功能并进行基本引导。',
+    submit: '提交',
+    cancel: '取消',
+    previousStep: '上一步',
   },
 };
 

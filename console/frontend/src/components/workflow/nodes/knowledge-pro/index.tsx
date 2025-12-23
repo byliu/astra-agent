@@ -36,10 +36,10 @@ const KnowledgeProStrategy = ({
               style={{
                 border:
                   data?.nodeParam?.ragType === item?.code
-                    ? '1px solid #275EFF'
+                    ? '1px solid #6356EA'
                     : '1px solid #E4EAFF',
                 color:
-                  data?.nodeParam?.ragType === item?.code ? '#275EFF' : '#333',
+                  data?.nodeParam?.ragType === item?.code ? '#6356EA' : '#333',
               }}
               onClick={() =>
                 handleParameterChange(old => {
@@ -189,7 +189,7 @@ export const KnowledgeProDetail = memo(props => {
                       src={parameterSettingsIcon}
                       alt=""
                     />
-                    <span className="text-[#275EFF] cursor-pointer">
+                    <span className="text-[#6356EA] cursor-pointer">
                       {t('workflow.nodes.knowledgeProNode.parameterSetting')}
                     </span>
                   </div>
@@ -208,7 +208,7 @@ export const KnowledgeProDetail = memo(props => {
                       className="w-2.5 h-2.5 mt-0.5"
                       alt=""
                     />
-                    <span className="text-[#275EFF] cursor-pointer">
+                    <span className="text-[#6356EA] cursor-pointer">
                       {t('workflow.nodes.knowledgeProNode.addKnowledgeBase')}
                     </span>
                   </div>

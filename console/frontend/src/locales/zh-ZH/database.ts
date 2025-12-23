@@ -1,5 +1,7 @@
 const translation = {
   createDatabase: '新建数据库',
+  emptyDescription: '暂无数据库，快去创建吧~',
+  noSearchResults: '未找到相关数据库',
   goToEdit: '去编辑',
   copy: '复制',
   delete: '删除',

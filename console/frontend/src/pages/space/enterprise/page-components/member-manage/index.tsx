@@ -18,6 +18,7 @@ import styles from './index.module.scss';
 import { ModuleType, OperationType } from '@/types/permission';
 import { enterpriseInvite } from '@/services/enterprise';
 import { DEFAULT_VALUES } from '@/pages/space/config';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 
@@ -37,6 +38,7 @@ interface FilterState {
 }
 
 const MemberManage: React.FC = () => {
+  const { t } = useTranslation();
   const invitationListRef = useRef<InvitationListRef>(null);
   const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.MEMBERS);
 

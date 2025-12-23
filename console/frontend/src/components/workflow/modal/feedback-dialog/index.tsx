@@ -116,7 +116,7 @@ const FeedbackForm = ({
             <img src={uploadAct} className="w-10 h-10" alt="" />
             <div className="mt-6 font-[500]">
               {i18next.t('workflow.promptDebugger.dragFileHereOr')}
-              <span className="text-[#275EFF]">
+              <span className="text-[#6356EA]">
                 {i18next.t('workflow.promptDebugger.selectFile')}
               </span>
             </div>

@@ -7,9 +7,8 @@ managing license assignments and status for applications and groups.
 
 from datetime import datetime
 
+from common.utils.snowfake import get_id
 from sqlmodel import Field, SQLModel  # type: ignore
-
-from workflow.utils.snowfake import get_id
 
 
 class License(SQLModel, table=True):  # type: ignore

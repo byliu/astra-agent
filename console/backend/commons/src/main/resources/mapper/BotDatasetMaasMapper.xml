@@ -2,39 +2,29 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.iflytek.astron.console.commons.mapper.dataset.BotDatasetMaasMapper">
 
-    <select id="selectBotStatsMaps"
-            resultType="com.iflytek.astron.console.commons.dto.dataset.DatasetStats">
-        SELECT
-        cbb.id              AS bot_id,
-        bd.dataset_id       AS dataset_id,
-        cbb.bot_name        AS name,
-        cbb.bot_type        AS bot_type,
-        cbm_latest.bot_status AS status
-        FROM bot_dataset_maas bd
-        LEFT JOIN chat_bot_base cbb
-        ON bd.bot_id = cbb.id
-        LEFT JOIN (
-        SELECT bot_id, bot_status
-        FROM (
-        SELECT
+    <select id="selectBotStatsMaps" resultType="com.iflytek.astron.console.commons.dto.dataset.DatasetStats">
+        select
         bot_id,
-        bot_status,
-        ROW_NUMBER() OVER (PARTITION BY bot_id ORDER BY update_time DESC) AS rn
-        FROM chat_bot_market
-        ) t
-        WHERE t.rn = 1
-        ) cbm_latest
-        ON cbm_latest.bot_id = bd.bot_id
-        WHERE bd.is_act = 1
-        <if test="datasetIds != null and datasetIds.size() > 0">
-            AND bd.dataset_id IN
-            <foreach collection="datasetIds" item="datasetId" open="(" separator="," close=")">
-                #{datasetId}
-            </foreach>
-        </if>
-        <if test="datasetIds == null or datasetIds.size() == 0">
-            AND 1 = 0
-        </if>
+        dataset_id,
+        name,
+        type as bot_type,
+        status
+        from (
+        select
+        cbb.id as bot_id,
+        bd.dataset_id,
+        cbb.bot_name as name,
+        cbb.bot_type as type,
+        cbm.bot_status as status
+        from bot_dataset_maas bd
+        left join chat_bot_base cbb on bd.bot_id = cbb.id
+        left join chat_bot_market cbm on bd.bot_id = cbm.bot_id
+        where bd.is_act = 1 AND bd.dataset_id in
+        <foreach item="item" index="index" collection="datasetIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ) as t
+        group by dataset_id, bot_id, name, type, status;
     </select>
 
 </mapper>

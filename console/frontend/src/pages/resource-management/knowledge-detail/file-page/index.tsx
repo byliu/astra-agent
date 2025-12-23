@@ -442,7 +442,7 @@ export const FilePageChunks: FC<{
           {violationTotal > 0 && (
             <div className="flex items-center gap-4">
               <div
-                className="flex items-center gap-1 text-[#275EFF] text-xs cursor-pointer"
+                className="flex items-center gap-1 text-[#6356EA] text-xs cursor-pointer"
                 onClick={() => downloadExcel([fileId || ''], 1, fileInfo.name)}
               >
                 <img src={download} className="w-4 h-4" alt="" />

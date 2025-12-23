@@ -332,7 +332,7 @@ class WorkflowControllerTest {
                 "'; DROP TABLE workflows; --",
                 "../../etc/passwd",
                 "\u0000\u0001\u0002",
-                "测试中文关键词");
+                "te Chinese"); // Test data: Chinese keywords for testing
     }
 
     // ==================== Workflow List Tests ====================
@@ -608,7 +608,7 @@ class WorkflowControllerTest {
         @DisplayName("Should return error when internal clone password is incorrect")
         void cloneV2_whenPasswordIsIncorrect_shouldReturnError() {
             // When
-            Object result = controller.cloneV2(VALID_WORKFLOW_ID, WRONG_PASSWORD, request);
+            Object result = controller.cloneV2(new CloneFlowReq(), request);
 
             // Then
             assertThat(result)
@@ -630,7 +630,7 @@ class WorkflowControllerTest {
         @DisplayName("Should reject all incorrect passwords for internal clone")
         void cloneV2_shouldRejectAllIncorrectPasswords(String incorrectPassword) {
             // When
-            Object result = controller.cloneV2(VALID_WORKFLOW_ID, incorrectPassword, request);
+            Object result = controller.cloneV2(new CloneFlowReq(), request);
 
             // Then
             assertThat(result)

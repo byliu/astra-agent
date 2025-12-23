@@ -5,12 +5,14 @@ import time
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, cast
 
-from pydantic import BaseModel, Field
+from common.utils.json_schema.json_schema_validator import JsonSchemaValidator
+from pydantic import BaseModel, Field, PrivateAttr
 from typing_extensions import Annotated
 
 from workflow.cache.event_registry import EventRegistry
 from workflow.consts.engine.chat_status import ChatStatus
 from workflow.engine.callbacks.callback_handler import ChatCallBacks
+from workflow.engine.entities.private_config import PrivateConfig
 from workflow.engine.entities.variable_pool import VariablePool
 from workflow.engine.entities.workflow_dsl import OutputItem
 from workflow.engine.nodes.base_node import BaseLLMNode
@@ -24,7 +26,6 @@ from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.otlp.log_trace.node_log import NodeLog
 from workflow.extensions.otlp.trace.span import Span
-from workflow.utils.json_schema.json_schema_validator import JsonSchemaValidator
 
 
 class EventType(str, Enum):
@@ -178,6 +179,9 @@ class QuestionAnswerNode(BaseLLMNode):
     supporting user interaction through interrupts and resume mechanisms.
     """
 
+    _private_config: PrivateConfig = PrivateAttr(
+        default_factory=lambda: PrivateConfig(timeout=None)
+    )
     question: str = Field(...)
     answerType: Literal["option", "direct"] = Field(...)
     timeout: int = Field(..., ge=1, le=5)
@@ -902,6 +906,7 @@ class QuestionAnswerNode(BaseLLMNode):
         callbacks = cast(ChatCallBacks, kwargs.get("callbacks"))
         self.start_time = time.time()
         self.timeout = self.timeout * 60  # Convert timeout from minutes to seconds
+        question_template: str = self.question
         try:
             # Process question content
             self.question = prompt_template_replace(
@@ -1010,6 +1015,7 @@ class QuestionAnswerNode(BaseLLMNode):
                     outputs=outputs,
                 )
             EventRegistry().on_interrupt_node_end(event_id=self.event_id)
+            self.question = question_template
             return node_res
 
         except CustomException as e:

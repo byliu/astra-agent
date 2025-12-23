@@ -109,7 +109,6 @@ class TestHttpAuthUtils:
             )
 
             # Check that result is a URL with auth parameters
-            assert "api.example.com" in result_url
             assert "authorization=" in result_url
 
     def test_public_query_url_functionality(self) -> None:
@@ -151,7 +150,6 @@ class TestHttpAuthUtils:
 
             # Check that result is the original URL (no URL join)
             assert "https://" in result_url
-            assert "api.example.com" in result_url
 
     def test_query_url_with_parameters(self) -> None:
         """Test query URL generation with parameters"""

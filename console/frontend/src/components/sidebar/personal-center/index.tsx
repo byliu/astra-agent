@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { cancelFavorite } from '@/services/agent-square';
 import { deleteChatList } from '@/services/chat';
 import { useTranslation } from 'react-i18next';
+import eventBus from '@/utils/event-bus';
 
 interface PersonalCenterProps {
   open: boolean;
@@ -203,6 +204,7 @@ const PersonalCenterHeader: FC<{
   showInput: boolean;
   setShowInput: (showInput: boolean) => void;
 }> = ({ showInput, setShowInput }) => {
+  const { t } = useTranslation();
   const userInfo = useUserStore((state: any) => state.user);
   const [infoName, setInfoName] = useState(userInfo.nickname || userInfo.login);
 
@@ -216,7 +218,7 @@ const PersonalCenterHeader: FC<{
               nickname: infoName,
               avatar: url,
             }).then(res => {
-              message.success('修改成功');
+              message.success(t('commonModal.update.success'));
               useUserStore.setState({
                 user: {
                   ...userInfo,
@@ -256,7 +258,7 @@ const PersonalCenterHeader: FC<{
                     avatar: userInfo.avatar,
                   })
                     .then(res => {
-                      message.success('修改成功');
+                      message.success(t('commonModal.update.success'));
                       // 更新用户信息
                       useUserStore.setState({
                         user: {
@@ -297,11 +299,11 @@ const PersonalCenterHeader: FC<{
         </div>
         <div className={styles.flexInfo}>
           <img src={user} alt="" />
-          <div className={styles.uid}>UID：{userInfo?.uid}</div>
+          <div className={styles.uid}>用户名：{userInfo?.username}</div>
           <img
             onClick={() => {
               copyText({
-                text: `${userInfo?.uid}`,
+                text: `${userInfo?.username}`,
                 successText: '复制成功',
               });
             }}
@@ -339,7 +341,8 @@ const PersonalCenter: FC<PersonalCenterProps> = ({
     cancelFavorite({
       botId,
     }).then(res => {
-      message.success('删除成功');
+      message.success(t('commonModal.agentDelete.success'));
+      eventBus.emit('favoriteChange', botId);
       onRefreshFavoriteData?.();
     });
   }, []);

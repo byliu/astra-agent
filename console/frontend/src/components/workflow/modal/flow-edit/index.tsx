@@ -101,7 +101,7 @@ const EditFlowForm = ({
   );
 };
 
-function EditModal({ currentFlow, setEditModal }): React.ReactElement {
+function EditModal({ currentFlow, setModalType }): React.ReactElement {
   const { t } = useTranslation();
   const setCurrentFlow = useFlowsManager(state => state.setCurrentFlow);
   const avatarIcon = globalStore(state => state.avatarIcon);
@@ -138,7 +138,7 @@ function EditModal({ currentFlow, setEditModal }): React.ReactElement {
     };
     saveFlowAPI(params)
       .then(data => {
-        setEditModal(false);
+        setModalType('');
         setCurrentFlow(currentFlow => ({
           ...currentFlow,
           name: tempFlow.name,
@@ -200,7 +200,7 @@ function EditModal({ currentFlow, setEditModal }): React.ReactElement {
                 src={close}
                 className="w-3 h-3 cursor-pointer"
                 alt=""
-                onClick={() => setEditModal(false)}
+                onClick={() => setModalType('')}
               />
             </div>
             <EditFlowForm
@@ -236,7 +236,7 @@ function EditModal({ currentFlow, setEditModal }): React.ReactElement {
                 <Button
                   type="text"
                   className="origin-btn px-6"
-                  onClick={() => setEditModal(false)}
+                  onClick={() => setModalType('')}
                 >
                   {t('common.cancel')}
                 </Button>

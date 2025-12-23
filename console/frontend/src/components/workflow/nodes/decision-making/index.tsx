@@ -208,7 +208,7 @@ const IntentSection = ({
                   </>
                 ) : (
                   <div className="flex">
-                    <span className="text-[#275EFF] flex-shrink-0">
+                    <span className="text-[#6356EA] flex-shrink-0">
                       {t('workflow.nodes.decisionMakingNode.defaultIntent')}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ const IntentSection = ({
           </div>
           {!canvasesDisabled && intentChains.length < 11 && (
             <div
-              className="mt-4 text-[#275EFF] text-center"
+              className="mt-4 text-[#6356EA] text-center"
               onClick={handleAddIntent}
             >
               {t('workflow.nodes.decisionMakingNode.addIntentKeyword')}

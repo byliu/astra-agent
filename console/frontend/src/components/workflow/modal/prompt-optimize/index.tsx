@@ -139,7 +139,7 @@ function PromptModal(): React.ReactElement {
                 <div className="w-full text-lg flex items-center justify-between">
                   <span>Prompt优化</span>
                   <div
-                    className="flex items-center gap-1 text-[#275EFF] text-base"
+                    className="flex items-center gap-1 text-[#6356EA] text-base"
                     onClick={() => !isReciving && handlePromptOptimization()}
                     style={{
                       opacity: isReciving ? '0.5' : '1',

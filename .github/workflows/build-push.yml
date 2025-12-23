@@ -5,12 +5,6 @@ on:
     branches:
       - main
       - master
-      - feature/**
-  pull_request:
-    branches:
-      - main
-      - master
-      - feature/**
   workflow_dispatch:
     inputs:
       push_images:
@@ -55,15 +49,11 @@ jobs:
           # Version is always latest
           VERSION="latest"
 
-          # Determine if should push (main, master, feature branches, PR, or manual dispatch)
+          # Determine if should push (only main/master branches or manual dispatch)
           SHOULD_PUSH="false"
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             SHOULD_PUSH="true"
           elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
-            SHOULD_PUSH="true"
-          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/heads/feature/* ]]; then
-            SHOULD_PUSH="true"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SHOULD_PUSH="true"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.push_images }}" == "true" ]]; then
             SHOULD_PUSH="true"
@@ -127,8 +117,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-database:
     name: 🧠 Build Core Database
@@ -174,8 +163,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-rpa:
     name: 🤖 Build Core RPA
@@ -221,8 +209,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-link:
     name: 🔗 Build Core Link
@@ -268,8 +255,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-aitools:
     name: 🛠️ Build Core AI Tools
@@ -315,8 +301,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-agent:
     name: 🤖 Build Core Agent
@@ -362,8 +347,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-knowledge:
     name: 📚 Build Core Knowledge
@@ -409,8 +393,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-core-workflow:
     name: ⚡ Build Core Workflow
@@ -456,8 +439,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-console-frontend:
     name: 🌐 Build Console Frontend
@@ -505,8 +487,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha,scope=console-frontend
-          cache-to: type=gha,mode=max,scope=console-frontend
+          no-cache: true
 
   build-console-hub:
     name: 🎯 Build Console Hub
@@ -552,8 +533,7 @@ jobs:
             VERSION=${{ needs.detect-and-prepare.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha,scope=console-hub
-          cache-to: type=gha,scope=console-hub,mode=max
+          no-cache: true
           provenance: false
           sbom: false
 

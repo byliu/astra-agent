@@ -72,11 +72,11 @@ const usePublishHeader = ({
     const startNode = nodes?.find(node => node.type === 'node-start');
     const outputs = startNode?.data?.outputs;
     let multiParams = true;
-    if (outputs?.length === 1) multiParams = false;
     if (
-      outputs?.length === 2 &&
-      outputs[1]?.fileType &&
-      outputs[1]?.schema?.type === 'string'
+      outputs?.length === 1 ||
+      outputs
+        ?.slice(1)
+        .every((item: { fileType: string }) => item.fileType === 'file')
     ) {
       multiParams = false;
     }
@@ -102,13 +102,11 @@ const usePublishHeader = ({
     const startNode = nodes?.find(node => node?.nodeType === 'node-start');
     const outputs = startNode?.data?.outputs;
     let multiParams = true;
-    if (outputs?.length === 1) {
-      multiParams = false;
-    }
     if (
-      outputs?.length === 2 &&
-      outputs?.[1]?.fileType &&
-      outputs?.[1]?.schema?.type === 'string'
+      outputs?.length === 1 ||
+      outputs
+        ?.slice(1)
+        .every((item: { fileType: string }) => item.fileType === 'file')
     ) {
       multiParams = false;
     }
@@ -176,7 +174,7 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
   const isLoading: boolean = useFlowsManager(
     (state: unknown) => state.isLoading
   );
-  const [botMultiFileParam, setBotMultiFileParam] = useState<any>(false);
+  const [botMultiFileParam, setBotMultiFileParam] = useState<boolean>(false);
   const [editV2Visible, { setLeft: hide, setRight: show }] = useToggle();
   const [fabuFlag, setFabuFlag]: any = useState(false);
   const [openWxmol, setOpenWxmol] = useState(false);
@@ -196,7 +194,6 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
   });
 
   useEffect(() => {
-    console.log('newBotId@@', newBotId);
     newBotId && getBotBaseInfo(newBotId);
   }, [newBotId]);
 
@@ -218,6 +215,7 @@ const PublishHeader: React.FC<PublishHeaderProps> = ({
           currentFlow?.ext ? JSON.parse(currentFlow.ext)?.botId : null
         }
         agentMaasId={agentMaasId || null}
+        isVirtual={currentFlow?.type === 4}
       />
       <Tooltip
         title={t('workflow.nodes.header.export')}

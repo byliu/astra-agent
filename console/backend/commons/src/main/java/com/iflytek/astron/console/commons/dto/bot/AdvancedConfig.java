@@ -13,6 +13,20 @@ public class AdvancedConfig {
 
     private String backgroundPic;
 
+
+    private TextToSpeech textToSpeech;
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TextToSpeech {
+        private boolean enabled;
+        private String vcn_cn;
+        private String vcn_en;
+
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -25,8 +39,9 @@ public class AdvancedConfig {
         private List<String> inputExample;
     }
 
-    public AdvancedConfig(String prologueText, List<String> inputExample, String backgroundPic) {
+    public AdvancedConfig(String prologueText, List<String> inputExample, String backgroundPic, TextToSpeech textToSpeech) {
         this.prologue = new Prologue(Boolean.TRUE, prologueText, inputExample);
         this.backgroundPic = backgroundPic;
+        this.textToSpeech = textToSpeech;
     }
 }

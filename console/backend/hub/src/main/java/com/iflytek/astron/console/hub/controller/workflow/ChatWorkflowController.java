@@ -90,6 +90,7 @@ public class ChatWorkflowController {
                 }
             }
             workflowInfo.setConfig(idPrefixes);
+            workflowInfo.setAdvancedConfig(dataObj.getString("advancedConfig"));
         } catch (Exception e) {
             log.info("Configuration processing exception", e);
         }

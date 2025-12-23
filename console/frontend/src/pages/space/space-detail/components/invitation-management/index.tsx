@@ -24,6 +24,7 @@ import styles from './index.module.scss';
 import { getSpaceInviteList, revokeSpaceInvite } from '@/services/space';
 import { STATUS_THEME_MAP_INVITE, PENDING_STATUS } from '@/pages/space/config';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
+import { useTranslation } from 'react-i18next';
 
 interface Invitation {
   id: string;
@@ -55,6 +56,7 @@ const InvitationManagement = forwardRef<
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const tableRef = useRef<SpaceTableRef>(null);
     const { invitationStatusTextMap } = useSpaceI18n();
 
@@ -107,15 +109,17 @@ const InvitationManagement = forwardRef<
       inviteeNickname: string
     ) => {
       Modal.confirm({
-        title: '确认撤回',
-        content: `确定要撤回对 "${inviteeNickname}" 的邀请吗？`,
-        okText: '确定',
-        cancelText: '取消',
+        title: t('space.confirmRevoke'),
+        content: t('space.confirmRevokeInvitation', {
+          nickname: inviteeNickname,
+        }),
+        okText: t('common.confirm'),
+        cancelText: t('common.cancel'),
         onOk: async () => {
           try {
             await revokeSpaceInvite({ inviteId: invitationId });
 
-            message.success('撤回成功');
+            message.success(t('space.revokeSuccess'));
           } catch (error: any) {
             message.error(error?.msg || error?.desc);
           } finally {
@@ -152,7 +156,7 @@ const InvitationManagement = forwardRef<
       return [
         {
           key: 'recall',
-          text: '撤回',
+          text: t('space.revoke'),
           type: 'link',
           size: 'small',
           permission: {
@@ -168,7 +172,7 @@ const InvitationManagement = forwardRef<
     // 列配置
     const columns: SpaceColumnConfig<Invitation>[] = [
       {
-        title: '用户名',
+        title: t('space.username'),
         dataIndex: 'inviteeNickname',
         key: 'inviteeNickname',
         render: (text: string, record: Invitation) => (
@@ -178,13 +182,13 @@ const InvitationManagement = forwardRef<
         ),
       },
       {
-        title: '邀请状态',
+        title: t('space.invitationStatus'),
         dataIndex: 'status',
         key: 'status',
         render: (status: number) => getStatusTag(status),
       },
       {
-        title: '加入时间',
+        title: t('space.joinTime'),
         dataIndex: 'createTime',
         key: 'createTime',
         render: (text: string) => (
@@ -195,7 +199,7 @@ const InvitationManagement = forwardRef<
 
     // 操作列配置
     const actionColumn: ActionColumnConfig<Invitation> = {
-      title: '操作',
+      title: t('space.operation'),
       width: 200,
       getActionButtons: (record: Invitation) => getActionButtons(record),
     };

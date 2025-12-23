@@ -6,63 +6,24 @@
 # Git Hooks Installation
 # =============================================================================
 
-hooks-check-all: ## Install pre-commit hook (formatting + code quality checks)
-	@echo "$(YELLOW)Installing Git pre-commit hook (fmt + checks)...$(RESET)"
+hooks-check-all: ## Install pre-commit hook (code quality checks only, no auto-format)
+	@echo "$(YELLOW)Installing Git pre-commit hook (checks only)...$(RESET)"
 	@mkdir -p .git/hooks
 	@echo '#!/bin/sh' > .git/hooks/pre-commit
-	@echo '# Auto-format code and run quality checks before commit' >> .git/hooks/pre-commit
-	@echo 'echo "$(YELLOW)Running code formatting...$(RESET)"' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo '# Run formatting' >> .git/hooks/pre-commit
-	@echo 'make fmt' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo '# Check if any files were modified by formatting' >> .git/hooks/pre-commit
-	@echo 'if [ -n "$$(git diff --name-only)" ]; then' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)Code formatting completed. Adding formatted files to commit...$(RESET)"' >> .git/hooks/pre-commit
-	@echo '    git add -u' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)Formatted files added to commit.$(RESET)"' >> .git/hooks/pre-commit
-	@echo 'else' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)No formatting changes needed.$(RESET)"' >> .git/hooks/pre-commit
-	@echo 'fi' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo '# Run multi-language code quality checks' >> .git/hooks/pre-commit
-	@echo 'echo "$(YELLOW)Running multi-language code quality checks...$(RESET)"' >> .git/hooks/pre-commit
+	@echo '# Run quality checks before commit - NO AUTO-FORMATTING' >> .git/hooks/pre-commit
+	@echo 'echo "$(YELLOW)Running code quality checks (including format checks)...$(RESET)"' >> .git/hooks/pre-commit
 	@echo '' >> .git/hooks/pre-commit
 	@echo '# Run all project quality checks' >> .git/hooks/pre-commit
-	@echo 'if ! make check >/dev/null 2>&1; then' >> .git/hooks/pre-commit
-	@echo '    echo "$(RED)Code quality checks failed. Please fix the issues.$(RESET)"' >> .git/hooks/pre-commit
+	@echo 'if ! make check; then' >> .git/hooks/pre-commit
+	@echo '    echo "$(RED)Code quality checks failed. Please fix the issues manually.$(RESET)"' >> .git/hooks/pre-commit
 	@echo '    echo "$(YELLOW)Tip: Run '\''make check'\'' to see detailed error messages$(RESET)"' >> .git/hooks/pre-commit
-	@echo '    echo "$(YELLOW)Or run language-specific checks: make check-go/check-console-frontend/check-java/check-python$(RESET)"' >> .git/hooks/pre-commit
+	@echo '    echo "$(YELLOW)Format issues should be fixed manually, not by CI$(RESET)"' >> .git/hooks/pre-commit
 	@echo '    exit 1' >> .git/hooks/pre-commit
 	@echo 'fi' >> .git/hooks/pre-commit
 	@echo '' >> .git/hooks/pre-commit
 	@echo 'echo "$(GREEN)All pre-commit checks passed!$(RESET)"' >> .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
-	@echo "$(GREEN)Git pre-commit hook (fmt + checks) installed$(RESET)"
-
-hooks-fmt: ## Install pre-commit hook (formatting only)
-	@echo "$(YELLOW)Installing Git pre-commit hook (fmt only)...$(RESET)"
-	@mkdir -p .git/hooks
-	@echo '#!/bin/sh' > .git/hooks/pre-commit
-	@echo '# Auto-format code before commit (no quality checks)' >> .git/hooks/pre-commit
-	@echo 'echo "$(YELLOW)Running code formatting...$(RESET)"' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo '# Run formatting' >> .git/hooks/pre-commit
-	@echo 'make fmt' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo '# Check if any files were modified by formatting' >> .git/hooks/pre-commit
-	@echo 'if [ -n "$$(git diff --name-only)" ]; then' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)Code formatting completed. Adding formatted files to commit...$(RESET)"' >> .git/hooks/pre-commit
-	@echo '    git add -u' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)Formatted files added to commit.$(RESET)"' >> .git/hooks/pre-commit
-	@echo 'else' >> .git/hooks/pre-commit
-	@echo '    echo "$(GREEN)No formatting changes needed.$(RESET)"' >> .git/hooks/pre-commit
-	@echo 'fi' >> .git/hooks/pre-commit
-	@echo '' >> .git/hooks/pre-commit
-	@echo 'echo "$(GREEN)Pre-commit formatting completed!$(RESET)"' >> .git/hooks/pre-commit
-	@echo 'echo "$(YELLOW)Note: Run '\''make check-all'\'' manually for quality checks$(RESET)"' >> .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "$(GREEN)Git pre-commit hook (fmt only) installed$(RESET)"
+	@echo "$(GREEN)Git pre-commit hook (check-only mode) installed$(RESET)"
 
 hooks-commit-msg: ## Install commit-msg hook for commit message format validation
 	@echo "$(YELLOW)Installing Git commit-msg hook...$(RESET)"
@@ -149,11 +110,9 @@ hooks-uninstall-msg: ## Uninstall commit-msg hook
 	fi
 
 # Combined installation commands
-hooks-install: hooks-check-all hooks-commit-msg hooks-pre-push ## Install all Git hooks (pre-commit full mode + commit-msg + pre-push)
+hooks-install: hooks-check-all hooks-commit-msg hooks-pre-push ## Install all Git hooks (pre-commit check + commit-msg + pre-push)
 	@echo "$(GREEN)All Git hooks installed!$(RESET)"
-
-hooks-install-basic: hooks-fmt hooks-commit-msg hooks-pre-push ## Install basic Git hooks (pre-commit lightweight mode + commit-msg + pre-push)
-	@echo "$(GREEN)Basic Git hooks installed!$(RESET)"
+	@echo "$(YELLOW)Note: Hooks check code quality but don't auto-fix$(RESET)"
 
 # =============================================================================
 # Branch Management

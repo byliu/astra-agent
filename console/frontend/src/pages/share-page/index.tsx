@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import styles from './index.module.scss';
 import shareLog from '@/assets/imgs/share-page/sharepageLog.svg';
+import agentLogoTextEn from '@/assets/imgs/sidebar/agentLogoTextEn.svg';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   getInviteByParam,
@@ -13,6 +14,8 @@ import spaceAvatar from '@/assets/imgs/share-page/spaceAva.svg';
 import useSpaceStore from '@/store/space-store';
 import { useEnterprise } from '@/hooks/use-enterprise';
 import { useSpaceType } from '@/hooks/use-space-type';
+import { getLanguageCode } from '@/utils/http';
+import { useTranslation } from 'react-i18next';
 
 function index() {
   const { setSpaceType, setEnterpriseId } = useSpaceStore();
@@ -22,7 +25,8 @@ function index() {
   const [searchParams] = useSearchParams();
   const param = searchParams.get('param');
   const { getJoinedEnterpriseList } = useEnterprise();
-
+  const languageCode = getLanguageCode();
+  const { t } = useTranslation();
   // 检查邀请是否已过期的函数
   const checkInviteExpired = (info: any) => {
     if (info?.expireTime) {
@@ -91,7 +95,11 @@ function index() {
   };
   return (
     <div className={styles.sharePage}>
-      <img className={styles.shareLog} src={shareLog} alt="" />
+      <img
+        className={styles.shareLog}
+        src={languageCode === 'en-US' ? agentLogoTextEn : shareLog}
+        alt=""
+      />
       <div className={styles.invite}>
         <div className={styles.flex}>
           <img
@@ -109,7 +117,7 @@ function index() {
           }
           className={styles.inviteText}
         >
-          邀请您加入
+          {t('spaceManagement.inviteYouToJoin')}
           {inviteInfo?.type == 1
             ? inviteInfo?.spaceName
             : inviteInfo?.enterpriseName}
@@ -153,11 +161,13 @@ function index() {
               alt=""
             />
             <div className={styles.inviteName}>{inviteInfo?.ownerName}</div>
-            <div className={styles.inviteTag}>所有者</div>
+            <div className={styles.inviteTag}>{t('spaceManagement.owner')}</div>
           </div>
         </div>
         <div className={styles.inviteText}>
-          邀请将在{inviteInfo?.expireTime}过期
+          {t('spaceManagement.inviteWillExpireAt', {
+            expireTime: inviteInfo?.expireTime,
+          })}
         </div>
         <div className={styles.flex}>
           {inviteInfo?.status == 1 && (
@@ -168,7 +178,7 @@ function index() {
                     inviteId: inviteInfo?.id,
                   })
                     .then(res => {
-                      message.success('拒绝成功');
+                      message.success(t('spaceManagement.refuseSuccess'));
                       inviteInfo.status = 2;
                       setInviteInfo({ ...inviteInfo });
                     })
@@ -178,7 +188,7 @@ function index() {
                 }}
                 className={styles.refuse}
               >
-                拒绝
+                {t('spaceManagement.refuse')}
               </div>
               <div
                 onClick={() => {
@@ -186,7 +196,7 @@ function index() {
                     inviteId: inviteInfo?.id,
                   })
                     .then(res => {
-                      message.success('加入成功');
+                      message.success(t('spaceManagement.joinSuccess'));
                       inviteInfo.status = 3;
                       inviteInfo.isBelong = true;
                       setInviteInfo({ ...inviteInfo });
@@ -197,23 +207,30 @@ function index() {
                 }}
                 className={styles.join}
               >
-                加入
+                {t('spaceManagement.join')}
               </div>
             </>
           )}
           {inviteInfo?.status == 2 && (
-            <div className={styles.expire}>已拒绝</div>
+            <div className={styles.expire}>{t('spaceManagement.rejected')}</div>
           )}
           {inviteInfo?.status == 3 && (
             <div onClick={handleJoinSpace} className={styles.enterBotton}>
-              进入{inviteInfo?.type == 1 ? '空间' : '团队'}
+              {t('spaceManagement.enter', {
+                spaceOrTeam:
+                  inviteInfo?.type == 1
+                    ? t('spaceManagement.space')
+                    : t('spaceManagement.team'),
+              })}
             </div>
           )}
           {inviteInfo?.status == 4 && (
-            <div className={styles.expire}>已撤回</div>
+            <div className={styles.expire}>
+              {t('spaceManagement.withdrawn')}
+            </div>
           )}
           {inviteInfo?.status == 5 && (
-            <div className={styles.expire}>邀请已过期</div>
+            <div className={styles.expire}>{t('spaceManagement.expired')}</div>
           )}
         </div>
       </div>

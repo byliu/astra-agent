@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import eventBus from '@/utils/event-bus';
 import { useTranslation } from 'react-i18next';
 import useOrderStore from '@/store/spark-store/order-store';
+import { useDebounceFn } from 'ahooks';
 
 import traceFree from '@/assets/imgs/trace/trace-free.svg';
 import tracePro from '@/assets/imgs/trace/trace-pro.svg';
@@ -17,6 +17,13 @@ import { upgradeCombo } from '@/services/enterprise';
 
 interface OrderTypeDisplayProps {
   onClose?: () => void;
+}
+
+interface OrderType {
+  type: string;
+  text: string;
+  icon: string;
+  alt: string;
 }
 
 /** ## 订单类型展示组件 */
@@ -36,7 +43,7 @@ const OrderTypeDisplay: React.FC<OrderTypeDisplayProps> = ({ onClose }) => {
   const { info } = useEnterpriseStore();
   const { spaceType } = useSpaceStore();
   // 使用函数生成 orderTypes 数组，确保每次渲染都使用最新的翻译
-  const getOrderTypes = () => [
+  const getOrderTypes = (): OrderType[] => [
     {
       type: 'free',
       text: t('sidebar.orderTypes.upgrade'),
@@ -72,46 +79,94 @@ const OrderTypeDisplay: React.FC<OrderTypeDisplayProps> = ({ onClose }) => {
   // 套餐升级功能
   const [upgradeComboModalVisible, setUpgradeComboModalVisible] =
     useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
 
   const handleUpgradeComboModalOk = async (
     e: React.MouseEvent<HTMLButtonElement>
-  ) => {
+  ): Promise<void> => {
     e.stopPropagation();
+
+    // 如果正在加载中，直接返回
+    if (upgradeLoading) {
+      return;
+    }
+
+    setUpgradeLoading(true);
+
     // TODO 升级团队版 需要调用后端接口，接口完成调用关闭弹窗，并跳转创建团队(默认为团队)页面
     try {
       await upgradeCombo();
       setUpgradeComboModalVisible(false);
       navigate('team/create/1');
     } catch (err: unknown) {
-      console.log(err, 'err');
       message.error(err instanceof Error ? err.message : '升级失败');
+    } finally {
+      setUpgradeLoading(false);
     }
   };
 
+  // 使用防抖包装升级确认函数
+  const { run: debouncedUpgradeOk } = useDebounceFn(handleUpgradeComboModalOk, {
+    wait: 500,
+    leading: true,
+    trailing: false,
+  });
+
   const handleUpgradeComboModalCancel = (
     e: React.MouseEvent<HTMLButtonElement>
-  ) => {
+  ): void => {
     e.stopPropagation();
     setUpgradeComboModalVisible(false);
   };
 
-  const UpgradeComboModal = () => {
+  // 点击升级按钮打开弹窗的函数
+  const handleOpenUpgradeModal = (
+    event: React.MouseEvent<HTMLDivElement>
+  ): void => {
+    event.stopPropagation();
+    if (currentOrder?.type === 'free' && hasServiceType3) {
+      return;
+    }
+    !isSpecial && setUpgradeComboModalVisible(true);
+    // 手动关闭 Popover
+    onClose?.();
+  };
+
+  // 使用防抖包装打开弹窗函数
+  const { run: debouncedOpenModal } = useDebounceFn(handleOpenUpgradeModal, {
+    wait: 300,
+    leading: true,
+    trailing: false,
+  });
+
+  const UpgradeComboModal = (): React.ReactElement => {
     return (
       <Modal
         width={400}
         open={upgradeComboModalVisible}
-        title="确定升级为团队版吗？"
+        title={t('sidebar.orderTypes.confirmUpgradeEnterprise')}
         footer={null}
+        centered
+        onCancel={handleUpgradeComboModalCancel}
       >
         <div className={styles.upgradeComboModalBox}>
           {/* <div className={styles.upgradeComboModalTitle}>确定升级为团队版吗？</div> */}
 
           {/* footer */}
           <div className={styles.upgradeComboModalFooter}>
-            <Button type="primary" onClick={handleUpgradeComboModalOk}>
-              确定
+            <Button
+              type="primary"
+              onClick={debouncedUpgradeOk}
+              loading={upgradeLoading}
+            >
+              {t('btnOk')}
             </Button>
-            <Button onClick={handleUpgradeComboModalCancel}>取消</Button>
+            <Button
+              onClick={handleUpgradeComboModalCancel}
+              disabled={upgradeLoading}
+            >
+              {t('btnCancel')}
+            </Button>
           </div>
         </div>
       </Modal>
@@ -131,20 +186,7 @@ const OrderTypeDisplay: React.FC<OrderTypeDisplayProps> = ({ onClose }) => {
           : ''
       }
     >
-      <div
-        className={styles.upCombo}
-        onClick={(event: React.MouseEvent<HTMLDivElement>) => {
-          event.stopPropagation();
-          if (currentOrder?.type === 'free' && hasServiceType3) {
-            return;
-          }
-
-          // !isSpecial && eventBus.emit('showComboModal');
-          !isSpecial && setUpgradeComboModalVisible(true);
-          // 手动关闭 Popover
-          onClose?.();
-        }}
-      >
+      <div className={styles.upCombo} onClick={debouncedOpenModal}>
         {info.serviceType === 3 && spaceType !== 'personal' ? (
           <>
             <img src={traceEnterprise} alt={currentOrder?.alt} />

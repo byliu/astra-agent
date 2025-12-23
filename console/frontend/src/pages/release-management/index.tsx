@@ -27,11 +27,14 @@ export default function Index(): ReactElement {
       >
         <Routes>
           <Route path="/" element={<ReleasedPage />}>
-            <Route index element={<AgentList AgentType="agent" />} />
+            <Route index element={<AgentList AgentType="all" />} />
+            <Route path="all" element={<AgentList AgentType="all" />} />
+            <Route path="agent" element={<AgentList AgentType="agent" />} />
             <Route
               path="workflow"
               element={<AgentList AgentType="workflow" />}
             />
+            <Route path="virtual" element={<AgentList AgentType="virtual" />} />
           </Route>
           <Route path="/detail/:botId" element={<DetailListPage />}>
             <Route index element={<DetailOverview />} />

@@ -3,6 +3,7 @@ import { Modal, Input, Button, Select, message } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import ButtonGroup from '@/components/button-group/button-group';
 import type { ButtonConfig } from '@/components/button-group/types';
+import { useTranslation } from 'react-i18next';
 
 import styles from './index.module.scss';
 
@@ -31,6 +32,7 @@ const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
   onSubmit,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [memberList, setMemberList] = useState<Member[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -75,14 +77,14 @@ const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
 
   const handleSubmit = async () => {
     if (!selectedMemberId) {
-      message.warning('请选择要转让的成员');
+      message.warning(t('space.transferOwnershipSelectMember'));
       return;
     }
 
     try {
       const res = await transferSpace({ uid: selectedMemberId });
       console.log(res, '------------ transferSpace -----------');
-      message.success('转让成功');
+      message.success(t('space.transferOwnershipSuccess'));
       onSuccess?.();
       handleClose();
     } catch (err: any) {
@@ -98,13 +100,13 @@ const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
   const buttons: ButtonConfig[] = [
     {
       key: 'cancel',
-      text: '取消',
+      text: t('space.cancel'),
       type: 'default',
       onClick: () => handleClose(),
     },
     {
       key: 'submit',
-      text: '确认',
+      text: t('space.confirm'),
       type: 'primary',
       onClick: () => handleSubmit(),
       disabled: !selectedMemberId,
@@ -113,7 +115,7 @@ const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
 
   return (
     <Modal
-      title="转移空间所有权"
+      title={t('space.transferOwnershipTitle')}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -126,13 +128,15 @@ const TransferOwnershipModal: React.FC<TransferOwnershipModalProps> = ({
     >
       <div className={styles.modalContent}>
         <div className={styles.warningText}>
-          转让所有权后,您的状态将改为管理员
+          {t('space.transferOwnershipWarning')}
         </div>
 
         <div className={styles.formSection}>
-          <div className={styles.formLabel}>将所有权转让给</div>
+          <div className={styles.formLabel}>
+            {t('space.transferOwnershipLabel')}
+          </div>
           <Select
-            placeholder="请选择成员"
+            placeholder={t('space.transferOwnershipPlaceholder')}
             value={selectedMemberId}
             onChange={handleMemberChange}
             className={styles.memberSelect}

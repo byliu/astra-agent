@@ -3,6 +3,7 @@ import { DeleteModal, CreateModal } from './components/modal-component';
 import folderIcon from '@/assets/imgs/knowledge/folder_icon.svg';
 import { useKnowledgePage } from './hooks/use-knowledge-page';
 import { KnowledgeContent } from './components/knowledge-content';
+import SiderContainer from '@/components/sider-container';
 
 const KnowledgePage: FC = () => {
   const {
@@ -22,7 +23,7 @@ const KnowledgePage: FC = () => {
     getKnowledges,
   } = useKnowledgePage();
   return (
-    <div className="w-full h-full overflow-hidden pb-6">
+    <div className="w-full h-full overflow-hidden">
       {deleteModal && (
         <DeleteModal
           setDeleteModal={setDeleteModal}
@@ -37,16 +38,21 @@ const KnowledgePage: FC = () => {
         />
       )}
       {createModal && <CreateModal setCreateModal={setCreateModal} />}
-      <KnowledgeContent
-        knowledgeRef={knowledgeRef as React.RefObject<HTMLDivElement>}
-        isHovered={isHovered}
-        setIsHovered={setIsHovered}
-        knowledges={knowledges}
-        getRobotsDebounce={getRobotsDebounce}
-        setCreateModal={setCreateModal}
-        setDeleteModal={setDeleteModal}
-        setCurrentKnowledge={setCurrentKnowledge}
-        folderIcon={folderIcon}
+
+      <SiderContainer
+        rightContent={
+          <KnowledgeContent
+            knowledgeRef={knowledgeRef as React.RefObject<HTMLDivElement>}
+            isHovered={isHovered}
+            setIsHovered={setIsHovered}
+            knowledges={knowledges}
+            getRobotsDebounce={getRobotsDebounce}
+            setCreateModal={setCreateModal}
+            setDeleteModal={setDeleteModal}
+            setCurrentKnowledge={setCurrentKnowledge}
+            folderIcon={folderIcon}
+          />
+        }
       />
     </div>
   );

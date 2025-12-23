@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getS3PresignUrl,
   uploadFileBindChat,
@@ -10,12 +10,17 @@ import type {
   SupportUploadConfig,
 } from '@/types/chat';
 import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 type UseChatFileUploadReturn = {
   fileList: UploadFileInfo[];
   setFileList: React.Dispatch<React.SetStateAction<UploadFileInfo[]>>;
   fileInputRef: React.RefObject<HTMLInputElement>;
-  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileSelect: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    config?: SupportUploadConfig,
+    uploadMaxMB?: number
+  ) => void;
   triggerFileSelect: () => void;
   removeFile: (file: UploadFileInfo) => void;
   hasErrorFiles: () => boolean;
@@ -28,9 +33,17 @@ export default function useChatFileUpload(
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeUploads = useRef<Map<string, XMLHttpRequest>>(new Map());
   const activeBindings = useRef<Map<string, AbortController>>(new Map());
-
+  // 追踪每种类型正在处理的文件数量，用于即时限制检查
+  const processingCountRef = useRef<Map<string, number>>(new Map());
+  const { t } = useTranslation();
   const generateFileBusinessKey = (): string => {
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    const randomBytes = new Uint8Array(10);
+    window.crypto.getRandomValues(randomBytes);
+    const randomStr = Array.from(randomBytes, byte => byte.toString(36))
+      .join('')
+      .substring(2, 15);
+
+    return `${Date.now()}-${randomStr}`;
   };
 
   const updateFileStatus = useCallback(
@@ -40,12 +53,23 @@ export default function useChatFileUpload(
       status: 'pending' | 'uploading' | 'completed' | 'error',
       progress: number,
       fileUrl = '',
-      error = ''
+      error = '',
+      paramName?: string,
+      inputName?: string
     ) => {
       setFileList(prev =>
         prev.map(file =>
           file.uid === uid
-            ? { ...file, fileId, status, progress, fileUrl, error }
+            ? {
+                ...file,
+                fileId,
+                status,
+                progress,
+                fileUrl,
+                error,
+                ...(paramName !== undefined && { paramName }),
+                ...(inputName !== undefined && { inputName }),
+              }
             : file
         )
       );
@@ -71,29 +95,129 @@ export default function useChatFileUpload(
       }
       return (file.type || '').includes(type);
     });
-    if (!isValidType) return `${file.name}是不支持的文件类型`;
+    if (!isValidType)
+      return t('chatPage.chatWindow.unsupportedFileType', {
+        name: file.name,
+      });
     return null;
   };
 
   // 处理选择的文件
-  const processSelectedFiles = (files: File[]) => {
-    const limit = botInfo?.supportUploadConfig?.[0]?.limit || 0;
-    if (limit > 0 && fileList.length + files.length > limit) {
-      message.warning(`最多上传${limit}个文件`);
+  const processSelectedFiles = (
+    files: File[],
+    configOverride?: SupportUploadConfig,
+    uploadMaxMB?: number
+  ) => {
+    // 如果传入了特定配置，使用该配置，否则使用第一个配置（兼容旧逻辑）
+    const config = configOverride;
+
+    if (!config) {
       return;
     }
 
-    const config = botInfo?.supportUploadConfig?.[0] as
-      | SupportUploadConfig
-      | undefined;
-    const validFiles: File[] = [];
-    files.forEach(file => {
+    // 获取该文件类型的限制
+    const limit = config.limit || 0;
+    const inputName = config.name || config.type;
+
+    // 统计当前该 inputName 的有效文件数量（排除失败状态）
+    // status: 'pending' | 'uploading' | 'completed' | 'error'
+    const currentTypeCount = fileList.filter(f => {
+      const status = f.status || 'completed';
+      // 排除失败状态
+      if (status === 'error') {
+        return false;
+      }
+      // 根据 paramName (inputName) 进行匹配
+      return f.paramName === inputName;
+    }).length;
+
+    // 加上正在处理中的文件数量（防止快速连续上传时状态更新不及时）
+    const processingCount = processingCountRef.current.get(inputName) || 0;
+    const totalCount = currentTypeCount + processingCount;
+
+    // 第一步：过滤文件大小
+    let validFiles: File[] = files;
+    if (uploadMaxMB) {
+      const maxSize = uploadMaxMB * 1024 * 1024; // 转换为字节
+      const oversizedFiles = files.filter(file => file.size > maxSize);
+
+      if (oversizedFiles.length > 0) {
+        const oversizedFileNames = oversizedFiles.map(f => f.name).join('、');
+        message.error(
+          t('chatPage.chatWindow.fileSizeExceeded', {
+            name: oversizedFileNames,
+            size: uploadMaxMB,
+          })
+        );
+      }
+      // 只保留符合大小要求的文件
+      validFiles = files.filter(file => file.size <= maxSize);
+    }
+
+    // 第二步：根据数量限制过滤
+    if (limit > 0 && totalCount + validFiles.length > limit) {
+      const allowedCount = Math.max(0, limit - totalCount);
+      if (allowedCount === 0) {
+        message.warning(
+          t('chatPage.chatWindow.fileLimitTip', {
+            name: config.name,
+            limit,
+          })
+        );
+        return;
+      }
+      // 只保留允许的数量
+      const exceededFiles = validFiles.slice(allowedCount);
+      if (exceededFiles.length > 0) {
+        message.warning(
+          t('chatPage.chatWindow.fileLimitTip', {
+            name: config.name,
+            limit,
+          }) + `，已忽略 ${exceededFiles.length} 个文件`
+        );
+      }
+      validFiles = validFiles.slice(0, allowedCount);
+    }
+
+    // 第三步：验证文件类型
+    const finalValidFiles: File[] = [];
+    const invalidFiles: { file: File; error: string }[] = [];
+
+    validFiles.forEach(file => {
       const validationError = validateFile(file, config);
-      if (!validationError) validFiles.push(file);
+      if (!validationError) {
+        finalValidFiles.push(file);
+      } else {
+        invalidFiles.push({ file, error: validationError });
+      }
     });
 
-    if (validFiles.length > 0) {
-      const newFiles: UploadFileInfo[] = validFiles.map(file => ({
+    // 显示不符合要求的文件提示
+    if (invalidFiles.length > 0) {
+      invalidFiles.forEach(({ file, error }) => {
+        message.error(error);
+      });
+    }
+
+    // 如果没有任何有效文件，直接返回
+    if (finalValidFiles.length === 0) {
+      return;
+    }
+
+    // 标记符合要求的文件正在处理中
+    processingCountRef.current.set(
+      inputName,
+      processingCount + finalValidFiles.length
+    );
+
+    // 验证文件后，无论成功与否，都清除该类型的处理中计数
+    // 使用 setTimeout 确保在下一个事件循环中清除，给 setFileList 时间执行
+    setTimeout(() => {
+      processingCountRef.current.set(inputName, 0);
+    }, 0);
+
+    if (finalValidFiles.length > 0) {
+      const newFiles: UploadFileInfo[] = finalValidFiles.map(file => ({
         uid: generateFileBusinessKey(),
         file,
         fileName: file.name,
@@ -104,6 +228,8 @@ export default function useChatFileUpload(
         fileBusinessKey: generateFileBusinessKey(),
         progress: 0,
         error: '',
+        paramName: config.name, // 添加 paramName
+        inputName: config.name, // 添加 inputName（对应 config.name）
       }));
       setFileList(prev => [...prev, ...newFiles]);
     }
@@ -147,6 +273,7 @@ export default function useChatFileUpload(
                   fileSize: fileObj.fileSize,
                   fileUrl: realFileUrl,
                   fileBusinessKey: fileObj.fileBusinessKey,
+                  paramName: fileObj.paramName, // 添加 paramName 参数
                 },
                 bindController.signal
               );
@@ -156,7 +283,10 @@ export default function useChatFileUpload(
                 bindResult,
                 'completed',
                 100,
-                realFileUrl
+                realFileUrl,
+                '',
+                fileObj.paramName,
+                fileObj.inputName
               );
               resolve(true);
             } catch (error: any) {
@@ -168,7 +298,7 @@ export default function useChatFileUpload(
                   'error',
                   0,
                   realFileUrl,
-                  '绑定已取消'
+                  t('chatPage.chatWindow.bindingCancelled')
                 );
               } else {
                 updateFileStatus(
@@ -177,7 +307,7 @@ export default function useChatFileUpload(
                   'error',
                   0,
                   realFileUrl,
-                  '绑定失败'
+                  t('chatPage.chatWindow.bindingFailed')
                 );
               }
               reject(error);
@@ -189,7 +319,7 @@ export default function useChatFileUpload(
               'error',
               0,
               realFileUrl,
-              '上传失败'
+              t('chatPage.chatWindow.uploadFailed')
             );
             reject(new Error('Upload failed'));
           }
@@ -203,7 +333,7 @@ export default function useChatFileUpload(
             'error',
             0,
             realFileUrl,
-            '网络错误'
+            t('chatPage.chatWindow.networkError')
           );
           reject(new Error('Network error'));
         });
@@ -221,7 +351,14 @@ export default function useChatFileUpload(
       });
     } catch (error) {
       activeUploads.current.delete(fileObj.uid);
-      updateFileStatus(fileObj.uid, '', 'error', 0, '', '获取签名URL失败');
+      updateFileStatus(
+        fileObj.uid,
+        '',
+        'error',
+        0,
+        '',
+        t('chatPage.chatWindow.getSignedUrlFailed')
+      );
       throw error;
     }
   };
@@ -245,7 +382,12 @@ export default function useChatFileUpload(
       setFileList(prev =>
         prev.map(file =>
           file.uid === uid
-            ? { ...file, status: 'pending', progress: 0, error: '上传已取消' }
+            ? {
+                ...file,
+                status: 'pending',
+                progress: 0,
+                error: t('chatPage.chatWindow.uploadCancelled'),
+              }
             : file
         )
       );
@@ -264,17 +406,22 @@ export default function useChatFileUpload(
     if (file.fileId) {
       // 已绑定，调用解绑
       unBindChatFile({ chatId: botInfo.chatId, fileId: file.fileId });
+      setFileList(prev => prev.filter(f => f.fileId !== file.fileId));
     } else {
       // 未绑定：取消上传与绑定
       cancelUpload(file.uid);
       cancelBinding(file.uid);
+      setFileList(prev => prev.filter(f => f.uid !== file.uid));
     }
-    setFileList(prev => prev.filter(f => f.uid !== file.uid));
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    config?: SupportUploadConfig,
+    uploadMaxMB?: number
+  ) => {
     const selectedFiles = Array.from(event.target.files || []);
-    processSelectedFiles(selectedFiles);
+    processSelectedFiles(selectedFiles, config, uploadMaxMB);
     if (event.target) event.target.value = '';
   };
 

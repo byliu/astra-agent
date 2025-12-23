@@ -157,5 +157,5 @@ class WorkflowDSL(BaseModel):
             if node.id == node_id:
                 return node
         raise CustomException(
-            CodeEnum.PROTOCOL_VALIDATION_ERROR, err_msg=f"Node {node_id} does not exist"
+            CodeEnum.PROTOCOL_BUILD_ERROR, err_msg=f"Node {node_id} does not exist"
         )

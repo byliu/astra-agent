@@ -1,9 +1,10 @@
 import { UploadFileInfo } from '@/types/chat';
-import { ReactElement } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Modal, Button } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { getFileIcon } from '@/utils';
 import closeIcon from '@/assets/imgs/chat/plugin/delete-file.png';
+import { useTranslation } from 'react-i18next';
 
 const FilePreview = ({
   file,
@@ -12,12 +13,34 @@ const FilePreview = ({
   file: UploadFileInfo;
   onClose: () => void;
 }): ReactElement => {
-  // 根据文件类型渲染预览内容
-  const renderFilePreview = () => {
-    const fileType = file.type?.split('/')[0] || '';
-    const extension = file.fileName?.split('.').pop()?.toLowerCase();
+  const { t } = useTranslation();
+  const extension = file.fileName?.split('.').pop()?.toLowerCase();
+  const [content, setContent] = useState('');
+  const downloadTxtFile = (url?: string) => {
+    if (!url) return;
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text();
+      })
+      .then(txtContent => {
+        setContent(txtContent);
+      })
+      .catch(error => {
+        console.error('下载失败:', error);
+      });
+  };
+  useEffect(() => {
+    if (extension === 'txt') {
+      downloadTxtFile(file.fileUrl);
+    }
+  }, [file.fileUrl]);
 
-    switch (fileType || extension) {
+  // 根据文件类型渲染预览内容 预览txt文件时，需要先下载文件内容
+  const renderFilePreview = (): ReactElement => {
+    switch (extension) {
       case 'jpg':
       case 'jpeg':
       case 'png':
@@ -35,7 +58,6 @@ const FilePreview = ({
           <iframe
             src={file.fileUrl}
             className="w-full h-[60vh] rounded-lg border"
-            title={file.fileName}
           />
         );
       case 'audio':
@@ -48,20 +70,18 @@ const FilePreview = ({
             </audio>
           </div>
         );
-      case 'doc':
-      case 'docx':
-      case 'xls':
-      case 'xlsx':
+      case 'txt':
+        return (
+          <div className="flex justify-center">
+            <pre>{content}</pre>
+          </div>
+        );
       default:
         return (
           <div className="flex flex-col items-center justify-center p-4">
             <img src={getFileIcon(file)} alt="" className="w-16 h-16 mb-4" />
             <p className="text-gray-700">
-              {['doc', 'docx'].includes(extension || '')
-                ? 'Word document preview not supported. Download to view.'
-                : ['xls', 'xlsx'].includes(extension || '')
-                  ? 'Excel document preview not supported. Download to view.'
-                  : 'Preview not available for this file type.'}
+              {t('chatPage.chatWindow.previewNotSupported')}
             </p>
           </div>
         );
@@ -84,20 +104,15 @@ const FilePreview = ({
           icon={<DownloadOutlined />}
           onClick={() => window.open(file.fileUrl, '_blank')}
         >
-          Download
+          {t('chatPage.chatWindow.download')}
         </Button>
       }
-      width="50%"
+      width="60%"
       centered
       closeIcon={<img src={closeIcon} alt="" className="w-4 h-4" />}
       destroyOnClose
     >
-      <div
-        className="overflow-auto"
-        style={{ maxHeight: 'calc(100vh - 200px)' }}
-      >
-        {renderFilePreview()}
-      </div>
+      <div className="overflow-auto max-h-[80vh]">{renderFilePreview()}</div>
     </Modal>
   );
 };

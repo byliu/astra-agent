@@ -149,7 +149,7 @@ function WorkflowImportModal({
                 <img src={uploadAct} className="w-8 h-8" alt="" />
                 <div className="font-medium mt-6">
                   {i18next.t('workflow.promptDebugger.dragFileHereOr')}
-                  <span className="text-[#275EFF]">
+                  <span className="text-[#6356EA]">
                     {i18next.t('workflow.promptDebugger.selectFile')}
                   </span>
                 </div>

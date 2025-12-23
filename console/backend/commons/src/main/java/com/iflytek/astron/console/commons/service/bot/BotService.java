@@ -22,11 +22,13 @@ public interface BotService {
 
     List<BotTypeList> getBotTypeList();
 
-    BotInfoDto insertWorkflowBot(String uid, BotCreateForm bot, Long spaceId);
+    BotInfoDto insertWorkflowBot(String uid, BotCreateForm bot, Long spaceId, Integer version);
 
     BotInfoDto insertBotBasicInfo(String uid, BotCreateForm bot, Long spaceId);
 
     ChatBotBase copyBot(String uid, Integer botId, Long spaceId);
+
+    ChatBotBase upgradeCopyBot(String uid, Integer sourceId, Long spaceId, Integer version);
 
     Boolean updateWorkflowBot(String uid, BotCreateForm bot, HttpServletRequest request, Long spaceId);
 

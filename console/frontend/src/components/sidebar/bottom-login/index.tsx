@@ -1,7 +1,6 @@
 import React, { ReactElement, useState, useEffect } from 'react';
 import loginAvatar from '@/assets/imgs/sidebar/avator.png';
 import navDropDown from '@/assets/imgs/sidebar/icon_nav_dropdown.png';
-import useLogin from '@/hooks/use-login';
 import useUserStore from '@/store/user-store';
 import { parseCurrentUserFromToken } from '@/config/casdoor';
 import { handleLoginRedirect } from '@/utils/auth';
@@ -19,12 +18,8 @@ interface User {
 
 interface BottomLoginProps {
   isCollapsed: boolean;
-  isLogin?: boolean;
-  user?: User | undefined;
   isPersonCenterOpen: boolean;
   setIsPersonCenterOpen: (visible: boolean) => void;
-  // Components
-  OrderTypeComponent?: ReactElement | undefined;
 }
 
 // Extracted components to reduce complexity
@@ -111,13 +106,11 @@ const getUserAvatar = (user?: User): string => {
 
 const BottomLogin = ({
   isCollapsed,
-  OrderTypeComponent,
   isPersonCenterOpen,
   setIsPersonCenterOpen,
 }: BottomLoginProps): ReactElement => {
   const [internalShowModal, setInternalShowModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { loading } = useLogin();
   const { user } = useUserStore();
 
   // 检查认证状态
@@ -157,19 +150,6 @@ const BottomLogin = ({
       handleLogout();
     }
   };
-
-  // 创建登出菜单内容
-  const LogoutModalContent = (): ReactElement => (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[120px]">
-      <button
-        onClick={handleLogout}
-        disabled={loading}
-        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? '登出中...' : '退出登录'}
-      </button>
-    </div>
-  );
 
   const handleBottomLogin = (e: React.MouseEvent): void => {
     e.stopPropagation();

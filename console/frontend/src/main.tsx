@@ -19,6 +19,11 @@ import './styles/antd.scss';
 import './styles/flow.scss';
 import 'reactflow/dist/style.css';
 
+console.log(
+  '[main] before bootstrap, window.__APP_CONFIG__ = ',
+  (window as any).__APP_CONFIG__
+);
+
 const rootElement = document.getElementById('root');
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(

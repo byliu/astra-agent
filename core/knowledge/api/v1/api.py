@@ -33,6 +33,7 @@ from knowledge.exceptions.exception import (
     ThirdPartyException,
 )
 from knowledge.service.rag_strategy_factory import RAGStrategyFactory
+from knowledge.service.rq.rewrite_query import rewrite_query
 
 rag_router = APIRouter(prefix="/knowledge/v1")
 
@@ -409,11 +410,15 @@ async def chunk_query(
         )
         strategy = RAGStrategyFactory.get_strategy(query_request.ragType)
 
+        new_query = await rewrite_query(
+            query_request.query, history=query_request.history, span=span_context
+        )
+
         return await handle_rag_operation(
             span_context=span_context,
             metric=metric,
             operation_callable=strategy.query,
-            query=query_request.query,
+            query=new_query,
             doc_ids=query_request.match.docIds,
             repo_ids=query_request.match.repoId,
             top_k=query_request.topN,

@@ -273,7 +273,7 @@ export const VariableMemoryDetail = memo(props => {
                   </div>
                   {!canvasesDisabled && (
                     <div
-                      className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
+                      className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
                       onClick={() => handleAddOutputLine()}
                     >
                       <img src={inputAddIcon} className="w-3 h-3" alt="" />

@@ -186,7 +186,7 @@ class TestManagementServerUtils:
         """Test send_telemetry_mgmt when OTLP is enabled"""
         mock_time.return_value = 1234567890.123
         mock_getenv.side_effect = lambda key, default=None: {
-            const.OTLP_ENABLE_KEY: "true",
+            const.OTLP_ENABLE_KEY: "1",
             const.KAFKA_TOPIC_KEY: "test_topic",
         }.get(key, default)
 
@@ -260,7 +260,7 @@ class TestManagementServerUtils:
         self, mock_getenv: Any
     ) -> None:
         """Test handle_validation_error_mgmt with OTLP enabled"""
-        mock_getenv.return_value = "true"
+        mock_getenv.return_value = "1"
 
         mock_span_context = Mock()
         mock_span_context.sid = "test_session_id"
@@ -311,7 +311,7 @@ class TestManagementServerUtils:
         self, mock_getenv: Any
     ) -> None:
         """Test handle_validation_error_mgmt with custom error code"""
-        mock_getenv.return_value = "true"
+        mock_getenv.return_value = "1"
 
         mock_span_context = Mock()
         mock_span_context.sid = "test_session_id"
@@ -372,7 +372,7 @@ class TestManagementServerUtils:
         self, mock_getenv: Any
     ) -> None:
         """Test handle_success_response_mgmt with OTLP enabled"""
-        mock_getenv.return_value = "true"
+        mock_getenv.return_value = "1"
 
         mock_span_context = Mock()
         mock_span_context.sid = "test_session_id"
@@ -423,7 +423,7 @@ class TestManagementServerUtils:
         self, mock_getenv: Any
     ) -> None:
         """Test handle_success_response_mgmt without tool_ids parameter"""
-        mock_getenv.return_value = "true"
+        mock_getenv.return_value = "1"
 
         mock_span_context = Mock()
         mock_span_context.sid = "test_session_id"

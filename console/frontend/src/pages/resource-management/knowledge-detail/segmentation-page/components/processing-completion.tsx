@@ -64,7 +64,7 @@ const ProcessingCompletion: FC<{
                     onClick={() => embedding()}
                   >
                     <img src={restart} className="w-4 h-4 ml-2" alt="" />
-                    <span className="ml-1.5 text-[#275EFF] text-xs">
+                    <span className="ml-1.5 text-[#6356EA] text-xs">
                       {t('knowledge.retry')}
                     </span>
                   </div>

@@ -55,7 +55,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
       setAbortController(null);
     }
     setCurrentStep(ImportStep.BEFORE_IMPORT);
-    message.info('已取消上传');
+    message.info(t('spaceManagement.cancelUpload'));
   }, [abortController]);
 
   // 关闭导入弹窗
@@ -72,7 +72,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
   // 文件上传前验证
   const beforeUpload = useCallback((file: File) => {
     if (!validExcel(file)) {
-      message.error('模板格式不符');
+      message.error(t('spaceManagement.templateFormatNotMatch'));
       return false;
     }
 
@@ -89,7 +89,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
     async (file?: File) => {
       const targetFile = file || fileList[0];
       if (!targetFile) {
-        message.error('请先选择要导入的文件');
+        message.error(t('spaceManagement.pleaseSelectFile'));
         return;
       }
 
@@ -119,7 +119,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
             setCurrentStep(ImportStep.IMPORT_RESULT);
           }
         } else {
-          message.error('上传失败，请稍后重试');
+          message.error(t('spaceManagement.uploadFail'));
           setCurrentStep(ImportStep.BEFORE_IMPORT);
         }
       } catch (error: any) {
@@ -130,7 +130,9 @@ const BatchImport: React.FC<BatchImportProps> = ({
           return;
         }
 
-        message.error(error?.desc || error?.msg || '上传失败，请稍后重试');
+        message.error(
+          error?.desc || error?.msg || t('spaceManagement.uploadFail')
+        );
         setCurrentStep(ImportStep.BEFORE_IMPORT);
       }
     },
@@ -154,7 +156,6 @@ const BatchImport: React.FC<BatchImportProps> = ({
   const handleAddMemberModalSubmit = useCallback(
     async (values: any) => {
       // 这里可以处理最终的成员添加逻辑
-      console.log('最终提交的成员数据:', values);
       try {
         const res = await onSubmit?.(values);
         if (res) {
@@ -162,7 +163,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
           resetState();
         }
       } catch (err: any) {
-        message.error(err.message || '导入失败');
+        message.error(err.message || t('spaceManagement.importFail'));
       }
     },
     [onSubmit, resetState]
@@ -173,7 +174,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
     <div className={styles.beforeImport}>
       <div className={styles.templateSection}>
         <span className={styles.templateHint}>
-          支持上传Excel表单批量导入成员信息
+          {t('spaceManagement.supportUploadExcel')}
         </span>
         <SpaceButton
           config={btnConfigs.importTemplate}
@@ -190,7 +191,9 @@ const BatchImport: React.FC<BatchImportProps> = ({
           <p className="ant-upload-drag-icon">
             <UploadOutlined className={styles.uploadIcon} />
           </p>
-          <p className="ant-upload-text">支持拖拽或点击上传</p>
+          <p className="ant-upload-text">
+            {t('spaceManagement.supportDragOrClickUpload')}
+          </p>
           {/* <p className="ant-upload-hint">
             支持Excel文件(.xlsx、.xls)
           </p> */}
@@ -204,7 +207,9 @@ const BatchImport: React.FC<BatchImportProps> = ({
     <div className={styles.uploading}>
       <div className={styles.progressSection}>
         <Spin />
-        <div className={styles.progressText}>解析中...</div>
+        <div className={styles.progressText}>
+          {t('spaceManagement.parsingInProgress')}
+        </div>
       </div>
 
       {/* <div className={styles.cancelSection}>
@@ -224,12 +229,16 @@ const BatchImport: React.FC<BatchImportProps> = ({
   const renderImportResultStep = () => (
     <div className={styles.importResult}>
       <div className={styles.resultSummary}>
-        <div className={styles.resultTitle}>文件解析完成</div>
+        <div className={styles.resultTitle}>
+          {t('spaceManagement.fileParsedSuccessfully')}
+        </div>
         {importResult && importResult.success && importResult.data && (
           <div className={styles.resultStats}>
             <div className={styles.successStats}>
               <span className={styles.successCount}>
-                成功解析 {importResult.data.userList.length} 个成员
+                {t('spaceManagement.successfullyParsed')}{' '}
+                {importResult.data.userList.length}{' '}
+                {t('spaceManagement.members')}
               </span>
             </div>
           </div>
@@ -250,7 +259,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
 
   const handleExportResult = useCallback(() => {
     if (!importResult?.data?.resultUrl) {
-      message.error('暂无解析结果');
+      message.error(t('spaceManagement.noParsingResult'));
       return;
     }
 
@@ -260,7 +269,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
   const TitleRender = () => {
     return (
       <div className={styles.AddMemberTitle}>
-        <span>添加新成员</span>
+        <span>{t('spaceManagement.addNewMember')}</span>
         <SpaceButton
           config={btnConfigs.exportResult}
           onClick={handleExportResult}
@@ -279,7 +288,7 @@ const BatchImport: React.FC<BatchImportProps> = ({
 
       {/* 导入弹窗 */}
       <Modal
-        title="批量导入成员信息"
+        title={t('spaceManagement.batchImport')}
         open={importModalVisible}
         onCancel={handleImportModalClose}
         width={600}
@@ -289,9 +298,11 @@ const BatchImport: React.FC<BatchImportProps> = ({
         footer={
           currentStep === ImportStep.IMPORT_RESULT && (
             <Space>
-              <Button onClick={handleImportModalClose}>取消</Button>
+              <Button onClick={handleImportModalClose}>
+                {t('spaceManagement.cancel')}
+              </Button>
               <Button type="primary" onClick={handleConfirmImport}>
-                确认导入
+                {t('spaceManagement.confirmImport')}
               </Button>
             </Space>
           )

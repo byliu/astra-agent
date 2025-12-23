@@ -11,18 +11,12 @@ import {
 import {
   getAgentDetail,
   handleAgentStatus,
-  getMCPServiceDetail,
-  getAgentTimeSeriesData,
-  getAgentSummaryData,
   getPreparationData,
-  type AgentInputParam,
 } from '@/services/release-management';
 import {
   getBotInfo,
   cancelBindWx,
-  publish,
-  getChainInfo,
-  getInputsType,
+  // getChainInfo,
 } from '@/services/spark-common';
 import WxModal from '@/components/wx-modal';
 import { useBotStateStore } from '@/store/spark-store/bot-state';
@@ -33,18 +27,19 @@ import { debounce } from 'lodash';
 
 import weixinghaoImg from '@/assets/imgs/release/weixin-release.svg';
 import apiImg from '@/assets/imgs/release/api-release.svg';
-import sparkImg from '@/assets/imgs/release/spark-release.svg';
+import agentHubIcon from '@/assets/imgs/workflow/agent-hub-icon.svg';
 import mcpImg from '@/assets/imgs/release/mcp-release.svg';
 import formSelect from '@/assets/imgs/main/icon_nav_dropdown.svg';
 import { useTranslation } from 'react-i18next';
 
 import styles from './index.module.scss';
-
+import useScreenWidth from '@/hooks/use-screen-width';
 interface AgentListProps {
-  AgentType?: 'agent' | 'workflow';
+  AgentType?: 'agent' | 'workflow' | 'virtual' | 'all';
 }
 
 const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
+  const screenWidth = useScreenWidth();
   const botInfo = useBotStateStore(state => state.botDetailInfo);
   const setBotDetailInfo = useBotStateStore(state => state.setBotDetailInfo);
   const [botMultiFileParam, setBotMultiFileParam] = useState<boolean>(false);
@@ -75,7 +70,16 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
     searchValue: string;
   };
   const [msg, setMsg] = useState<MsgType>({
-    version: AgentType === 'agent' ? '1' : '3',
+    version:
+      AgentType === 'all'
+        ? ''
+        : AgentType === 'agent'
+          ? '1'
+          : AgentType === 'workflow'
+            ? '3'
+            : AgentType === 'virtual'
+              ? '4'
+              : '3',
     searchValue: '',
   });
   // tab状态赋值
@@ -93,7 +97,16 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
   useEffect(() => {
     setMsg(prev => ({
       ...prev,
-      version: AgentType === 'agent' ? '1' : '3',
+      version:
+        AgentType === 'all'
+          ? ''
+          : AgentType === 'agent'
+            ? '1'
+            : AgentType === 'workflow'
+              ? '3'
+              : AgentType === 'virtual'
+                ? '4'
+                : '3',
     }));
 
     setPageInfo(prev => ({
@@ -119,7 +132,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
             <ExclamationCircleOutlined
               style={{ marginRight: '5px', color: '#f2aa58' }}
             />
-            下架申请提交后无法撤回，请谨慎提交！
+            {t('releaseManagement.takeDownWarning')}
           </div>
         </div>
       ),
@@ -133,12 +146,12 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
           handleAgentStatus(botId, {
             action: 'OFFLINE',
             publishType: 'MARKET',
-            publishData: { reason: '维护更新' },
+            publishData: { reason: t('releaseManagement.maintenanceUpdate') },
           })
             .then(() => {
               reasonRef.current = undefined;
               close && close();
-              message.success('提交申请成功！');
+              message.success(t('releaseManagement.submitApplicationSuccess'));
               setPageInfo(pre => ({ ...pre, pageIndex: 1 }));
             })
             .catch(err => {
@@ -150,7 +163,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
               .then(res => {
                 getBotInfo({ botId: botInfo.botId }).then(res => {
                   setBotDetailInfo(res.data);
-                  message.success('解绑成功');
+                  message.success(t('releaseManagement.unbindSuccess'));
                 });
               })
               .catch(error => {
@@ -216,7 +229,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
         title: t('releaseManagement.agentId'),
         align: 'left',
         width: 120,
-        render: (text: string): React.ReactNode => {
+        render: (text: string) => {
           return <div style={{ marginLeft: '8px' }}>{text}</div>;
         },
       },
@@ -241,7 +254,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
       {
         dataIndex: 'botDesc',
         title: t('releaseManagement.functionDesc'),
-        align: 'center',
+        align: 'left',
         ellipsis: true,
       },
       {
@@ -262,8 +275,8 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
                     return (
                       <img
                         style={{ width: '20px', height: '20px' }}
-                        src={sparkImg}
-                        alt="讯飞星火"
+                        src={agentHubIcon}
+                        alt="Agent Hub"
                       />
                     );
                   } else if (item == 2) {
@@ -279,7 +292,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
                       <img
                         style={{ width: '20px', height: '20px' }}
                         src={weixinghaoImg}
-                        alt="微信"
+                        alt="WeChat"
                       />
                     );
                   } else if (item == 4) {
@@ -339,7 +352,9 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
     cols.push({
       dataIndex: 'action',
       title: t('releaseManagement.operation'),
-      align: 'center',
+      align: 'left',
+      fixed: screenWidth > 1440 ? undefined : 'right',
+      width: 200,
       render: (bot: {
         version: number;
         botId: string | undefined;
@@ -378,11 +393,13 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
                     'MCP'
                   ).then((res: any) => {
                     if (
-                      (res.length === 2 &&
-                        res[1]?.fileType === 'file' &&
-                        res[1]?.schema?.type === 'array-string') ||
-                      (res.length === 2 && res[1]?.fileType !== 'file') ||
-                      res.length > 2
+                      res.length > 1 &&
+                      res
+                        .slice(1)
+                        .some(
+                          (item: { fileType: string }) =>
+                            item.fileType !== 'file'
+                        )
                     ) {
                       setMoreParams(true);
                     } else {
@@ -522,8 +539,8 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
     getAgentDetail(botId as unknown as number)
       .then(data => {
         setBotDetailInfo({
-          ...data,
-          name: data?.botName,
+          ...(data as BotData),
+          name: (data as BotData)?.botName,
         });
       })
       .catch(err => {
@@ -577,7 +594,11 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
                   showSearch
                   placeholder={t('releaseManagement.select')}
                   optionFilterProp="label"
-                  style={{ width: 160 }}
+                  style={{
+                    width: 160,
+                    border: '1px solid #E7E7F0',
+                    borderRadius: 10,
+                  }}
                   className={styles.ant_input}
                   notFoundContent={null}
                   onChange={onChangeTypeSelect}
@@ -590,7 +611,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
                     { label: t('releaseManagement.unreleased'), value: -9 },
                     // { label: t('releaseManagement.releasing'), value: 1 },
                     { label: t('releaseManagement.released'), value: 2 },
-                    { label: t('releaseManagement.auditFailed'), value: 3 },
+                    // { label: t('releaseManagement.auditFailed'), value: 3 },
                   ]}
                 />
               </div>
@@ -616,9 +637,12 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
           onCancel={() => {
             setOpenWxmol(false);
           }}
-          agentType={AgentType}
+          agentType={botInfo?.version === 3 ? 'workflow' : 'agent'}
+          isVirtual={AgentType === 'virtual' || botInfo?.version === 4}
           agentMaasId={
-            AgentType === 'workflow' ? (botInfo?.maasId as string) : null
+            AgentType === 'workflow' || botInfo?.version === 3
+              ? (botInfo?.maasId as string)
+              : null
           }
         />
         <Table
@@ -626,7 +650,9 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
           loading={loading}
           dataSource={botList}
           columns={unifiedColumns}
-          rowKey={(record: { createTime: string }) => record.createTime}
+          rowKey={(record: BotData & { action: BotData }): number =>
+            record.botId
+          }
           pagination={{
             position: ['bottomCenter'],
             total: total,
@@ -638,7 +664,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
             current: pageInfo.pageIndex,
             pageSize: pageInfo.pageSize,
             // pageSizeOptions: [10, 20, 50],
-            onChange: (pageIndex, pageSize) => {
+            onChange: (pageIndex, pageSize): void => {
               setPageInfo(pre => ({
                 ...pre,
                 pageIndex: pageSize !== pre?.pageSize ? 1 : pageIndex,
@@ -649,6 +675,7 @@ const AgentList: React.FC<AgentListProps> = ({ AgentType }) => {
           scroll={{
             scrollToFirstRowOnChange: true,
             y: 'max(200px ,calc(100vh - 350px))',
+            x: screenWidth > 1440 ? undefined : 1000,
           }}
         />
       </div>

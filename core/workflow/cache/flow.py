@@ -9,7 +9,7 @@ from workflow.domain.models.flow import Flow
 from workflow.extensions.middleware.getters import get_cache_service
 
 # Redis key prefix for flow information
-REDIS_FLOW_INFO_HEAD = "flows:flow_info:new"
+REDIS_FLOW_INFO_HEAD = "workflow:flow_info"
 
 
 def get_flow_by_id(flow_id: str) -> Flow | None:

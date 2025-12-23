@@ -212,21 +212,22 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
      */
     private String buildModelApiUrlNew(String baseUrl) {
         try {
-            // Read IP blacklist
+            // Read IP blacklist from database
             List<ConfigInfo> list = configInfoMapper.getListByCategory(CAT_IP_BLACKLIST);
             String rawBlacklist = (list != null && !list.isEmpty()) ? list.getFirst().getValue() : "";
-            List<String> blacklist =
+            List<String> databaseBlacklist =
                     StrUtil.isBlank(rawBlacklist)
                             ? Collections.emptyList()
                             : Arrays.stream(rawBlacklist.split(","))
                                     .map(String::trim)
                                     .filter(StrUtil::isNotBlank)
-                                    .collect(toList());
-
+                                    .toList();
+            // Merge database blacklist with default blacklist
+            List<String> mergedBlacklist = new ArrayList<>(databaseBlacklist);
             SsrfProperties ssrfProperties = new SsrfProperties();
             // Note: The underlying object field name is ipBlaklist (third-party spelling), maintain
             // compatibility
-            ssrfProperties.setIpBlaklist(blacklist);
+            ssrfProperties.setIpBlaklist(mergedBlacklist);
 
             // 0) Remove userInfo and normalize
             String stripped = SsrfValidators.stripUserInfo(baseUrl);
@@ -259,6 +260,12 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
                 }
             } else {
                 finalPath = cleanedPath;
+            }
+
+            // SECURITY FIX: Validate path to prevent directory traversal
+            if (finalPath.contains("..") || finalPath.contains("//")) {
+                log.warn("Potential path traversal detected: {}", finalPath);
+                throw new BusinessException(ResponseEnum.MODEL_URL_CHECK_FAILED);
             }
 
             // 4) Final URL validation again
@@ -295,12 +302,15 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
         Model model;
         if (isNew) {
             // Duplicate name validation
-            Model exist =
-                    this.getOne(
-                            new LambdaQueryWrapper<Model>()
-                                    .eq(Model::getUid, request.getUid())
-                                    .eq(Model::getName, request.getModelName())
-                                    .eq(Model::getIsDeleted, 0));
+            LambdaQueryWrapper<Model> lqw = new LambdaQueryWrapper<Model>()
+                    .eq(Model::getName, request.getModelName())
+                    .eq(Model::getIsDeleted, 0);
+            if (spaceId != null) {
+                lqw.eq(Model::getSpaceId, spaceId);
+            } else {
+                lqw.eq(Model::getUid, request.getUid()).isNull(Model::getSpaceId);
+            }
+            Model exist = this.getOne(lqw);
             if (exist != null) {
                 throw new BusinessException(ResponseEnum.MODEL_NAME_EXISTED);
             }
@@ -362,6 +372,21 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
         }
 
         // Common fields
+        setCommonFileds(request, model);
+
+        if (isNew) {
+            model.setSpaceId(spaceId);
+            mapper.insert(model);
+            log.info("New model added successfully, domain={}, uid={}", request.getDomain(), request.getUid());
+        } else {
+            mapper.updateById(model);
+            log.info("Model updated successfully, domain={}, uid={}", request.getDomain(), request.getUid());
+        }
+
+        insertTagInfo(request, model);
+    }
+
+    private static void setCommonFileds(ModelValidationRequest request, Model model) {
         model.setName(request.getModelName());
         model.setDomain(request.getDomain());
         model.setUrl(request.getEndpoint());
@@ -376,17 +401,6 @@ public class ModelService extends ServiceImpl<ModelMapper, Model> {
         model.setConfig(
                 Optional.ofNullable(request.getConfig()).map(JSON::toJSONString).orElse(null));
         model.setUpdateTime(new Date());
-
-        if (isNew) {
-            model.setSpaceId(spaceId);
-            mapper.insert(model);
-            log.info("New model added successfully, domain={}, uid={}", request.getDomain(), request.getUid());
-        } else {
-            mapper.updateById(model);
-            log.info("Model updated successfully, domain={}, uid={}", request.getDomain(), request.getUid());
-        }
-
-        insertTagInfo(request, model);
     }
 
     private void insertTagInfo(ModelValidationRequest request, Model model) {

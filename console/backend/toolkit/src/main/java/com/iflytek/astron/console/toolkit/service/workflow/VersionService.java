@@ -1,22 +1,27 @@
 package com.iflytek.astron.console.toolkit.service.workflow;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.entity.workflow.Workflow;
+import com.iflytek.astron.console.commons.enums.bot.BotTypeEnum;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowData;
 import com.iflytek.astron.console.toolkit.entity.core.workflow.FlowProtocol;
 import com.iflytek.astron.console.toolkit.entity.dto.WorkflowReq;
+import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowConfig;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowVersion;
-import com.iflytek.astron.console.toolkit.mapper.workflow.WorkflowMapper;
-import com.iflytek.astron.console.toolkit.mapper.workflow.WorkflowVersionMapper;
+import com.iflytek.astron.console.toolkit.mapper.workflow.*;
 import com.iflytek.astron.console.toolkit.tool.DataPermissionCheckTool;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Version service for managing workflow versions. Handles workflow version creation, listing,
@@ -49,6 +55,9 @@ public class VersionService {
     @Autowired
     WorkflowVersionMapper workflowVersionMapper;
 
+    @Autowired
+    private WorkflowConfigMapper workflowConfigMapper;
+
 
     @Value("${spring.profiles.active}")
     String env;
@@ -63,11 +72,72 @@ public class VersionService {
         }
         dataPermissionCheckTool.checkWorkflowBelong(workflow, SpaceInfoUtil.getSpaceId());
         Page<WorkflowVersion> result = workflowVersionMapper.selectPageByCondition(newPage, flowId);
+        setAgentConfig(null, flowId, result);
         return result;
     }
 
     public Object list_botId_Page(Page<WorkflowVersion> page, String botId) {
-        return workflowVersionMapper.selectPageLatestByName(page, botId);
+        Page<WorkflowVersion> workflowVersionIPage = workflowVersionMapper.selectPageLatestByName(page, botId);
+        setAgentConfig(botId, null, workflowVersionIPage);
+        return workflowVersionIPage;
+    }
+
+    private void setAgentConfig(String botId, String flowIdStr, Page<WorkflowVersion> workflowVersionPage) {
+        // get WorkflowConfig
+        Map<String, String> cfgByVersion = Collections.emptyMap();
+        try {
+            List<WorkflowConfig> workflowConfigs = new ArrayList<>();
+            if (StringUtils.isNotBlank(botId)) {
+                Integer botIdInt = Integer.parseInt(botId);
+                workflowConfigs = workflowConfigMapper.selectList(
+                        Wrappers.<WorkflowConfig>lambdaQuery()
+                                .eq(WorkflowConfig::getBotId, botIdInt)
+                                .eq(WorkflowConfig::getDeleted, false));
+            }
+            if (StringUtils.isNotBlank(flowIdStr)) {
+                workflowConfigs = workflowConfigMapper.selectList(
+                        Wrappers.<WorkflowConfig>lambdaQuery()
+                                .eq(WorkflowConfig::getFlowId, flowIdStr)
+                                .eq(WorkflowConfig::getDeleted, false));
+            }
+
+            if (CollUtil.isNotEmpty(workflowConfigs)) {
+                cfgByVersion = workflowConfigs.stream()
+                        .filter(cfg -> cfg.getVersionNum() != null)
+                        .collect(Collectors.toMap(
+                                WorkflowConfig::getVersionNum,
+                                WorkflowConfig::getConfig,
+                                (exist, replace) -> exist));
+            }
+        } catch (NumberFormatException ignore) {
+            // When botId is not a number, the voice intelligent agent configuration query is skipped;
+            log.warn("pase error e= ", ignore);
+        }
+
+        String flowId = null;
+        if (StringUtils.isNotBlank(flowIdStr)) {
+            flowId = flowIdStr;
+        } else {
+            if (CollUtil.isNotEmpty(workflowVersionPage.getRecords())) {
+                flowId = workflowVersionPage.getRecords().get(0).getFlowId();
+            }
+        }
+
+        String advancedConfig = null;
+        if (StrUtil.isNotBlank(flowId)) {
+            Workflow flow = workflowMapper.selectOne(
+                    Wrappers.<Workflow>lambdaQuery().eq(Workflow::getFlowId, flowId));
+            if (flow != null) {
+                advancedConfig = flow.getAdvancedConfig();
+            }
+        }
+
+        for (WorkflowVersion record : workflowVersionPage.getRecords()) {
+            record.setFlowConfig(cfgByVersion.get(record.getVersionNum()));
+            if (record.getAdvancedConfig() == null) {
+                record.setAdvancedConfig(advancedConfig);
+            }
+        }
     }
 
     /**
@@ -92,7 +162,7 @@ public class VersionService {
             WorkflowVersion workflowVersion = new WorkflowVersion();
 
             // Set version number
-            String version_num = generateVersionNumber();
+            String versionNum = generateVersionNumber();
 
             // Set currently using this version
             updateIsVersionForFlowId(createDto.getFlowId());
@@ -107,7 +177,7 @@ public class VersionService {
 
             // Data setting
             workflowVersion.setBotId(createDto.getBotId());
-            workflowVersion.setVersionNum(version_num);
+            workflowVersion.setVersionNum(versionNum);
             workflowVersion.setName(createDto.getName());
             workflowVersion.setData(workflow.getData());
             workflowVersion.setSysData(JSONObject.toJSONString(flowProtocol));
@@ -115,6 +185,31 @@ public class VersionService {
             workflowVersion.setPublishResult(createDto.getPublishResult());
             workflowVersion.setFlowId(createDto.getFlowId());
             workflowVersion.setDescription(createDto.getDescription());
+            // Set advanced configuration information
+            workflowVersion.setAdvancedConfig(workflow.getAdvancedConfig());
+            // Determine whether it is a voice intelligent agent
+            if (Objects.equals(workflow.getType(), BotTypeEnum.TALK.getType())) {
+                WorkflowConfig workflowConfig = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                        .eq(WorkflowConfig::getVersionNum, "-1")
+                        .eq(WorkflowConfig::getDeleted, false));
+                WorkflowConfig latestConfig = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                        .eq(WorkflowConfig::getName, createDto.getName())
+                        .eq(WorkflowConfig::getDeleted, false)
+                        .orderByDesc(WorkflowConfig::getUpdatedTime)
+                        .last("limit 1"));
+                if (latestConfig != null) {
+                    latestConfig.setConfig(workflowConfig.getConfig());
+                    workflowConfigMapper.updateById(workflowConfig);
+                } else {
+                    workflowConfig.setVersionNum(versionNum);
+                    workflowConfig.setId(null);
+                    workflowConfig.setName(createDto.getName());
+                    workflowConfigMapper.insert(workflowConfig);
+                }
+
+            }
             workflowVersionMapper.insert(workflowVersion);
 
             return ApiResult.success(new JSONObject()
@@ -184,15 +279,42 @@ public class VersionService {
                         .fluentPut("workflowVersionName", "v1.0"));
             }
             String data = workflowVersion.getData();
+            String preAdvanceConfig = workflowVersion.getAdvancedConfig();
             String maxName = workflowVersion.getName();
 
             String name;
             String workflow_data = workflow.getData();
-            if (workflow_data != null && workflow_data.equals(data)) {
-                name = incrementVersion(maxName, false);
-            } else {
-                name = incrementVersion(maxName, true);
+            // Compare the latest version of advanced configuration to see if there are any updates
+            String advancedConfig = workflow.getAdvancedConfig();
+            boolean configNoChange = true;
+            if (Objects.equals(workflow.getType(), BotTypeEnum.TALK.getType())) {
+                WorkflowConfig draftCfg = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                        .eq(WorkflowConfig::getVersionNum, "-1")
+                        .eq(WorkflowConfig::getDeleted, false));
+                String draftConfig = (draftCfg != null) ? draftCfg.getConfig() : null;
+
+                List<WorkflowConfig> beforeVersionConfigList = workflowConfigMapper.selectList(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                        .ne(WorkflowConfig::getVersionNum, "-1")
+                        .eq(WorkflowConfig::getDeleted, false));
+                Optional<WorkflowConfig> latestNonDraftCfgOpt = beforeVersionConfigList.stream()
+                        .filter(cfg -> StrUtil.isNotBlank(cfg.getName()))
+                        .filter(cfg -> extractVersionNumberSafely(cfg.getName()) > 0D)
+                        .max(Comparator
+                                .comparingDouble((WorkflowConfig cfg) -> extractVersionNumberSafely(cfg.getName()))
+                                .thenComparing(WorkflowConfig::getUpdatedTime, Comparator.nullsLast(Date::compareTo)));
+
+                // Compare draft configuration and historical configuration
+                configNoChange = latestNonDraftCfgOpt
+                        .map(WorkflowConfig::getConfig)
+                        .map(latestCfg -> Objects.equals(latestCfg, draftConfig))
+                        .orElse(false);
             }
+            Boolean advanceConfigChange = Objects.equals(preAdvanceConfig, advancedConfig);
+            Boolean dataNoChange = Objects.equals(workflow_data, data);
+            boolean needBump = !(Boolean.TRUE.equals(dataNoChange) && Boolean.TRUE.equals(advanceConfigChange) && configNoChange);
+            name = incrementVersion(maxName, needBump);
             return ApiResult.success(new JSONObject()
                     .fluentPut("workflowVersionName", name));
         } catch (Exception e) {
@@ -200,6 +322,16 @@ public class VersionService {
         }
     }
 
+    private static double extractVersionNumberSafely(String versionName) {
+        if (StrUtil.isBlank(versionName)) {
+            return 0D;
+        }
+        try {
+            return extractVersionNumber(versionName.toLowerCase(Locale.ROOT));
+        } catch (Exception ignore) {
+            return 0D;
+        }
+    }
 
     /**
      * Get system data for a specific version.
@@ -461,8 +593,9 @@ public class VersionService {
 
             // Return result: if version exists return version name, if no version return "Draft Version"
             String versionDisplay = (latestVersion != null) ? latestVersion.getName() : "Draft Version";
-
-            return ApiResult.success(new JSONObject().fluentPut("workflowMaxVersion", versionDisplay));
+            JSONObject workflowMaxVersion = new JSONObject().fluentPut("workflowMaxVersion", versionDisplay)
+                    .fluentPut("versionNum", (latestVersion != null) ? latestVersion.getVersionNum() : "0");
+            return ApiResult.success(workflowMaxVersion);
         } catch (Exception e) {
             log.error("Query workflow maximum version number exception, botId: {}", botId, e);
             throw new BusinessException(ResponseEnum.WORKFLOW_VERSION_GET_MAX_FAILED);

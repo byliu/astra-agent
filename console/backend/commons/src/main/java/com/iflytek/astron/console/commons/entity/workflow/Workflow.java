@@ -46,4 +46,5 @@ public class Workflow {
     Integer category;
 
     Long spaceId;
+    Integer type;
 }

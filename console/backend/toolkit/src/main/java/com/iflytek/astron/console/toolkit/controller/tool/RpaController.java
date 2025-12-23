@@ -2,19 +2,21 @@ package com.iflytek.astron.console.toolkit.controller.tool;
 
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.toolkit.common.anno.ResponseResultBody;
+import com.iflytek.astron.console.toolkit.entity.dto.rpa.StartReq;
 import com.iflytek.astron.console.toolkit.entity.table.tool.RpaInfo;
 import com.iflytek.astron.console.toolkit.entity.table.tool.RpaUserAssistant;
 import com.iflytek.astron.console.toolkit.entity.tool.CreateRpaAssistantReq;
 import com.iflytek.astron.console.toolkit.entity.tool.RpaAssistantResp;
 import com.iflytek.astron.console.toolkit.entity.tool.UpdateRpaAssistantReq;
 import com.iflytek.astron.console.toolkit.handler.UserInfoManagerHandler;
-import com.iflytek.astron.console.toolkit.service.tool.RpaAssistantService;
-import com.iflytek.astron.console.toolkit.service.tool.RpaInfoService;
+import com.iflytek.astron.console.toolkit.service.tool.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -123,5 +125,14 @@ public class RpaController {
     public void delete(@PathVariable("id") Long id) {
         String userId = UserInfoManagerHandler.getUserId();
         rpaAssistantService.delete(userId, id);
+    }
+
+    /**
+     * Debug RPA robot.
+     */
+    @PostMapping(value = "/debug", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(@RequestBody StartReq req,
+            @RequestHeader(value = "X-RPA-Token") String apiToken) {
+        return rpaAssistantService.debug(req, apiToken);
     }
 }

@@ -10,6 +10,7 @@ import com.iflytek.astron.console.commons.dto.bot.BotInfoDto;
 import com.iflytek.astron.console.commons.dto.bot.BotModelDto;
 import com.iflytek.astron.console.commons.entity.bot.BotTemplate;
 import com.iflytek.astron.console.commons.entity.bot.BotTypeList;
+import com.iflytek.astron.console.hub.enums.ConfigTypeEnum;
 import com.iflytek.astron.console.commons.enums.bot.DefaultBotModelEnum;
 import com.iflytek.astron.console.commons.mapper.bot.BotTemplateMapper;
 import com.iflytek.astron.console.commons.response.ApiResult;
@@ -20,6 +21,7 @@ import com.iflytek.astron.console.commons.util.RequestContextUtil;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
 import com.iflytek.astron.console.hub.dto.bot.BotGenerationDTO;
 import com.iflytek.astron.console.hub.service.bot.BotAIService;
+import com.iflytek.astron.console.hub.service.bot.PersonalityConfigService;
 import com.iflytek.astron.console.hub.util.BotPermissionUtil;
 import com.iflytek.astron.console.toolkit.service.model.LLMService;
 import com.iflytek.astron.console.toolkit.service.repo.MassDatasetInfoService;
@@ -66,6 +68,9 @@ public class BotCreateController {
     @Autowired
     private RedisUtil redisUtil;
 
+    @Autowired
+    private PersonalityConfigService personalityConfigService;
+
     /**
      * Create workflow assistant
      *
@@ -87,6 +92,9 @@ public class BotCreateController {
         if (!botDatasetService.checkDatasetBelong(uid, spaceId, datasetList)) {
             return ApiResult.error(ResponseEnum.BOT_BELONG_ERROR);
         }
+        if (Boolean.TRUE.equals(bot.getEnablePersonality()) && personalityConfigService.checkPersonalityConfig(bot.getPersonalityConfig())) {
+            return ApiResult.error(ResponseEnum.CREATE_BOT_FAILED);
+        }
         boolean selfDocumentExist = (datasetList != null && !datasetList.isEmpty());
         boolean maasDocumentExist = (maasDatasetList != null && !maasDatasetList.isEmpty());
         int supportDocument = (selfDocumentExist || maasDocumentExist) ? 1 : 0;
@@ -102,6 +110,12 @@ public class BotCreateController {
 
         if (maasDocumentExist) {
             botDatasetMaasService.botAssociateDataset(uid, botId, maasDatasetList, supportDocument);
+        }
+
+        if (Boolean.TRUE.equals(bot.getEnablePersonality())) {
+            personalityConfigService.insertOrUpdate(bot.getPersonalityConfig(), botId.longValue(), ConfigTypeEnum.DEBUG);
+        } else {
+            personalityConfigService.setDisabledByBotId(botId.longValue());
         }
 
         return ApiResult.success(botId);
@@ -164,7 +178,7 @@ public class BotCreateController {
 
     /**
      * AI generate input examples
-     *
+     * <p>
      * Path: /bot/generateInputExample
      */
     @PostMapping(value = "/generate-input-example")
@@ -219,6 +233,10 @@ public class BotCreateController {
         // Permission validation
         botPermissionUtil.checkBot(bot.getBotId());
 
+        if (Boolean.TRUE.equals(bot.getEnablePersonality()) && personalityConfigService.checkPersonalityConfig(bot.getPersonalityConfig())) {
+            return ApiResult.error(ResponseEnum.CREATE_BOT_FAILED);
+        }
+
         // Validate dataset ownership before updating bot
         List<Long> datasetList = bot.getDatasetList();
         List<Long> maasDatasetList = bot.getMaasDatasetList();
@@ -235,6 +253,13 @@ public class BotCreateController {
         // Handle dataset associations update
         botDatasetService.updateDatasetByBot(uid, bot.getBotId(), datasetList, supportDocument);
         botDatasetMaasService.updateDatasetByBot(uid, bot.getBotId(), maasDatasetList, supportDocument);
+
+        if (Boolean.TRUE.equals(bot.getEnablePersonality())) {
+            personalityConfigService.insertOrUpdate(bot.getPersonalityConfig(), bot.getBotId().longValue(), ConfigTypeEnum.DEBUG);
+            personalityConfigService.insertOrUpdate(bot.getPersonalityConfig(), bot.getBotId().longValue(), ConfigTypeEnum.MARKET);
+        } else {
+            personalityConfigService.setDisabledByBotId(bot.getBotId().longValue());
+        }
 
         return ApiResult.success(result);
     }

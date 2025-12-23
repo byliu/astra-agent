@@ -70,7 +70,7 @@ const translation = {
       parameters: '参数',
       add: '添加',
       noRobot: '暂无机器人',
-      noRpaTool: '暂无RPA工具',
+      noRpaTool: '暂无RPA工具，快去新建RPA工具吧~',
       noMore: '没有更多了',
       createRpa: '新建RPA',
     },
@@ -671,6 +671,8 @@ const translation = {
       regenerate: '重新生成',
       tryFlow: '试试Flow',
       confirmDeleteAllDialogue: '确认删除清空所有对话？',
+      versionNotPublished: '当前版本未发布成功，无用户对话页',
+      virtualLoading: '虚拟人加载中',
     },
     flowModal: {
       createWorkflow: '创建工作流',
@@ -752,7 +754,7 @@ const translation = {
     debugNode: '调试节点',
     debugPreview: '调试预览',
     nodeInfoChanged:
-      '由于{nodeNames}节点信息发生改变，需将所有对照组中该节点信息重置',
+      '由于{{nodeNames}}节点信息发生改变，需将所有对照组中该节点信息重置',
     addControlGroup: '添加对照组（{{count}}/4）',
     clearHistoryRecords: '清除历史记录',
     benchmarkGroup: '基准组',

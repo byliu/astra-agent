@@ -9,7 +9,7 @@ import type { ButtonConfig, UserRole } from './types';
 import { ModuleType, OperationType, PermissionFailureBehavior } from './types';
 import styles from './space-button.module.scss';
 import { useUserStoreHook } from '@/hooks/use-user-store';
-
+import { useTranslation } from 'react-i18next';
 // SpaceButton 组件属性接口
 export interface SpaceButtonProps {
   // 按钮配置
@@ -46,7 +46,7 @@ const SpaceButton: React.FC<SpaceButtonProps> = ({
   defaultPermissionFailureBehavior = PermissionFailureBehavior.DISABLE,
 }) => {
   const { permissionParams } = useUserStoreHook();
-
+  const { t } = useTranslation();
   // 优先使用传入的 userRole，如果没有则从 userStore 获取
   let effectiveUserRole: UserRole | undefined = userRole;
   if (!effectiveUserRole) {
@@ -175,6 +175,15 @@ const SpaceButton: React.FC<SpaceButtonProps> = ({
     type === 'primary' && styles.addMemberBtn,
     className
   );
+  // 翻译按钮文本（如果文本包含 '.' 且不是纯数字，则认为是 i18n key）
+  const getButtonText = (text: string) => {
+    if (!text) return '';
+    // 如果包含 '.' 且不是 IP 地址或数字，则认为是 i18n key
+    if (text.includes('.') && !/^\d+\.\d+/.test(text)) {
+      return t(text);
+    }
+    return text;
+  };
 
   // 创建按钮元素
   const button = (
@@ -189,7 +198,7 @@ const SpaceButton: React.FC<SpaceButtonProps> = ({
       className={buttonClassName}
       style={style}
     >
-      {text}
+      {getButtonText(text)}
     </Button>
   );
 

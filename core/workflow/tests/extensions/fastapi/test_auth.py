@@ -206,7 +206,7 @@ class TestAuthMiddleware:
         auth_middleware.api_secret = "test_secret"
 
         with patch(
-            "workflow.utils.hmac_auth.HMACAuth.build_auth_header"
+            "common.utils.hmac_auth.HMACAuth.build_auth_header"
         ) as mock_build_auth:
             mock_build_auth.return_value = {"Authorization": "test_auth_header"}
 

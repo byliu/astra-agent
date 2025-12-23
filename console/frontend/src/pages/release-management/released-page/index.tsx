@@ -15,8 +15,14 @@ export default function Index() {
   const isAgentListPage =
     location.pathname === '/management/release' ||
     location.pathname === '/management/release/' ||
+    location.pathname === '/management/release/all' ||
+    location.pathname === '/management/release/all/' ||
+    location.pathname === '/management/release/agent' ||
+    location.pathname === '/management/release/agent/' ||
     location.pathname === '/management/release/workflow' ||
-    location.pathname === '/management/release/workflow/';
+    location.pathname === '/management/release/workflow/' ||
+    location.pathname === '/management/release/virtual' ||
+    location.pathname === '/management/release/virtual/';
 
   const isAPIPage =
     location.pathname === '/management/release/apikey' ||
@@ -33,8 +39,8 @@ export default function Index() {
     else if (isAPIPage) setActiveKey('2');
   }, [location.pathname]);
   return (
-    <div className={styles.apply}>
-      <div className={styles.applyTop}>
+    <div className={styles.releasePage}>
+      <div className={styles.releasePageTop}>
         <div className={styles.content}>
           {isAgentListPage && (
             <>
@@ -48,11 +54,25 @@ export default function Index() {
                 <div
                   className={`${styles.changeBox} ${
                     (location.pathname === '/management/release' ||
-                      location.pathname === '/management/release/') &&
+                      location.pathname === '/management/release/' ||
+                      location.pathname === '/management/release/all' ||
+                      location.pathname === '/management/release/all/') &&
                     styles.activeBox
                   }`}
-                  onClick={() => {
-                    navigate('/management/release');
+                  onClick={(): void => {
+                    navigate('/management/release/all');
+                  }}
+                >
+                  {t('releaseManagement.all')}
+                </div>
+                <div
+                  className={`${styles.changeBox} ${
+                    (location.pathname === '/management/release/agent' ||
+                      location.pathname === '/management/release/agent/') &&
+                    styles.activeBox
+                  }`}
+                  onClick={(): void => {
+                    navigate('/management/release/agent');
                   }}
                 >
                   {t('releaseManagement.instructional')}
@@ -63,11 +83,23 @@ export default function Index() {
                       location.pathname === '/management/release/workflow/') &&
                     styles.activeBox
                   }`}
-                  onClick={() => {
+                  onClick={(): void => {
                     navigate('/management/release/workflow');
                   }}
                 >
                   {t('releaseManagement.workflow')}
+                </div>
+                <div
+                  className={`${styles.changeBox} ${
+                    (location.pathname === '/management/release/virtual' ||
+                      location.pathname === '/management/release/virtual/') &&
+                    styles.activeBox
+                  }`}
+                  onClick={(): void => {
+                    navigate('/management/release/virtual');
+                  }}
+                >
+                  {t('releaseManagement.virtual')}
                 </div>
               </div>
             </>

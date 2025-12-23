@@ -34,7 +34,7 @@ class ImageServiceTest {
         when(f.isEmpty()).thenReturn(bytes == null || bytes.length == 0);
         lenient().when(f.getContentType()).thenReturn(contentType);
 
-        // These won't be called in some exception cases → mark as lenient to avoid unused stub warnings
+        // These won't be called in some exception cases mark as lenient to avoid unused stub warnings
         lenient().when(f.getOriginalFilename()).thenReturn(name);
         lenient().when(f.getInputStream()).thenReturn(new ByteArrayInputStream(bytes == null ? new byte[0] : bytes));
         lenient().when(f.getSize()).thenReturn(sizeOverride != null ? sizeOverride : (bytes == null ? 0L : (long) bytes.length));
@@ -84,7 +84,7 @@ class ImageServiceTest {
 
         String key = service.upload(file);
 
-        // Cannot infer extension from filename/type → no suffix
+        // Cannot infer extension from filename/type no suffix
         assertThat(key).matches(Pattern.compile("^icon/user/sparkBot_[0-9a-f]{32}$"));
         verify(s3UtilClient).putObject(eq(key), any(InputStream.class), eq(3L), eq("image/bmp"));
     }
@@ -145,7 +145,7 @@ class ImageServiceTest {
     }
 
     @Test
-    @DisplayName("upload - contentType is blank string: normalized to application/octet-stream → not allowed")
+    @DisplayName("upload - contentType is blank string: normalized to application/octet-stream  not allowed")
     void upload_blankContentType_shouldThrow() throws Exception {
         MultipartFile file = mockFile("x", "   ", "a".getBytes(), null);
 

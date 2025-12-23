@@ -61,6 +61,6 @@ def get_factories_and_deps() -> List[Tuple[Any, List[ServiceType]]]:
             oss_factory.OSSServiceFactory(),
             [ServiceType.OSS_SERVICE],
         ),
-        (log_factory.LogServiceFactory(), [ServiceType.LOG_SERVICE]),
         (otlp_factory.OTLPServiceFactory(), [ServiceType.OTLP_SERVICE]),
+        (log_factory.LogServiceFactory(), [ServiceType.LOG_SERVICE]),
     ]

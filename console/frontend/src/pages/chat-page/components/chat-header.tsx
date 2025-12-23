@@ -93,15 +93,15 @@ const ChatHeader = (props: {
   //收藏按钮样式
   const collectButtonClass = `cursor-pointer flex items-center justify-center w-[84px] h-9 border rounded-[18px] transition-all duration-200 ${
     collectHover
-      ? 'text-[#275eff] border-[#275eff]'
-      : 'text-gray-600 border-[#e4eaff] hover:text-[#275eff] hover:border-[#275eff]'
+      ? 'text-[#6356EA] border-[#6356EA]'
+      : 'text-gray-600 border-[#e4eaff] hover:text-[#6356EA] hover:border-[#6356EA]'
   }`;
 
   //分享按钮样式
   const shareButtonClass = `cursor-pointer flex items-center justify-center w-[84px] h-9 border rounded-[18px] transition-all duration-200 ${
     shareHover
-      ? 'text-[#275eff] border-[#275eff]'
-      : 'text-gray-600 border-[#e4eaff] hover:text-[#275eff] hover:border-[#275eff]'
+      ? 'text-[#6356EA] border-[#6356EA]'
+      : 'text-gray-600 border-[#e4eaff] hover:text-[#6356EA] hover:border-[#6356EA]'
   }`;
 
   // 渲染左侧区域内容

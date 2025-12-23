@@ -71,7 +71,7 @@
   }
 
   .card-chat:hover {
-    color: #275eff;
+    color: #6356EA;
     font-weight: 500;
 
     .chat-icon {
@@ -106,7 +106,7 @@
     }
 
     .go-setting {
-      color: #275eff;
+      color: #6356EA;
     }
   }
 }
@@ -126,7 +126,9 @@
 .detail-select {
   width: 160px;
   height: 32px;
-
+  border-radius: 10px;
+  /* 描边色 */
+  border: 1px solid #E7E7F0; 
   transition: width 0.3s;
 }
 
@@ -146,4 +148,15 @@
   .detail-search-input {
     width: 160px;
   }
+}
+
+.square-title {
+  font-family: 'PingFang-Sim';
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 26px;
+  text-align: center;
+  letter-spacing: normal;
+  /* 字体主色 */
+  color: #222529;
 }

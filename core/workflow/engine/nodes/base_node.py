@@ -1,15 +1,17 @@
 import asyncio
+import base64
 import json
 import os
 from abc import abstractmethod
-from asyncio import Event
+from asyncio import Queue
 from typing import Any, AsyncIterator, Dict, List, Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from workflow.consts.engine.chat_status import ChatStatus, SparkLLMStatus
 from workflow.consts.engine.model_provider import ModelProviderEnum
 from workflow.consts.engine.template import TemplateSplitType, TemplateType
+from workflow.consts.engine.timeout import QueueTimeout
 from workflow.domain.entities.chat import HistoryItem
 from workflow.engine.callbacks.callback_handler import ChatCallBacks
 from workflow.engine.callbacks.openai_types_sse import GenerateUsage
@@ -22,6 +24,7 @@ from workflow.engine.entities.msg_or_end_dep_info import MsgOrEndDepInfo
 from workflow.engine.entities.node_entities import NodeType
 from workflow.engine.entities.node_running_status import NodeRunningStatus
 from workflow.engine.entities.output_mode import EndNodeOutputModeEnum
+from workflow.engine.entities.private_config import PrivateConfig
 from workflow.engine.entities.retry_config import RetryConfig
 from workflow.engine.entities.variable_pool import ParamKey, VariablePool
 from workflow.engine.nodes.entities.node_run_result import (
@@ -40,7 +43,6 @@ from workflow.engine.nodes.util.prompt import (
     process_prompt,
 )
 from workflow.exception.e import CustomException
-from workflow.exception.errors.code_convert import CodeConvert
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.otlp.log_trace.node_log import NodeLog
 from workflow.extensions.otlp.trace.span import Span
@@ -52,7 +54,6 @@ from workflow.infra.providers.llm.iflytek_spark.schemas import (
     StreamOutputMsg,
 )
 from workflow.infra.providers.llm.types import SystemUserMsg
-from workflow.utils.file_util import url_to_base64
 
 
 class BaseNode(BaseModel):
@@ -78,9 +79,10 @@ class BaseNode(BaseModel):
     node_type: str = ""
     alias_name: str = ""
     node_id: str = ""
+    _private_config: PrivateConfig = PrivateAttr(default_factory=PrivateConfig)
     retry_config: RetryConfig = Field(default_factory=RetryConfig)
-    stream_node_first_token: Event = Field(
-        default_factory=Event
+    stream_node_first_token: Queue = Field(
+        default_factory=lambda: Queue(maxsize=1)
     )  # Event to track if streaming node has sent first token
     remarkVisible: bool = False
     remark: str = ""
@@ -136,10 +138,10 @@ class BaseNode(BaseModel):
             if not variable_pool.get_stream_node_has_sent_first_token(node_id):
                 # Mark that streaming node has sent first token
                 variable_pool.set_stream_node_has_sent_first_token(node_id)
-            if not self.stream_node_first_token.is_set():
+            if self.stream_node_first_token.empty():
                 # Mark that streaming output first frame has been sent,
                 # triggering engine to set exception branches as inactive
-                self.stream_node_first_token.set()
+                self.stream_node_first_token.put_nowait(True)
             if not msg_or_end_node_deps:
                 # No node dependencies during single node debugging
                 return
@@ -874,7 +876,9 @@ class BaseOutputNode(BaseNode):
                 # Scenario: User limited output token count, reasoning ended early, avoid waiting for content
                 if llm_output_status[dep_node_id]:
                     break
-                msg: StreamOutputMsg = await asyncio.wait_for(queue.get(), timeout=120)
+                msg: StreamOutputMsg = await asyncio.wait_for(
+                    queue.get(), timeout=QueueTimeout.AsyncQT.value
+                )
                 llm_response = msg.llm_response
                 exception_occurred = msg.exception_occurred
                 span.add_info_events(
@@ -1030,6 +1034,8 @@ class BaseLLMNode(BaseNode):
     :param chat_ai: Chat AI instance
     """
 
+    _private_config = PrivateConfig(timeout=5 * 60.0)
+
     domain: str = Field(...)
     appId: str = Field(...)
     apiKey: str = Field(default="")
@@ -1180,13 +1186,18 @@ class BaseLLMNode(BaseNode):
                         if not image_url:
                             image_url = payload_comp_history[0].content
                         payload_comp_history.pop(0)
-        image_base64 = None
         # If it's an image understanding model, reserve the first position in array for image
         if image_url:
-            image_base64 = url_to_base64(image_url)
+            import requests  # type: ignore
+
+            image_response = requests.get(image_url)
+            if image_response.status_code != 200:
+                raise Exception(f"Failed to download image from {image_url}")
             image_msg = {
                 "role": "user",
-                "content": image_base64,
+                "content": str(
+                    base64.b64encode(image_response.content).decode("utf-8")
+                ),
                 "content_type": "image",
             }
             span_context.add_info_events({"image": str(image_url)})
@@ -1273,44 +1284,42 @@ class BaseLLMNode(BaseNode):
                 search_disable=self.searchDisable,
             ):
                 msg = llm_response.msg
-                code, status, content, reasoning_content, token_usage = (
+                status, content, reasoning_content, token_usage = (
                     self._get_chat_ai().decode_message(msg)
                 )
-                if code == 0:
-                    if reasoning_content:
-                        reasoning_contents.append(reasoning_content)
-                    if stream and self.respFormat != RespFormatEnum.JSON.value:
-                        await self.put_llm_content(
-                            node_id=self.node_id,
-                            model_name=self.domain,
-                            variable_pool=variable_pool,
-                            msg_or_end_node_deps=msg_or_end_node_deps or {},
-                            llm_content=msg,
-                        )
-                    texts.append(content if content else "")
-                    if status in [
+                # Mark streaming output first frame has been sent, trigger engine to set exception branches as inactive
+                if self.stream_node_first_token.empty():
+                    self.stream_node_first_token.put_nowait(True)
+                if reasoning_content:
+                    reasoning_contents.append(reasoning_content)
+                if stream and self.respFormat != RespFormatEnum.JSON.value:
+                    await self.put_llm_content(
+                        node_id=self.node_id,
+                        model_name=self.domain,
+                        variable_pool=variable_pool,
+                        msg_or_end_node_deps=msg_or_end_node_deps or {},
+                        llm_content=msg,
+                    )
+                texts.append(content if content else "")
+                if status in [
+                    SparkLLMStatus.END.value,
+                    ChatStatus.FINISH_REASON.value,
+                ]:
+                    token_usage = token_usage
+                    break
+                if (
+                    self.source == ModelProviderEnum.OPENAI.value
+                    and status
+                    and status
+                    not in [
                         SparkLLMStatus.END.value,
                         ChatStatus.FINISH_REASON.value,
-                    ]:
-                        token_usage = token_usage
-                        break
-                    if (
-                        self.source == ModelProviderEnum.OPENAI.value
-                        and status
-                        and status
-                        not in [
-                            SparkLLMStatus.END.value,
-                            ChatStatus.FINISH_REASON.value,
-                        ]
-                    ):
-                        # Exception case: finish_reason has value but not "stop", report the issue
-                        # For example, openai-gpt-4o gives "length" when max_token is very small
-                        raise CustomException(err_code=CodeEnum.OPEN_AI_REQUEST_ERROR)
-                else:
-                    raise CustomException(
-                        err_code=CodeConvert.sparkCode(code),
-                        cause_error=json.dumps(msg, ensure_ascii=False),
-                    )
+                    ]
+                ):
+                    # Exception case: finish_reason has value but not "stop", report the issue
+                    # For example, openai-gpt-4o gives "length" when max_token is very small
+                    raise CustomException(err_code=CodeEnum.OPEN_AI_REQUEST_ERROR)
+
             if texts:
                 res = "".join(texts)
                 span.add_info_events({"spark_llm_chat_result": "".join(texts)})
@@ -1355,8 +1364,6 @@ class BaseLLMNode(BaseNode):
                 # As long as put_llm_content method is executed, it proves LLM has sent first frame,
                 # so set has_sent_first_token to True
                 variable_pool.set_stream_node_has_sent_first_token(node_id)
-            if not self.stream_node_first_token.is_set():
-                self.stream_node_first_token.set()  # Mark streaming output first frame has been sent, trigger engine to set exception branches as inactive
             if not msg_or_end_node_deps:
                 # No node dependencies during single node debugging
                 return

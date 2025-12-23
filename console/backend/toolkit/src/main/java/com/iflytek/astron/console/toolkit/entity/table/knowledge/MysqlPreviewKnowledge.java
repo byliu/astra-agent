@@ -20,6 +20,14 @@ public class MysqlPreviewKnowledge {
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
     private String fileId;
+
+    /**
+     * Auto-increment sequence ID to preserve insertion order This field ensures that data order remains
+     * consistent during queries
+     */
+    @TableField(value = "seq_id")
+    private Long seqId;
+
     // Knowledge point
     @TableField(typeHandler = MySqlJsonHandler.class)
     private JSONObject content;

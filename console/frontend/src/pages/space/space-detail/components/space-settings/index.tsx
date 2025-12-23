@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Button, Card, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 import TransferOwnershipModal from '@/components/space/transfer-ownership-modal';
 import DeleteSpaceModal from '@/components/space/delete-space-modal';
@@ -21,18 +22,24 @@ const SpaceSettings: React.FC<{
 }> = ({ spaceInfo, onRefresh }) => {
   const { spaceType } = useSpaceStore();
   const permissionsUtils = usePermissions();
+  const { t } = useTranslation();
 
   // 根据 userRole 动态设置文案
-  const getTextConfig = (userRole: number) => {
-    const isOwner = userRole === 1;
-    return {
-      deleteSpace: isOwner ? '删除空间' : '离开空间',
-      deleteDescription: isOwner
-        ? '空间删除后所有资产将无法恢复，请谨慎操作'
-        : '退出空间后将无法访问空间内容，需要重新邀请才能加入',
-      deleteButtonText: isOwner ? '删除空间' : '离开空间',
-    };
-  };
+  const getTextConfig = useCallback(
+    (userRole: number) => {
+      const isOwner = userRole === 1;
+      return {
+        deleteSpace: isOwner ? t('space.deleteSpace') : t('space.leaveSpace'),
+        deleteDescription: isOwner
+          ? t('common.deleteSpaceWarning')
+          : t('space.leaveSpaceWarning'),
+        deleteButtonText: isOwner
+          ? t('space.deleteSpace')
+          : t('space.leaveSpace'),
+      };
+    },
+    [t]
+  );
 
   const textConfig = getTextConfig(spaceInfo.userRole);
 
@@ -51,16 +58,19 @@ const SpaceSettings: React.FC<{
     setShowTransferModal(false);
   }, []);
 
-  const handleTransferModalSubmit = useCallback((values: any) => {
-    try {
-      console.log('转让所有权:', values);
-      message.success('转让所有权成功');
-      setShowTransferModal(false);
-    } catch (error) {
-      message.error('转让所有权失败');
-      console.error('转让所有权失败', error);
-    }
-  }, []);
+  const handleTransferModalSubmit = useCallback(
+    (values: any) => {
+      try {
+        console.log('转让所有权:', values);
+        message.success(t('space.transferOwnershipSuccess'));
+        setShowTransferModal(false);
+      } catch (error) {
+        message.error(t('space.transferOwnershipFailed'));
+        console.error('转让所有权失败', error);
+      }
+    },
+    [t]
+  );
 
   // 删除空间
   const handleDeleteSpace = useCallback(() => {
@@ -109,9 +119,11 @@ const SpaceSettings: React.FC<{
           <Card className={styles.settingCard}>
             <div className={styles.settingContent}>
               <div className={styles.settingInfo}>
-                <h3 className={styles.settingTitle}>转让空间所有权</h3>
+                <h3 className={styles.settingTitle}>
+                  {t('space.transferSpaceOwnership')}
+                </h3>
                 <p className={styles.settingDescription}>
-                  将空间所有权转移给其他成员
+                  {t('space.transferOwnershipDescription')}
                 </p>
               </div>
               <Button
@@ -119,7 +131,7 @@ const SpaceSettings: React.FC<{
                 onClick={handleTransferOwnership}
                 className={styles.transferBtn}
               >
-                转让空间
+                {t('space.transferSpace')}
               </Button>
             </div>
           </Card>

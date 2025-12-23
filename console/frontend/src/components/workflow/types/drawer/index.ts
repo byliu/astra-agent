@@ -11,6 +11,12 @@ export type {
   VoiceBroadcastInstance,
   DeepPartial,
   AdvancedConfigUpdate,
+  CommonComponentProps,
+  ConversationStarterProps,
+  ChatBackgroundProps,
+  UseAdvancedConfigurationReturn,
+  useAdvancedConfigurationProps,
+  UploadProps,
 } from './advanced-config';
 
 // Chat Debugger 相关类型

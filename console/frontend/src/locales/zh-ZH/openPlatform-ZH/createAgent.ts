@@ -7,6 +7,8 @@ const translation = {
   advanced: '高阶',
   workflowCreation: '工作流创建',
   workflowDesign: '设计工作流，创建复杂任务逻辑的智能体',
+  virtualCreation: '语音/虚拟人创建',
+  virtualCreationDesc: '面向实时语音交互&虚拟人驱动的多模态场景',
 
   generating: '生成中...',
   oneSentenceCreateAgent: '一句话创建智能体',
@@ -42,6 +44,7 @@ const translation = {
   customCreation: '自定义创建',
   buildSame: '建同款',
   allTemplates: '所有模板',
+  createSuccess: '创建成功',
 };
 
 export default translation;

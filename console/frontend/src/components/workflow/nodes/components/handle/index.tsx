@@ -14,7 +14,7 @@ export const TargetHandle = ({
     <Handle
       id={id}
       type="target"
-      className="w-3 h-3 rounded-full bg-flow-handle border-2 border-[#275EFF]"
+      className="w-3 h-3 rounded-full bg-flow-handle border-2 border-[#6356EA]"
       position={Position.Left}
       isConnectable={isConnectable}
     />
@@ -150,7 +150,7 @@ export const SourceHandle = ({
         <Handle
           id={id}
           type="source"
-          className="w-3 h-3 rounded-full bg-flow-handle border-2 border-[#275EFF]"
+          className="w-3 h-3 rounded-full bg-flow-handle border-2 border-[#6356EA]"
           position={Position.Right}
           isConnectable={isConnectable}
           onClick={handleShowNodesList}

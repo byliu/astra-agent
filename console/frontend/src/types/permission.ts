@@ -4,6 +4,12 @@ export enum SpaceType {
   ENTERPRISE = 'team', // 企业空间
 }
 
+export enum EnterpriseServiceType {
+  ENTERPRISE = 'ENTERPRISE', // 企业版
+  TEAM = 'TEAM', // 团队版
+  NONE = 'NONE', // 个人版
+}
+
 // 角色类型
 export enum RoleType {
   OWNER = 'owner', // 所有者

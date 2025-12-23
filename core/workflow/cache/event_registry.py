@@ -20,6 +20,7 @@ from workflow.extensions.middleware.getters import get_cache_service
 from workflow.infra.audit_system.strategy.base_strategy import AuditStrategy
 
 # Redis key prefix for event-related data
+# TODO The prefix is to be renamed workflow
 _EVENT_PREFIX = "sparkflowV2:event"
 
 # Global audit strategy registry for events

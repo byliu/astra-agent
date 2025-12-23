@@ -46,7 +46,7 @@ const PromptSection = ({
           </h4>
           {!canvasesDisabled && (
             <div
-              className="flex items-center gap-1 cursor-pointer text-[#275EFF] text-xs"
+              className="flex items-center gap-1 cursor-pointer text-[#6356EA] text-xs"
               onClick={e => {
                 e.stopPropagation();
                 setSelectPromptModalInfo({ open: true, nodeId: id });

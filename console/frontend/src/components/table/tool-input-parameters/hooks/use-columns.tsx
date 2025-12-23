@@ -217,7 +217,7 @@ const useRequiredColumn = (
           <div
             className="w-[18px] h-[18px] rounded-full bg-[#fff] flex items-center justify-center cursor-pointer"
             style={{
-              border: required ? '1px solid #275EFF' : '1px solid #CACEE0',
+              border: required ? '1px solid #6356EA' : '1px solid #CACEE0',
             }}
             onClick={() =>
               handleInputParamsChange(record?.id, 'required', !required)
@@ -253,7 +253,7 @@ const useDefaultColumn = (
     render: (_, record) =>
       record.type === 'array' && record?.from === 2 && !record?.arraySon ? (
         <div
-          className="w-full h-[40px] flex items-center justify-center gap-2 border border-[#D9E0E9] rounded-lg text-[#275EFF] cursor-pointer"
+          className="w-full h-[40px] flex items-center justify-center gap-2 border border-[#D9E0E9] rounded-lg text-[#6356EA] cursor-pointer"
           onClick={() => {
             setArrayDefaultModal(true);
             setCurrentArrayDefaultId(record?.id);

@@ -63,6 +63,7 @@ export const initialStatus = {
   preRunningNodeIds: [],
   currentFollowNodeId: '',
   versionId: '',
+  chatType: 'text',
   startNodeParams: [],
   buildPassRef: false,
   debuggering: false,
@@ -72,6 +73,12 @@ export const initialStatus = {
   userWheel: false,
   deleteAllModal: false,
   chatIdRef: uuid().replace(/-/g, ''),
+};
+
+export const handleChatTypeChange = (type: string, set) => {
+  set({
+    chatType: type,
+  });
 };
 
 const getDialogues = (id: string, set, shouldAddDivider = false): void => {
@@ -396,7 +403,7 @@ const handleNodeStatusChange = ({
         ) {
           edge.animated = true;
           edge.style = {
-            stroke: '#275EFF',
+            stroke: '#6356EA',
             strokeWidth: 2,
             strokeDasharray: '5 5',
           };
@@ -504,7 +511,7 @@ const handleMessageEnd = (data: WebSocketMessageData, get): void => {
       ...edge,
       animated: false,
       style: {
-        stroke: '#275EFF',
+        stroke: '#6356EA',
         strokeWidth: 2,
       },
     }))
@@ -921,7 +928,7 @@ const handleStopConversation = (get): void => {
       ...edge,
       animated: false,
       style: {
-        stroke: '#275EFF',
+        stroke: '#6356EA',
         strokeWidth: 2,
       },
     }))

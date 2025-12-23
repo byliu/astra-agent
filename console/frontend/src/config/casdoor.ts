@@ -2,6 +2,18 @@
 import Sdk from 'casdoor-js-sdk';
 
 const getRuntimeCasdoorUrl = (): string => {
+  try {
+    console.log(
+      'casdoor url',
+      window?.__APP_CONFIG__,
+      'CONSOLE_CASDOOR_URL',
+      import.meta?.env?.CONSOLE_CASDOOR_URL,
+      'VITE_CASDOOR_SERVER_URL',
+      import.meta?.env?.VITE_CASDOOR_SERVER_URL
+    );
+  } catch (error) {
+    console.log('casdoor url error', error);
+  }
   if (typeof window !== 'undefined' && window.__APP_CONFIG__) {
     const runtimeValue = window.__APP_CONFIG__.CASDOOR_URL;
     if (runtimeValue !== undefined) {

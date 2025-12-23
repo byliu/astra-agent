@@ -507,11 +507,9 @@ const SelectLocalModel = ({
           {t('model.selectModel')}：
           <span className="text-[#7f7f7f]">{t('model.selectModelTips')}</span>
           <a
-            className="text-[#275EFF]"
-            href="#"
-            onClick={() => {
-              message.info(t('model.noDocument'));
-            }}
+            className="text-[#6356EA]"
+            href="https://github.com/iflytek/astron-xmod-shim"
+            target="_blank"
           >
             {t('model.referenceDocument')}
           </a>
@@ -564,7 +562,10 @@ const PerformanceConfiguration = ({
           alt="tips"
           className="w-4 h-4 ml-1 cursor-pointer"
           onClick={() => {
-            message.info(t('model.noDocument'));
+            window.open(
+              'https://github.com/iflytek/astron-xmod-shim',
+              '_blank'
+            );
           }}
         />
       </div>
@@ -1399,7 +1400,7 @@ const ModelParametersSection = ({
       <div className="w-full flex items-center justify-between">
         <div>{t('model.modelParameters')}：</div>
         <div
-          className="flex items-center gap-1.5 text-[#275eff] cursor-pointer"
+          className="flex items-center gap-1.5 text-[#6356EA] cursor-pointer"
           onClick={handleAddData}
         >
           <img src={inputAddIcon} className="w-2.5 h-2.5" alt="" />
@@ -1511,8 +1512,8 @@ export function CreateModal({
               <div
                 className={`${
                   modalState.modelCreateType === ModelCreateType.THIRD_PARTY
-                    ? 'bg-white text-[#275eff] shadow'
-                    : 'text-[#7f7f7f] hover:text-[#275eff]'
+                    ? 'bg-white text-[#6356EA] shadow'
+                    : 'text-[#7f7f7f] hover:text-[#6356EA]'
                 } min-w-[70px] h-8 px-3 rounded-lg text-sm flex items-center justify-center  transition-colors ${isEditMode ? 'pointer-events-none' : 'cursor-pointer'}`}
                 onClick={() =>
                   modalState.setModelCreateType(ModelCreateType.THIRD_PARTY)
@@ -1523,8 +1524,8 @@ export function CreateModal({
               <div
                 className={`${
                   modalState.modelCreateType === ModelCreateType.LOCAL
-                    ? 'bg-white text-[#275eff] shadow'
-                    : 'text-[#7f7f7f] hover:text-[#275eff]'
+                    ? 'bg-white text-[#6356EA] shadow'
+                    : 'text-[#7f7f7f] hover:text-[#6356EA]'
                 } min-w-[70px] h-8 px-3 rounded-lg text-sm flex items-center justify-center  transition-colors ${isEditMode ? 'pointer-events-none' : 'cursor-pointer'}`}
                 onClick={() =>
                   modalState.setModelCreateType(ModelCreateType.LOCAL)

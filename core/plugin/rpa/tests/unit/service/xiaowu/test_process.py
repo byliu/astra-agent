@@ -98,6 +98,7 @@ class TestTaskMonitoring:
             sid="test-sid",
             access_token="test-token",
             project_id="test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -116,6 +117,7 @@ class TestTaskMonitoring:
         mocks["create_task"].assert_called_once_with(
             access_token="test-token",
             project_id="test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -136,6 +138,7 @@ class TestTaskMonitoring:
             sid="test-sid",
             access_token="test-token",
             project_id="test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -172,6 +175,7 @@ class TestTaskMonitoring:
             sid="test-sid",
             access_token="test-token",
             project_id="test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -221,6 +225,7 @@ class TestTaskMonitoring:
                     sid="test-sid",
                     access_token="test-token",
                     project_id="test-project",
+                    version=None,
                     exec_position="EXECUTOR",
                     params={"key": "value"},
                 )
@@ -253,6 +258,7 @@ class TestTaskMonitoring:
             sid=None,
             access_token="test-token",
             project_id="test-project",
+            version=None,
             exec_position="EXECUTOR",
             params={"key": "value"},
         )
@@ -292,6 +298,7 @@ class TestTaskMonitoring:
                 sid="test-sid",
                 access_token="test-token",
                 project_id="test-project",
+                version=None,
                 exec_position="EXECUTOR",
                 params={"key": "value"},
             )
@@ -496,7 +503,7 @@ class TestOtlpHandle:
     def test_otlp_handle_disabled(self, mock_getenv: MagicMock) -> None:
         """Test otlp_handle when OTLP is disabled."""
         # Arrange
-        mock_getenv.return_value = "false"
+        mock_getenv.return_value = "0"
         mock_meter = MagicMock()
         mock_node_trace = MagicMock()
 

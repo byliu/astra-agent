@@ -18,4 +18,5 @@ public class PromptBotDetail extends BotDetail {
     private Boolean editable;
     private List<Integer> releaseType;
     private BotModelDto botModel;
+    private PersonalityConfigDto personalityConfig;
 }

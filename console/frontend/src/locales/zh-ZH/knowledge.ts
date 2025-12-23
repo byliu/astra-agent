@@ -7,6 +7,8 @@ const translation = {
   fileParsingEmbedding: '文件解析，嵌入中...',
   knowledgeBaseCreated: '知识库已创建！',
   createNewKnowledge: '新建知识库',
+  emptyDescription: '暂无知识库，快去创建吧~',
+  noSearchResults: '未找到相关知识库',
   documentCount: '包含文档数',
   totalCharacters: '总字符数（千）',
   relatedAgents: '关联智能体',

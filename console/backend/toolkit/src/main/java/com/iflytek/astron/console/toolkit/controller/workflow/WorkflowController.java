@@ -6,6 +6,7 @@ import com.iflytek.astron.console.commons.entity.workflow.Workflow;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
+import com.iflytek.astron.console.toolkit.common.Result;
 import com.iflytek.astron.console.toolkit.common.anno.ResponseResultBody;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.ChatBizReq;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.ChatResumeReq;
@@ -14,6 +15,7 @@ import com.iflytek.astron.console.toolkit.entity.common.PageData;
 import com.iflytek.astron.console.toolkit.entity.common.Pagination;
 import com.iflytek.astron.console.toolkit.entity.dto.*;
 import com.iflytek.astron.console.toolkit.entity.dto.eval.WorkflowComparisonSaveReq;
+import com.iflytek.astron.console.toolkit.entity.dto.talkagent.TalkAgentConfigDto;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowComparison;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowDialog;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.WorkflowFeedback;
@@ -21,8 +23,7 @@ import com.iflytek.astron.console.toolkit.entity.tool.McpServerTool;
 import com.iflytek.astron.console.toolkit.entity.vo.McpServerToolDetailVO;
 import com.iflytek.astron.console.toolkit.entity.vo.WorkflowVo;
 import com.iflytek.astron.console.toolkit.handler.UserInfoManagerHandler;
-import com.iflytek.astron.console.toolkit.service.workflow.WorkflowExportService;
-import com.iflytek.astron.console.toolkit.service.workflow.WorkflowService;
+import com.iflytek.astron.console.toolkit.service.workflow.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -68,6 +69,7 @@ public class WorkflowController {
 
 
     private final WorkflowService workflowService;
+    private final TalkAgentService talkAgentService;
     private final WorkflowExportService workflowExportService;
 
     // ---------------------- Basic Information ----------------------
@@ -168,15 +170,14 @@ public class WorkflowController {
      * <p>
      * Note: Retain existing logic, only return standard error response when validation fails.
      */
-    @GetMapping("/internal-clone")
+    @PostMapping("/internal-clone")
     public Object cloneV2(
-            @RequestParam @NotNull Long id,
-            @RequestParam @NotBlank String password,
+            @RequestBody CloneFlowReq req,
             HttpServletRequest request) {
-        if (!"xfyun".equals(password)) {
+        if (!"xfyun".equals(req.getPassword())) {
             return ApiResult.error(ResponseEnum.INCORRECT_PASSWORD);
         }
-        return workflowService.cloneForXfYun(id, SpaceInfoUtil.getSpaceId(), request);
+        return workflowService.cloneForXfYun(req.getMaasId(), SpaceInfoUtil.getSpaceId(), req.getFlowType(), req.getBotId(), req.getFlowConfig(), request);
     }
 
     /**
@@ -219,6 +220,12 @@ public class WorkflowController {
     @GetMapping("/can-publish")
     public Object canPublish(@RequestParam @NotNull Long id) {
         return ApiResult.success(workflowService.getById(id).getCanPublish());
+    }
+
+    @GetMapping("/can-publish-set")
+    public Object canPublishSet(@RequestParam Long id) {
+        log.info("workflow[{}] set unpublished ,operator = {}", id, UserInfoManagerHandler.get());
+        return Result.success(workflowService.canPublishSet(id));
     }
 
     @GetMapping("/can-publish-set-not")
@@ -535,5 +542,17 @@ public class WorkflowController {
     @GetMapping("/get-max-version")
     public Object getMaxVersion(@RequestParam @NotBlank String flowId) {
         return workflowService.getMaxVersionByFlowId(flowId);
+    }
+
+    /**
+     * Obtain speech model configuration
+     *
+     * @param botId
+     * @param version
+     * @return
+     */
+    @GetMapping("/get-talk-agent-config")
+    public TalkAgentConfigDto getTalkAgentConfig(@RequestParam Integer botId, @RequestParam(required = false) String version, @RequestParam String type) {
+        return talkAgentService.getTalkAgentConfig(botId, version, type);
     }
 }

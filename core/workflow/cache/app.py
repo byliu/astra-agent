@@ -9,7 +9,7 @@ from workflow.domain.models.ai_app import App
 from workflow.extensions.middleware.getters import get_cache_service
 
 # Redis key prefix for application information
-REDIS_APP_INFO_HEAD = "apps:app_info:new"
+REDIS_APP_INFO_HEAD = "workflow:app_info"
 
 
 def get_app_by_app_id(app_id: str) -> App | None:

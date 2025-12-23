@@ -121,6 +121,9 @@ const translation = {
   draftVersion: '草稿版本',
   version: '版本：',
   publishTime: '发布时间：',
+
+  emptyDescription: '暂无插件，快去创建吧~',
+  noSearchResults: '未找到相关插件',
 };
 
 export default translation;

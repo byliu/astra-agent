@@ -76,7 +76,7 @@
         //     text-overflow: ellipsis;
         //     &.activeState {
         //       font-weight: 500;
-        //       color: #275eff;
+        //       color: #6356EA;
         //       background: rgba(255, 255, 255, 1);
         //       box-shadow: 0px 2px 4px 0px rgba(46, 51, 68, 0.0373);
         //       border-radius: 10px;
@@ -96,17 +96,12 @@
     margin: 12px auto auto;
     // max-width: 1440px;
     //min-width: calc(100% - 180px);
-    padding: 20px 20px;
+    // padding: 20px 20px;
 
     .noData {
       :global {
         .ant-table-tbody > tr > td {
           border-bottom: none !important;
-        }
-
-        .ant-empty-normal {
-          justify-content: center;
-          align-items: center;
         }
       }
     }
@@ -133,7 +128,7 @@
       .ant-table-header,
       .ant-table-thead {
         .ant-table-cell {
-          background: #f2f5fe;
+          background: #f1f0ff;
           font-family: PingFang SC;
           font-size: 14px;
           font-weight: 500;
@@ -187,9 +182,10 @@
       }
 
       .ant-pagination {
-        color: #979797;
+        color: #43436b;
         margin-top: 20px;
         margin-bottom: 5px;
+        padding: 0 20px 18px 20px;
 
         .ant-pagination-total-text {
           margin-right: auto !important;
@@ -208,19 +204,21 @@
       .ant-pagination-item {
         width: 32px;
         height: 32px;
-        border-radius: 3px;
+        border-radius: 4px;
         background: #fff;
-        border: 1px solid #d7dfe9;
+        border: none;
+        background: transparent;
+        // border: 1px solid #d7dfe9;
         a {
           color: rgba(0, 0, 0, 0.6);
         }
 
         &.ant-pagination-item-active {
-          background: #275eff;
-          border: 1px solid #275eff;
-          color: #fff;
+          background: #efeefc;
+          // border: 1px solid #6356ea;
+          color: #6356ea;
           a {
-            color: #fff;
+            color: #6356ea;
           }
         }
       }
@@ -255,30 +253,30 @@
 
   :global {
     .state0 {
-      background-image: url("~assets/imgs/bot-center/state-done.png");
+      background-image: url("~assets/imgs/bot-center/bot-center/state-down.png");
     }
 
     .state4,
     .state1 {
-      background-image: url("~assets/imgs/bot-center/state-wait.png");
+      background-image: url("~assets/imgs/bot-center/bot-center/state-wait.png");
     }
 
     .state2 {
-      background-image: url("~assets/imgs/bot-center/state-done.png");
+      background-image: url("~assets/imgs/bot-center/bot-center/state-done.png");
     }
 
     .state3 {
-      background-image: url("~assets/imgs/bot-center/state-close.png");
+      background-image: url("~assets/imgs/bot-center/bot-center/state-close.png");
     }
   }
 }
 
 .historyAct {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 8px;
-  color: #597dff;
+  color: #6356ea;
 
   span {
     white-space: nowrap;
@@ -296,7 +294,7 @@
       .ant-modal-content {
         padding: 30px 30px !important;
         .ant-modal-close {
-          background: url("~assets/imgs/bot-center/close_btn_model.png") no-repeat;
+          background: url(~assets/imgs/bot-center/close_btn_model.png) no-repeat;
           background-position: center center;
           background-size: 60% 60%;
         }
@@ -311,7 +309,8 @@
     align-items: center;
     position: absolute;
     bottom: 32px;
-    height: 17px;
+    width: 60%;
+    height: 34px;
     font-size: 12px;
     font-weight: 500;
     color: #f2aa58;
@@ -401,7 +400,7 @@
   }
 
   .bottom {
-    padding-top: 24px;
+    padding-top: 20px;
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-end;

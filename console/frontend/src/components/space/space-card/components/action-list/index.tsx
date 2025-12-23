@@ -8,6 +8,7 @@ import {
 import styles from './index.module.scss';
 import { SpaceType } from '@/types/permission';
 import { useUserStoreHook } from '@/hooks/use-user-store';
+import { useTranslation } from 'react-i18next';
 
 // 按钮配置接口
 interface ButtonConfig {
@@ -40,37 +41,37 @@ const ActionList: React.FC<ActionListProps> = ({
   buttonConfigs,
 }) => {
   const { isSuperAdmin, isAdmin, isMember, isOwner } = useUserStoreHook();
-
+  const { t } = useTranslation();
   // 默认按钮配置列表
   const defaultButtonConfigs: ButtonConfig[] = [
     {
       key: 'enter',
-      text: '进入管理',
+      text: t('space.enterManagement'),
       statusList: ['joined'],
       spaceTypeList: ['personal'],
     },
     {
       key: 'enter',
-      text: '进入空间',
+      text: t('space.enterSpace'),
       statusList: ['joined'],
       spaceTypeList: ['team'],
     },
     {
       key: 'join',
-      text: '申请空间',
+      text: t('space.applySpace'),
       statusList: ['notJoined'],
       spaceTypeList: ['team'], // 只有团队空间支持申请加入
     },
     {
       key: 'pending',
-      text: '申请中',
+      text: t('space.applying'),
       statusList: ['pending'],
       spaceTypeList: ['team'], // 只有团队空间支持申请加入
       disabled: true,
     },
     {
       key: 'noPermission',
-      text: '暂无权限',
+      text: t('space.noPermission'),
       icon: <LockOutlined />,
       statusList: ['noPermission'],
       spaceTypeList: ['personal', 'team'],

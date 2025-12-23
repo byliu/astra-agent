@@ -88,7 +88,7 @@ class MainRunner:
 
     # 接口列表
     def interface_list(self) -> List[str]:
-        # int_list = ["TTS", "SMARTTS", "ONE_SENTENCE_REPRODUCTION"]
+        # int_list = ["TTS", "SMARTTS"]
 
         # print('("INTERFACE_LIST_STR"):',os.getenv("INTERFACE_LIST_STR"))
         int_list_str = os.getenv("INTERFACE_LIST_STR")

@@ -5,24 +5,24 @@ import {
   handleAgentStatus,
   // getPreparationData,
   // getAgentPublishStatus,
-  type AgentInputParam,
+  // type AgentInputParam,
 } from '@/services/release-management';
-import {
-  getBotInfo,
-  // getWechatAuthUrl,
-  publishMCP,
-  // getMcpContent,
-  // getChainInfo,
-} from '@/services/spark-common';
+// import {
+//   getBotInfo,
+//   // getWechatAuthUrl,
+//   publishMCP,
+//   // getMcpContent,
+//   // getChainInfo,
+// } from '@/services/spark-common';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import eventBus from '@/utils/event-bus';
 import { useBotStateStore } from '@/store/spark-store/bot-state';
 
-import wxImg from '@/assets/imgs/workflow/wechat-icon.png';
-import mcpImg from '@/assets/imgs/workflow/mcp-icon.png';
+// import wxImg from '@/assets/imgs/workflow/wechat-icon.png';
+// import mcpImg from '@/assets/imgs/workflow/mcp-icon.png';
 import apiImg from '@/assets/imgs/workflow/iflytekCloud-icon.png';
-import xinghuoImg from '@/assets/imgs/workflow/iflytek-icon.png';
+import agentHubIcon from '@/assets/imgs/workflow/agent-hub-icon.svg';
 
 import styles from './index.module.scss';
 import cls from 'classnames';
@@ -45,6 +45,7 @@ interface MultiModeCpnProps {
   moreParams?: any;
   workflowId?: number;
   agentMaasId?: string | null;
+  isVirtual?: boolean;
 }
 
 const WxModal: React.FC<MultiModeCpnProps> = ({
@@ -65,154 +66,155 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
   moreParams,
   workflowId,
   agentMaasId,
+  isVirtual,
 }) => {
-  const i = 0;
-  const flag = false;
-  const [form] = Form.useForm();
+  // const i = 0;
+  // const flag = false;
+  // const [form] = Form.useForm();
   const botInfo = useBotStateStore(state => state.botDetailInfo);
-  const setBotDetailInfo = useBotStateStore(state => state.setBotDetailInfo);
-  const [editData, setEditData] = useState<any>({});
-  const [args, setArgs] = useState<any>({});
-  const [isMcpOpen, setIsMcpOpen] = useState(false);
-  const waringRef = useRef<HTMLDivElement>(null);
-  const [spinning, setSpinning] = useState(false);
+  // const setBotDetailInfo = useBotStateStore(state => state.setBotDetailInfo);
+  // const [editData, setEditData] = useState<any>({});
+  // const [args, setArgs] = useState<any>({});
+  // const [isMcpOpen, setIsMcpOpen] = useState(false);
+  // const waringRef = useRef<HTMLDivElement>(null);
+  // const [spinning, setSpinning] = useState(false);
   const [unBindStatus, setUnBindStatus] = useState(false);
   const [fabuActive, setFabuActive] = useState(false);
-  const [wxfabuActive, setWxfabuActive] = useState(false);
+  // const [wxfabuActive, setWxfabuActive] = useState(false);
   const [apifabuActive, setApifabuActive] = useState(false);
-  const [mcpfabuActive, setMcpfabuActive] = useState(false);
-  const [appid, setAppid] = useState('');
+  // const [mcpfabuActive, setMcpfabuActive] = useState(false);
+  // const [appid, setAppid] = useState('');
   const navigate = useNavigate();
-  const [released, setReleased] = useState(false);
+  // const [released, setReleased] = useState(false);
   const [isClickFabu, setIsClickFabu] = useState(false);
-  const [isClickMcp, setIsClickMcp] = useState(false);
+  // const [isClickMcp, setIsClickMcp] = useState(false);
   const { t } = useTranslation();
 
   /**
    * 校验
    */
-  const validate = async (): Promise<boolean> => {
-    try {
-      const values = await form.validateFields();
-      return values;
-    } catch (err) {
-      message.warning(t('releaseModal.mcpServerParamsDescEmpty'));
-      return false;
-    }
-  };
+  // const validate = async (): Promise<boolean> => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     return values;
+  //   } catch (err) {
+  //     message.warning(t('releaseModal.mcpServerParamsDescEmpty'));
+  //     return false;
+  //   }
+  // };
 
   /** 绑定微信 */
-  const handleBind = (): void => {
-    if (!appid.length) {
-      message.warning(t('releaseModal.appidEmpty'));
-      return;
-    }
-    if (!botInfo) {
-      return;
-    }
+  // const handleBind = (): void => {
+  //   if (!appid.length) {
+  //     message.warning(t('releaseModal.appidEmpty'));
+  //     return;
+  //   }
+  //   if (!botInfo) {
+  //     return;
+  //   }
 
-    // NOTE: 新的应该是微信信息 -- 绑定到微信
-    // getAgentPublishStatus(botInfo.botId as number).then(res => {
-    //   console.log('123-------', res);
-    // });
+  //   // NOTE: 新的应该是微信信息 -- 绑定到微信
+  //   // getAgentPublishStatus(botInfo.botId as number).then(res => {
+  //   //   console.log('123-------', res);
+  //   // });
 
-    const redirectUrl =
-      'https://' + window.location.host + `/work_flow/${agentMaasId}/overview`;
-    const params = {
-      publishType: 'WECHAT' as const,
-      action: 'PUBLISH' as const,
-      publishData: { appId: appid, redirectUrl },
-    };
-    setSpinning(true);
+  //   const redirectUrl =
+  //     'https://' + window.location.host + `/work_flow/${agentMaasId}/overview`;
+  //   const params = {
+  //     publishType: 'WECHAT' as const,
+  //     action: 'PUBLISH' as const,
+  //     publishData: { appId: appid, redirectUrl },
+  //   };
+  //   setSpinning(true);
 
-    handleAgentStatus(botInfo.botId as number, params)
-      .then((res: any) => {
-        // const url = res.data;
-        // if (url.includes('https://')) window.open(url, '_blank');
-        // else window.open('https://' + url, '_blank');
-        // onCancel();
-      })
-      .catch(error => {
-        message.error(error.msg);
-      })
-      .finally(() => setSpinning(false));
-  };
+  //   handleAgentStatus(botInfo.botId as number, params)
+  //     .then((res: any) => {
+  //       // const url = res.data;
+  //       // if (url.includes('https://')) window.open(url, '_blank');
+  //       // else window.open('https://' + url, '_blank');
+  //       // onCancel();
+  //     })
+  //     .catch(error => {
+  //       message.error(error.msg);
+  //     })
+  //     .finally(() => setSpinning(false));
+  // };
 
   // 解绑微信
-  const handleEndBind = (): void => {
-    setSpinning(true);
-    if (!botInfo) {
-      setSpinning(false);
-      return;
-    }
-    const params = {
-      publishType: 'WECHAT' as const,
-      action: 'OFFLINE' as const,
-      publishData: { appId: botInfo.wechatAppid as string },
-    };
+  // const handleEndBind = (): void => {
+  //   setSpinning(true);
+  //   if (!botInfo) {
+  //     setSpinning(false);
+  //     return;
+  //   }
+  //   const params = {
+  //     publishType: 'WECHAT' as const,
+  //     action: 'OFFLINE' as const,
+  //     publishData: { appId: botInfo.wechatAppid as string },
+  //   };
 
-    handleAgentStatus(botInfo.botId as number, params)
-      .then(res => {
-        getBotInfo({ botId: botInfo.botId }).then((res: any) => {
-          setUnBindStatus(false);
-          setBotDetailInfo(res);
-          message.success(t('releaseModal.unBindSuccess'));
-        });
-      })
-      .catch(error => {
-        message.error(error.msg);
-      })
-      .finally(() => setSpinning(false));
-  };
+  //   handleAgentStatus(botInfo.botId as number, params)
+  //     .then(res => {
+  //       getBotInfo({ botId: botInfo.botId }).then((res: any) => {
+  //         setUnBindStatus(false);
+  //         setBotDetailInfo(res);
+  //         message.success(t('releaseModal.unBindSuccess'));
+  //       });
+  //     })
+  //     .catch(error => {
+  //       message.error(error.msg);
+  //     })
+  //     .finally(() => setSpinning(false));
+  // };
 
-  const handleMcpOk = async (): Promise<void> => {
-    const values = await validate();
-    if (!values) {
-      return;
-    }
-    const obj = form.getFieldsValue();
-    const parmas: {
-      serverName: string;
-      description: string;
-      botId?: string;
-      content?: string;
-      icon?: string;
-      args?: AgentInputParam[];
-    } = {
-      serverName: obj.botName as string,
-      description: obj.botDesc as string,
-    };
-    parmas.botId = botInfo?.botId as string;
-    parmas.content = obj.content as string;
-    parmas.icon = botInfo?.avatar as string;
-    if (flag) {
-      args[i].schema.default = obj.default;
-    } else {
-      args[0].schema.default = obj.default;
-    }
+  // const handleMcpOk = async (): Promise<void> => {
+  //   const values = await validate();
+  //   if (!values) {
+  //     return;
+  //   }
+  //   const obj = form.getFieldsValue();
+  //   const parmas: {
+  //     serverName: string;
+  //     description: string;
+  //     botId?: string;
+  //     content?: string;
+  //     icon?: string;
+  //     args?: AgentInputParam[];
+  //   } = {
+  //     serverName: obj.botName as string,
+  //     description: obj.botDesc as string,
+  //   };
+  //   parmas.botId = botInfo?.botId as string;
+  //   parmas.content = obj.content as string;
+  //   parmas.icon = botInfo?.avatar as string;
+  //   if (flag) {
+  //     args[i].schema.default = obj.default;
+  //   } else {
+  //     args[0].schema.default = obj.default;
+  //   }
 
-    parmas.args = args;
-    publishMCP(parmas)
-      .then(res => {
-        setIsClickMcp(true);
-        message.success(t('releaseModal.mcpReleaseSuccess'));
-        if (setPageInfo) {
-          setPageInfo((pre: any) => ({ ...pre, pageIndex: 1 }));
-        }
-        setIsMcpOpen(false);
-        setIsOpenapi(true);
-        setCurrentNew('mcp');
-      })
-      .catch(e => {
-        message.error(
-          e.msg || e.detail.message || t('releaseModal.mcpReleaseFail')
-        );
-      });
-  };
+  //   parmas.args = args;
+  //   publishMCP(parmas)
+  //     .then(res => {
+  //       setIsClickMcp(true);
+  //       message.success(t('releaseModal.mcpReleaseSuccess'));
+  //       if (setPageInfo) {
+  //         setPageInfo((pre: any) => ({ ...pre, pageIndex: 1 }));
+  //       }
+  //       setIsMcpOpen(false);
+  //       setIsOpenapi(true);
+  //       setCurrentNew('mcp');
+  //     })
+  //     .catch(e => {
+  //       message.error(
+  //         e.msg || e.detail.message || t('releaseModal.mcpReleaseFail')
+  //       );
+  //     });
+  // };
 
-  const handleMcpCancel = (): void => {
-    setIsMcpOpen(false);
-  };
+  // const handleMcpCancel = (): void => {
+  //   setIsMcpOpen(false);
+  // };
 
   //发布 or 更新发布 -- 至星火
   const handlePublish = async (): Promise<void> => {
@@ -262,7 +264,6 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
   //   getMCPServiceDetail(botInfo?.botId as number).then((resp: any) => {
   //     setReleased(resp?.released);
 
-  //     // MARK: 这里外部已经调用了一次吧? 怎么又调用了
   //     getAgentInputParams(botInfo?.botId as number).then(
   //       (res: AgentInputParam[]) => {
   //         const arr: AgentInputParam[] = [...res];
@@ -305,13 +306,13 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
     setIsClickFabu(false);
   }, [show]);
 
-  useEffect(() => {
-    form.setFieldsValue(editData);
-  }, [editData]);
+  // useEffect(() => {
+  //   form.setFieldsValue(editData);
+  // }, [editData]);
 
-  useEffect(() => {
-    setAppid('');
-  }, [show]);
+  // useEffect(() => {
+  //   setAppid('');
+  // }, [show]);
 
   return (
     <>
@@ -323,7 +324,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
         width={700}
         wrapClassName="wx-modal"
       >
-        <Spin spinning={spinning}>
+        <Spin spinning={false}>
           {unBindStatus ? (
             <>
               <div className={styles.header}>{t('releaseModal.unBindTip')}</div>
@@ -349,9 +350,8 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                 >
                   {t('releaseModal.cancel')}
                 </div>
-                <div className={styles.confirm} onClick={handleEndBind}>
-                  {t('releaseModal.ok')}
-                </div>
+                {/* <div className={styles.confirm} onClick={handleEndBind}> */}
+                <div>{t('releaseModal.ok')}</div>
               </div>
             </>
           ) : (
@@ -380,7 +380,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                     [styles.spark_fabuactive as string]: fabuActive,
                   })}
                   onClick={() => {
-                    setWxfabuActive(false);
+                    // setWxfabuActive(false);
                     setApifabuActive(false);
                     setFabuActive(true);
                   }}
@@ -388,7 +388,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                   <div className={styles.text_title}>
                     <img
                       className={styles.xinghuoImg}
-                      src={xinghuoImg}
+                      src={agentHubIcon}
                       alt=""
                     />
                     <div>
@@ -397,10 +397,10 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                           [styles.text_sparktopactive as string]: fabuActive,
                         })}
                       >
-                        {t('releaseModal.sparkAgent')}
+                        {t('releaseModal.agentHub')}
                       </div>
                       <div className={styles.text_sparkbottom}>
-                        {t('releaseModal.sparkAgentTip')}
+                        {t('releaseModal.agentHubTip')}
                       </div>
                     </div>
                   </div>
@@ -417,7 +417,9 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                       : t('releaseModal.release')}
                   </div>
                 </div>
-                {(agentType == 'workflow' ||
+
+                {/* NOTE: hide binding wechat for now - 2025.10 */}
+                {/* {(agentType === 'workflow' ||
                   window.location.pathname.includes('work_flow')) && (
                   <div
                     className={cls(styles.wx_fabu, {
@@ -511,56 +513,65 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
                       )}
                     </div>
                   </div>
-                )}
-                <div
-                  className={cls(styles.spark_fabu, {
-                    [styles.spark_apifabuActive as string]: apifabuActive,
-                  })}
-                  onClick={() => {
-                    if (botInfo) {
-                      navigate(
-                        `/management/bot-api?id=${botInfo.botId}&version=${botInfo.version}`
-                      );
-                    }
-                    setWxfabuActive(false);
-                    setFabuActive(false);
-                    setMcpfabuActive(false);
-                    setApifabuActive(true);
-                  }}
-                >
-                  <div className={styles.text_title}>
-                    <img className={styles.xinghuoImg} src={apiImg} alt="" />
-                    <div>
-                      <div
-                        className={cls(styles.text_sparktop, {
-                          [styles.text_sparktopactive as string]: apifabuActive,
-                        })}
-                      >
-                        {t('releaseModal.releaseToApi')}
+                )} */}
+                {!isVirtual &&
+                  (agentType === 'workflow' ||
+                    window.location.pathname.includes('work_flow')) && (
+                    <div
+                      className={cls(styles.spark_fabu, {
+                        [styles.spark_apifabuActive as string]: apifabuActive,
+                      })}
+                      onClick={() => {
+                        if (botInfo) {
+                          navigate(
+                            `/management/bot-api?id=${botInfo.botId}&version=${botInfo.version}`
+                          );
+                        }
+                        // setWxfabuActive(false);
+                        setFabuActive(false);
+                        // setMcpfabuActive(false);
+                        setApifabuActive(true);
+                      }}
+                    >
+                      <div className={styles.text_title}>
+                        <img
+                          className={styles.xinghuoImg}
+                          src={apiImg}
+                          alt=""
+                        />
+                        <div>
+                          <div
+                            className={cls(styles.text_sparktop, {
+                              [styles.text_sparktopactive as string]:
+                                apifabuActive,
+                            })}
+                          >
+                            {t('releaseModal.releaseToApi')}
+                          </div>
+                          <div className={styles.text_sparkbottom}>
+                            {t('releaseModal.apiConfigTip')}
+                          </div>
+                        </div>
                       </div>
-                      <div className={styles.text_sparkbottom}>
-                        {t('releaseModal.apiConfigTip')}
+                      <div
+                        className={styles.peizhiApi}
+                        onClick={() => {
+                          setIsOpenapi(true);
+                          if (currentNew == 'intro') {
+                            setCurrentNew('api');
+                          }
+                          // onCancel();
+                        }}
+                      >
+                        {Array.isArray(botInfo?.releaseType) &&
+                        botInfo.releaseType.includes(2)
+                          ? t('releaseModal.updateConfigure')
+                          : t('releaseModal.configure')}
                       </div>
                     </div>
-                  </div>
-                  <div
-                    className={styles.peizhiApi}
-                    onClick={() => {
-                      setIsOpenapi(true);
-                      if (currentNew == 'intro') {
-                        setCurrentNew('api');
-                      }
-                      // onCancel();
-                    }}
-                  >
-                    {Array.isArray(botInfo?.releaseType) &&
-                    botInfo.releaseType.includes(2)
-                      ? t('releaseModal.updateConfigure')
-                      : t('releaseModal.configure')}
-                  </div>
-                </div>
+                  )}
                 {/* NOTE: publishing as mcp is currently not supported - 2025.10 */}
-                {/* {(agentType == 'workflow' ||
+                {/* {(agentType === 'workflow' ||
                     window.location.pathname.includes('work_flow')) && (
                     <div
                       className={cls(styles.mcp_fabu, {
@@ -613,7 +624,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
         </Spin>
       </Modal>
 
-      <Modal
+      {/* <Modal
         okText={
           released ? t('releaseModal.updateRelease') : t('releaseModal.ok')
         }
@@ -727,7 +738,7 @@ const WxModal: React.FC<MultiModeCpnProps> = ({
             </Col>
           </Row>
         </Form>
-      </Modal>
+      </Modal> */}
     </>
   );
 };

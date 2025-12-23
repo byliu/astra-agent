@@ -5,10 +5,13 @@ HTTP request execution, tool debugging, and OpenAPI schema validation.
 It handles authentication, parameter validation, and response processing.
 """
 
+import asyncio
+import atexit
 import base64
 import json
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
 
 from common.otlp.log_trace.node_trace_log import NodeTraceLog, Status
@@ -27,7 +30,7 @@ from plugin.link.api.schemas.community.tools.http.execution_schema import (
     ToolDebugResponseHeader,
 )
 from plugin.link.consts import const
-from plugin.link.domain.models.manager import get_db_engine, get_redis_engine
+from plugin.link.domain.models.manager import get_db_engine
 from plugin.link.exceptions.sparklink_exceptions import SparkLinkBaseException
 from plugin.link.infra.tool_crud.process import ToolCrudOperation
 from plugin.link.infra.tool_exector.process import HttpRun
@@ -39,6 +42,13 @@ from plugin.link.utils.json_schemas.read_json_schemas import (
 from plugin.link.utils.json_schemas.schema_validate import api_validate
 from plugin.link.utils.open_api_schema.schema_parser import OpenapiSchemaParser
 from plugin.link.utils.uid.generate_uid import new_uid
+
+try:
+    max_workers = int(os.getenv(const.KAFKA_THREAD_NUM_KEY, "10"))
+except Exception:
+    max_workers = 10
+kafka_send_executor = ThreadPoolExecutor(max_workers=max_workers)
+atexit.register(kafka_send_executor.shutdown, wait=True)
 
 default_value = {
     " 'string'": "",
@@ -72,26 +82,32 @@ def extract_request_params(
     return app_id, uid, caller
 
 
-def send_telemetry(node_trace: NodeTraceLog) -> None:
+async def send_telemetry(node_trace: NodeTraceLog) -> None:
     """Send telemetry data to Kafka."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         kafka_service = get_kafka_producer_service()
         node_trace.start_time = int(round(time.time() * 1000))
-        kafka_service.send(os.getenv(const.KAFKA_TOPIC_KEY), node_trace.to_json())
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            kafka_send_executor,
+            kafka_service.send,
+            os.getenv(const.KAFKA_TOPIC_KEY),
+            node_trace.to_json(),
+        )
 
 
-def handle_validation_error(
+async def handle_validation_error(
     validate_err: str, span_context: Span, node_trace: NodeTraceLog, m: Meter
 ) -> HttpRunResponse:
     """Handle validation errors with telemetry."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(ErrCode.JSON_PROTOCOL_PARSER_ERR.code)
         node_trace.answer = validate_err
         node_trace.status = Status(
             code=ErrCode.JSON_PROTOCOL_PARSER_ERR.code,
             message=validate_err,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -103,7 +119,7 @@ def handle_validation_error(
     )
 
 
-def handle_sparklink_error(
+async def handle_sparklink_error(
     err: SparkLinkBaseException,
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -115,7 +131,7 @@ def handle_sparklink_error(
     span_context.add_error_event(err.message)
     span_context.set_status(OTelStatus(StatusCode.ERROR))
 
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(err.code)
         node_trace.answer = err.message
         node_trace.service_id = tool_id
@@ -125,7 +141,7 @@ def handle_sparklink_error(
             code=err.code,
             message=err.message,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -135,7 +151,7 @@ def handle_sparklink_error(
     )
 
 
-def handle_custom_error(
+async def handle_custom_error(
     error_code: Any,
     message: str,
     span_context: Span,
@@ -148,7 +164,7 @@ def handle_custom_error(
     span_context.add_error_event(message)
     span_context.set_status(OTelStatus(StatusCode.ERROR))
 
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(error_code.code)
         node_trace.answer = message
         node_trace.service_id = tool_id
@@ -158,7 +174,7 @@ def handle_custom_error(
             code=error_code.code,
             message=message,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -170,7 +186,7 @@ def handle_custom_error(
     )
 
 
-def handle_general_exception(
+async def handle_general_exception(
     err: Exception,
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -182,7 +198,7 @@ def handle_general_exception(
     span_context.add_error_event(f"{ErrCode.COMMON_ERR.msg}: {err}")
     span_context.set_status(OTelStatus(StatusCode.ERROR))
 
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(ErrCode.COMMON_ERR.code)
         node_trace.answer = f"{ErrCode.COMMON_ERR.msg}: {err}"
         node_trace.service_id = tool_id
@@ -192,7 +208,7 @@ def handle_general_exception(
             code=ErrCode.COMMON_ERR.code,
             message=f"{ErrCode.COMMON_ERR.msg}: {err}",
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -219,16 +235,13 @@ def process_authentication(
         raise Exception(f"Security type {security_type} not found in security schema")
 
     api_key_info = operation_id_schema["security"].get(security_type)
-    redis_engine = get_redis_engine()
-    redis_cache = redis_engine.get(f"spark_bot:tool_config:{tool_id}")
-    if redis_cache is None:
-        raise Exception("security: get redis_cache is none!")
-    auth_info = redis_cache.get("authentication", {})
-    if auth_info is None:
-        raise Exception("security: redis_cache get authentication is none!")
+    auth_name = api_key_info.get("name", None)
+    auth_value = api_key_info.get("x-value", None)
+    if not auth_name or not auth_value:
+        raise Exception(f"auth name:{auth_name}, auth value:{auth_value}")
 
     if api_key_info.get("type") == "apiKey":
-        api_key_dict = auth_info.get("apiKey")
+        api_key_dict = {auth_name: auth_value}
         if api_key_info.get("in") == "header":
             message_header.update(api_key_dict)
         elif api_key_info.get("in") == "query":
@@ -286,7 +299,7 @@ def validate_response_schema(
     return er_msgs
 
 
-def handle_success_response(
+async def handle_success_response(
     result: str,
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -295,7 +308,7 @@ def handle_success_response(
     tool_type: str,
 ) -> HttpRunResponse:
     """Handle successful response with telemetry."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_success_count()
         node_trace.answer = result
         node_trace.service_id = tool_id
@@ -304,7 +317,7 @@ def handle_success_response(
             code=ErrCode.SUCCESSES.code,
             message=ErrCode.SUCCESSES.msg,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -320,7 +333,7 @@ def handle_success_response(
     )
 
 
-def handle_debug_validation_error(
+async def handle_debug_validation_error(
     validate_err: str,
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -334,7 +347,7 @@ def handle_debug_validation_error(
         f"error message: {validate_err}"
     )
 
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(ErrCode.JSON_PROTOCOL_PARSER_ERR.code)
         node_trace.answer = validate_err
         node_trace.service_id = tool_id
@@ -343,7 +356,7 @@ def handle_debug_validation_error(
             code=ErrCode.JSON_PROTOCOL_PARSER_ERR.code,
             message=validate_err,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return HttpRunResponse(
         header=HttpRunResponseHeader(
@@ -355,7 +368,7 @@ def handle_debug_validation_error(
     )
 
 
-def handle_debug_success_response(
+async def handle_debug_success_response(
     result: str,
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -364,7 +377,7 @@ def handle_debug_success_response(
     tool_type: str,
 ) -> ToolDebugResponse:
     """Handle successful debug response with telemetry."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_success_count()
         node_trace.answer = result
         node_trace.service_id = tool_id
@@ -373,7 +386,7 @@ def handle_debug_success_response(
             code=ErrCode.SUCCESSES.code,
             message=ErrCode.SUCCESSES.msg,
         )
-        send_telemetry(node_trace)
+        await send_telemetry(node_trace)
 
     return ToolDebugResponse(
         header=ToolDebugResponseHeader(
@@ -436,7 +449,7 @@ def setup_http_request(
     )
 
 
-def process_http_result(
+async def process_http_result(
     result: str,
     open_api_schema: Dict[str, Any],
     span_context: Span,
@@ -458,7 +471,7 @@ def process_http_result(
         detailed_message = (
             f"错误信息：{ErrCode.RESPONSE_SCHEMA_VALIDATE_ERR.msg}, " f"详细信息：{msg}"
         )
-        return handle_custom_error(
+        return await handle_custom_error(
             ErrCode.RESPONSE_SCHEMA_VALIDATE_ERR,
             detailed_message,
             span_context,
@@ -472,7 +485,7 @@ def process_http_result(
     result = json.dumps(result_json, ensure_ascii=False)
     span_context.add_info_events({"after result": result})
 
-    return handle_success_response(
+    return await handle_success_response(
         result, span_context, node_trace, m, tool_id, tool_type
     )
 
@@ -562,7 +575,7 @@ def get_tool_schema(
     return operation_id_schema, tool_type, open_api_schema
 
 
-def validate_and_get_params(
+async def validate_and_get_params(
     run_params_list: Dict[str, Any],
     span_context: Span,
     node_trace: NodeTraceLog,
@@ -571,7 +584,9 @@ def validate_and_get_params(
     """Validate request and extract parameters."""
     validate_err = api_validate(get_http_run_schema(), run_params_list)
     if validate_err:
-        return None, handle_validation_error(validate_err, span_context, node_trace, m)
+        return None, await handle_validation_error(
+            validate_err, span_context, node_trace, m
+        )
 
     tool_id = run_params_list["parameter"]["tool_id"]
     operation_id = run_params_list["parameter"]["operation_id"]
@@ -604,7 +619,7 @@ async def handle_request_execution(
             )
         except Exception as auth_err:
             if "Security type" in str(auth_err):
-                return handle_custom_error(
+                return await handle_custom_error(
                     ErrCode.OPENAPI_AUTH_TYPE_ERR,
                     ErrCode.OPENAPI_AUTH_TYPE_ERR.msg,
                     span_context,
@@ -625,7 +640,7 @@ async def handle_request_execution(
         )
         result = await http_inst.do_call(span_context)
 
-        return process_http_result(
+        return await process_http_result(
             result,
             open_api_schema,
             span_context,
@@ -636,11 +651,11 @@ async def handle_request_execution(
         )
 
     except SparkLinkBaseException as err:
-        return handle_sparklink_error(
+        return await handle_sparklink_error(
             err, span_context, node_trace, m, params["tool_id"], tool_type
         )
     except Exception as err:
-        return handle_general_exception(
+        return await handle_general_exception(
             err, span_context, node_trace, m, params["tool_id"], tool_type
         )
 
@@ -662,14 +677,14 @@ async def execute_http_request(
             span_context,
         )
     except SparkLinkBaseException as err:
-        return handle_sparklink_error(
+        return await handle_sparklink_error(
             err, span_context, node_trace, m, params["tool_id"]
         )
 
     if not operation_id_schema:
         if operation_id_schema is None:
             message = f"{params['tool_id']} does not exist"
-            return handle_custom_error(
+            return await handle_custom_error(
                 ErrCode.TOOL_NOT_EXIST_ERR,
                 message,
                 span_context,
@@ -679,7 +694,7 @@ async def execute_http_request(
             )
         else:
             message = f"operation_id: {params['operation_id']} does not exist"
-            return handle_custom_error(
+            return await handle_custom_error(
                 ErrCode.OPERATION_ID_NOT_EXIST_ERR,
                 message,
                 span_context,
@@ -710,9 +725,10 @@ async def http_run(run_params: HttpRunRequest) -> HttpRunResponse:
     with span.start(func_name="http_run") as span_context:
         node_trace.sid = span_context.sid
         node_trace.chat_id = span_context.sid
+        node_trace.caller = "http_run"
         m = setup_logging_and_metrics(span_context, run_params_list)
 
-        params, error_response = validate_and_get_params(
+        params, error_response = await validate_and_get_params(
             run_params_list, span_context, node_trace, m
         )
         if error_response:
@@ -767,14 +783,14 @@ async def tool_debug(tool_debug_params: ToolDebugRequest) -> ToolDebugResponse:
                 uid=span_context.uid,
                 chat_id=span_context.sid,
                 sub="spark-link",
-                caller=caller,
+                caller="tool_debug",
                 log_caller="",
                 question=json.dumps(run_params_list, ensure_ascii=False),
             )
 
             validate_err = api_validate(get_tool_debug_schema(), run_params_list)
             if validate_err:
-                return handle_debug_validation_error(
+                return await handle_debug_validation_error(
                     validate_err, span_context, node_trace, m, tool_id, tool_type or ""
                 )
 
@@ -801,7 +817,7 @@ async def tool_debug(tool_debug_params: ToolDebugRequest) -> ToolDebugResponse:
                     f"错误信息：{ErrCode.RESPONSE_SCHEMA_VALIDATE_ERR.msg}, "
                     f"详细信息：{msg}"
                 )
-                return handle_custom_error(
+                return await handle_custom_error(
                     ErrCode.RESPONSE_SCHEMA_VALIDATE_ERR,
                     detailed_message,
                     span_context,
@@ -815,16 +831,16 @@ async def tool_debug(tool_debug_params: ToolDebugRequest) -> ToolDebugResponse:
             result = json.dumps(result_json, ensure_ascii=False)
             span_context.add_info_events({"after result": result})
 
-            return handle_debug_success_response(
+            return await handle_debug_success_response(
                 result, span_context, node_trace, m, tool_id, tool_type or ""
             )
 
         except SparkLinkBaseException as err:
-            return handle_sparklink_error(
+            return await handle_sparklink_error(
                 err, span_context, node_trace, m, tool_id, tool_type or ""
             )
         except Exception as err:
-            return handle_general_exception(
+            return await handle_general_exception(
                 err, span_context, node_trace, m, tool_id, tool_type or ""
             )
 

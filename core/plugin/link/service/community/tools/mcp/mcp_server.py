@@ -187,7 +187,7 @@ async def tool_list(list_info: MCPToolListRequest = Body()) -> MCPToolListRespon
             uid=span_context.uid,
             chat_id=span_context.sid,
             sub="spark-link",
-            caller="mcp_caller",
+            caller="tool_list",
             log_caller="",
             question=list_info.model_dump_json(),
         )
@@ -204,6 +204,8 @@ async def tool_list(list_info: MCPToolListRequest = Body()) -> MCPToolListRespon
         # Process URLs
         if mcp_server_urls:
             for url in mcp_server_urls:
+                if not url.strip():
+                    continue
                 item = await _process_mcp_server_by_url(url)
                 items.append(item)
 
@@ -214,7 +216,8 @@ async def tool_list(list_info: MCPToolListRequest = Body()) -> MCPToolListRespon
             sid=session_id,
             data=MCPToolListData(servers=items),
         )
-        if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+        span_context.add_info_events({"tool_list_result": result.model_dump_json()})
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
             m.in_success_count()
             node_trace.answer = result.model_dump_json()
             node_trace.service_id = "tool_list"
@@ -243,7 +246,7 @@ def _log_error_to_kafka(
     err: ErrCode, node_trace: NodeTraceLog, mcp_server_id: str, m: Meter
 ) -> None:
     """Log error information to Kafka if OTLP is enabled."""
-    if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+    if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
         m.in_error_count(err.code)
         node_trace.answer = err.msg
         node_trace.service_id = mcp_server_id
@@ -381,7 +384,7 @@ def _validate_and_get_url(
     # Check blacklist first
     if url and is_in_blacklist(url=url):
         err = ErrCode.MCP_SERVER_BLACKLIST_URL_ERR
-        if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
             m.in_error_count(err.code)
         return err, ""
 
@@ -391,14 +394,14 @@ def _validate_and_get_url(
             mcp_server_id=call_info.mcp_server_id, span=span_context
         )
         if err is not ErrCode.SUCCESSES:
-            if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
                 m.in_error_count(err.code)
             return err, ""
 
     # Check local URL
     if is_local_url(url):
         err = ErrCode.MCP_SERVER_LOCAL_URL_ERR
-        if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
             m.in_error_count(err.code)
         return err, ""
 
@@ -435,7 +438,7 @@ async def call_tool(call_info: MCPCallToolRequest = Body()) -> MCPCallToolRespon
             uid=span_context.uid,
             chat_id=span_context.sid,
             sub="spark-link",
-            caller="mcp_caller",
+            caller="call_tool",
             log_caller="",
             question=call_info.model_dump_json(),
         )
@@ -459,10 +462,10 @@ async def call_tool(call_info: MCPCallToolRequest = Body()) -> MCPCallToolRespon
             mcp_server_id,
             m,
         )
-
+        span_context.add_info_events({"call_tool_result": result.model_dump_json()})
         # Log success if the call succeeded
         if result.code == ErrCode.SUCCESSES.code:
-            if os.getenv(const.OTLP_ENABLE_KEY, "false").lower() == "true":
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
                 m.in_success_count()
                 node_trace.answer = result.model_dump_json()
                 node_trace.service_id = mcp_server_id

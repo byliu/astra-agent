@@ -30,6 +30,7 @@ export interface EnterpriseStore {
   setJoinedEnterpriseList: (list: EnterpriseInfo[]) => void;
   setSpaceStatistics: (statistics: SpaceStatistics) => void;
   setCertificationType: (type: boolean) => void;
+  clearEnterpriseData: () => void;
 }
 
 const getDefaultEnterpriseInfo = () => ({
@@ -55,7 +56,6 @@ const useEnterpriseStore = create<EnterpriseStore>((set, get) => ({
   joinedEnterpriseList: [],
   spaceStatistics: {
     total: 0,
-    mine: 0,
     joined: 0,
   },
   setEnterpriseInfo: (enterprise: Partial<EnterpriseInfo>) => {
@@ -69,6 +69,17 @@ const useEnterpriseStore = create<EnterpriseStore>((set, get) => ({
   },
   setCertificationType: (type: boolean) => {
     set({ certificationType: type });
+  },
+  clearEnterpriseData: () => {
+    set({
+      info: getDefaultEnterpriseInfo(),
+      certificationType: null,
+      joinedEnterpriseList: [],
+      spaceStatistics: {
+        total: 0,
+        joined: 0,
+      },
+    });
   },
 }));
 

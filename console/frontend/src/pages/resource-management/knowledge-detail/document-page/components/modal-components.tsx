@@ -409,7 +409,7 @@ export const TagsManage: FC<{
             <div className="mt-1.5 text-desc font-medium">
               {t('knowledge.addTagsDescription')}{' '}
               <span
-                className="text-[#275EFF] cursor-pointer"
+                className="text-[#6356EA] cursor-pointer"
                 onClick={() =>
                   navigate(`/resource/knowledge/detail/${repoId}/setting`, {
                     state: {

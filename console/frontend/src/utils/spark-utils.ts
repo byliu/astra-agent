@@ -2,7 +2,6 @@
 import { Base64 } from 'js-base64';
 import { message } from 'antd';
 // import UrlParse from 'url-parse';
-// import SSO from '@/lib/sso.min.js';
 import { localeConfig } from '@/locales/localeConfig';
 // const localeNow = sessionStorage.getItem('localeLang');
 // const recoilPersist = localStorage.getItem('recoil-persist') || '{}';

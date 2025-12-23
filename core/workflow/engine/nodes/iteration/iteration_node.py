@@ -2,10 +2,13 @@ import asyncio
 import copy
 from typing import Any, Dict
 
+from pydantic import PrivateAttr
+
 from workflow.engine.callbacks.callback_handler import ChatCallBacks
 from workflow.engine.entities.chains import Chains
 from workflow.engine.entities.node_entities import NodeType
 from workflow.engine.entities.node_running_status import NodeRunningStatus
+from workflow.engine.entities.private_config import PrivateConfig
 from workflow.engine.entities.variable_pool import VariablePool
 from workflow.engine.nodes.base_node import BaseNode
 from workflow.engine.nodes.entities.node_run_result import (
@@ -29,6 +32,9 @@ class IterationNode(BaseNode):
 
     # Node ID of the first node in the workflow subgraph within this iteration
     IterationStartNodeId: str
+    _private_config: PrivateConfig = PrivateAttr(
+        default_factory=lambda: PrivateConfig(timeout=None)
+    )
 
     async def async_execute(
         self,
@@ -72,7 +78,6 @@ class IterationNode(BaseNode):
                         self.node_id
                     ]
                 )
-                built_nodes = copy.deepcopy(iteration_one_engine.engine_ctx.built_nodes)
 
                 batch_datas = variable_pool.get_variable(
                     node_id=self.node_id,
@@ -85,7 +90,6 @@ class IterationNode(BaseNode):
                 batch_result_dict: dict[str, list] = {}
                 temp_variable_pool = copy.deepcopy(variable_pool)
                 for batch_data in batch_datas:
-                    iteration_one_engine.engine_ctx.built_nodes = built_nodes
                     res = await self._process_single_batch(
                         batch_data,
                         temp_variable_pool,

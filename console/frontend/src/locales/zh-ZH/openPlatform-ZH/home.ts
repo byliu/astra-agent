@@ -10,6 +10,8 @@ const translation = {
   selected: '精选',
   officialAssistant: '官方助手',
   quickStart: '快速开始',
+  quickStartDesc: '快速了解智能体，轻松掌握创建全流程',
+  learnMore: '去了解',
   agentSummer: 'Agent一夏',
   casePractice: '案例实践',
   officialTutorial: '官方教程',

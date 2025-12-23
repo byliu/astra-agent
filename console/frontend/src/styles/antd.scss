@@ -5,14 +5,16 @@
   padding-top: 0px;
   padding-bottom: 0px;
   border-radius: 10px;
-  font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-    "WenQuanYi Micro Hei", sans-serif !important;
+  font-family:
+    'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+    'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif !important;
   background: transparent !important;
 }
 
 .ant-input-show-count-suffix {
-  font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-    "WenQuanYi Micro Hei", sans-serif !important;
+  font-family:
+    'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+    'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif !important;
   color: #a4a4a4 !important;
   font-weight: 500;
   font-size: 12px;
@@ -20,13 +22,17 @@
 
 .ant-btn-primary {
   color: #fff;
-  background: #275eff !important;
+  background: #6356ea !important;
 }
 
 .ant-btn-primary:disabled {
   opacity: 0.5;
   color: #fff;
-  background: #275eff;
+  background: #6356ea;
+}
+
+.ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover {
+  border-color: #6356ea;
 }
 
 .origin-btn {
@@ -42,7 +48,7 @@
 }
 
 .primary-btn {
-  background: #275eff !important;
+  background: #6356ea !important;
   border-radius: 10px;
   color: #fff;
 }
@@ -57,18 +63,18 @@
   background: #ffffff !important;
   border: transparent;
   border-radius: 10px;
-  color: #275eff;
+  color: #6356ea;
 }
 
 .link-border-btn {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.7843);
-  border: 1px solid #275eff;
-  color: #275eff;
+  border: 1px solid #6356ea;
+  color: #6356ea;
 }
 
 .ant-picker-footer .ant-btn-primary {
-  background: #275eff !important;
+  background: #6356ea !important;
 }
 
 .config-slider {
@@ -77,7 +83,7 @@
 
 .config-slider .ant-slider-track,
 .ant-slider-handle {
-  background: #275eff;
+  background: #6356ea;
 }
 
 .config-slider .ant-slider-handle {
@@ -96,11 +102,11 @@
 }
 
 .config-slider:hover .ant-slider-track {
-  background: #275eff;
+  background: #6356ea;
 }
 
 .config-slider .ant-slider-handle::after {
-  box-shadow: 0 0 0 2px #275eff !important;
+  box-shadow: 0 0 0 2px #6356ea !important;
 }
 
 .chat-feedback .ant-checkbox-group {
@@ -123,7 +129,7 @@
 }
 
 .ant-checkbox-checked .ant-checkbox-inner {
-  background-color: #275eff;
+  background-color: #6356ea;
 }
 
 .ant-message {
@@ -133,7 +139,7 @@
 .knowledge-upload .ant-upload {
   width: 766px;
   padding: 0px;
-  background: url("../assets/imgs/knowledge/pic_zhishi_bg.png") no-repeat center;
+  background: url('../assets/imgs/knowledge/pic_zhishi_bg.png') no-repeat center;
   background-size: cover;
 }
 
@@ -236,7 +242,7 @@
 }
 
 .upload-progress .ant-progress-bg {
-  background: #275eff;
+  background: #6356ea;
 }
 
 .hit-progress .ant-progress-inner {
@@ -264,8 +270,9 @@
     background-color: #f2f5fe;
     color: #7f7f7f;
     font-size: 12px;
-    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-      "WenQuanYi Micro Hei", sans-serif !important;
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+      'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif !important;
   }
 
   .ant-table-tbody {
@@ -281,12 +288,14 @@
   .ant-table-tbody .ant-table-cell {
     font-size: 14px;
     padding: 14px 20px;
-    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-      "WenQuanYi Micro Hei", sans-serif !important;
-    .ant-empty-normal {
-      align-items: center;
-      justify-content: center;
-    }
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+      'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif !important;
+  }
+
+  .ant-empty-normal {
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -381,7 +390,7 @@
     line-height: 28px;
 
     &:hover {
-      background: #275eff;
+      background: #6356ea;
 
       > a {
         color: #f9fafb;
@@ -402,7 +411,7 @@
   }
 
   .ant-pagination-item-active {
-    background: #275eff;
+    background: #6356ea;
     font-size: 14px;
     font-weight: 500;
 
@@ -420,7 +429,7 @@
 
 .list-switch.ant-switch-checked {
   .ant-switch-inner {
-    background: #275eff;
+    background: #6356ea;
   }
 }
 
@@ -442,7 +451,7 @@
   .ant-switch-inner {
     width: 36px;
     height: 22px;
-    background: #275eff;
+    background: #6356ea;
   }
 }
 
@@ -453,8 +462,9 @@
     color: #f0f3f9;
     // background: rgba(0, 0, 0, 0.7);
     background: #333333;
-    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-      "WenQuanYi Micro Hei", sans-serif;
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+      'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
     font-size: 12px;
     font-weight: 500;
   }
@@ -473,8 +483,9 @@
   .ant-tooltip-inner {
     color: #f0f3f9;
     background: #ea1717;
-    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-      "WenQuanYi Micro Hei", sans-serif;
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+      'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
     font-size: 12px;
     font-weight: 500;
   }
@@ -558,8 +569,9 @@
 
   .ant-table-cell {
     border-inline-end: none !important;
-    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei",
-      "WenQuanYi Micro Hei", sans-serif;
+    font-family:
+      'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino Sans GB',
+      'Heiti SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
   }
 
   .ant-table-thead .ant-table-cell {
@@ -665,8 +677,8 @@
   }
 }
 
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -712,7 +724,9 @@ input[type="number"]::-webkit-outer-spin-button {
   // When expand icon exists, adjust content width
   &:has(.ant-table-row-expand-icon) > div,
   &:has(> img) > div {
-    width: calc(100% - 24px); // Reserve space for expand icon (16px) + margin (8px)
+    width: calc(
+      100% - 24px
+    ); // Reserve space for expand icon (16px) + margin (8px)
     max-width: calc(100% - 24px);
   }
 }
@@ -730,7 +744,9 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   // Rows with expand icons (override above)
-  .ant-table-row-level-#{$level} .ant-table-cell:first-child:has(.ant-table-row-expand-icon) > div,
+  .ant-table-row-level-#{$level}
+    .ant-table-cell:first-child:has(.ant-table-row-expand-icon)
+    > div,
   .ant-table-row-level-#{$level} .ant-table-cell:first-child:has(> img) > div {
     width: calc(100% - #{$total-with-icon});
     max-width: calc(100% - #{$total-with-icon});
@@ -915,10 +931,10 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-    border-color: #275eff;
+    border-color: #6356ea;
 
     .checked-icon-container {
-      border-color: #275eff;
+      border-color: #6356ea;
 
       .checked-icon {
         display: block;
@@ -936,6 +952,12 @@ input[type="number"]::-webkit-outer-spin-button {
 .tool-params-table {
   .ant-table {
     background: transparent !important;
+  }
+
+  .ant-table-cell-with-append {
+    width: 100% !important;
+    display: inline-flex !important;
+    align-items: center;
   }
 
   .ant-table-cell {
@@ -1315,7 +1337,7 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
-.flow-pagination-template {
+.flow-pagination-tamplate {
   font-size: 14px;
 
   .ant-pagination-item {
@@ -1329,7 +1351,7 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .ant-pagination-item-active {
-    background: #275eff;
+    background: #6356ea;
     border: none;
 
     a {
@@ -1362,7 +1384,11 @@ input[type="number"]::-webkit-outer-spin-button {
     background: #f2f5fe !important;
   }
 
-  .ant-table-content > table .ant-table-tbody .ant-table-placeholder .ant-table-cell {
+  .ant-table-content
+    > table
+    .ant-table-tbody
+    .ant-table-placeholder
+    .ant-table-cell {
     border: none !important;
   }
 }
@@ -1375,13 +1401,15 @@ input[type="number"]::-webkit-outer-spin-button {
     }
   }
 }
+
 .ant-popover-content .ant-popconfirm-buttons .ant-btn.popver-footer-button {
   padding: 0 16px !important;
   height: 32px;
   line-height: 32px;
 }
 
-.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+.ant-select-dropdown
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
   background-color: #f2f5fe;
 }
 
@@ -1407,7 +1435,9 @@ input[type="number"]::-webkit-outer-spin-button {
 .ant-form {
   .ant-form-item
     .ant-form-item-label
-    > label.ant-form-item-required:not(.ant-form-item-required-mark-optional)::before {
+    > label.ant-form-item-required:not(
+      .ant-form-item-required-mark-optional
+    )::before {
     color: #f74e43;
   }
 }
@@ -1479,7 +1509,7 @@ input[type="number"]::-webkit-outer-spin-button {
   border-radius: 8px;
 
   &:focus-within {
-    border-color: #275eff;
+    border-color: #6356ea;
   }
 
   .ant-input {
@@ -1604,18 +1634,17 @@ input[type="number"]::-webkit-outer-spin-button {
       font-weight: normal;
       color: rgba(0, 0, 0, 0.6);
 
-      // 分页组件激活态样式
       &.ant-pagination-item-active {
-        background-color: #275eff !important;
-        border-color: #275eff !important;
+        background-color: #6356ea !important;
+        border-color: #6356ea !important;
 
         a {
           color: rgba(255, 255, 255, 0.9) !important;
         }
 
         &:hover {
-          background-color: #275eff !important;
-          border-color: #275eff !important;
+          background-color: #6356ea !important;
+          border-color: #6356ea !important;
 
           a {
             color: #ffffff !important;
@@ -1624,22 +1653,17 @@ input[type="number"]::-webkit-outer-spin-button {
       }
     }
   }
-
-  .ant-empty-normal {
-    justify-content: center;
-    align-items: center;
-  }
 }
 
 .xingchen-textarea {
   position: relative;
 
   .ant-input-data-count {
-    bottom: 2px !important; // Distance from bottom border: 2px
-    right: 6px !important; // Slightly adjust right distance
+    bottom: 2px !important;
+    right: 6px !important;
     padding: 2px 4px;
     font-size: 12px;
-    pointer-events: none; // Avoid affecting text input
+    pointer-events: none;
   }
 }
 
@@ -1653,19 +1677,18 @@ input[type="number"]::-webkit-outer-spin-button {
   z-index: 99999 !important;
 
   .ant-popover-title {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 500;
   }
 
   .control-mode-item {
     &:hover {
-      box-shadow:
-        0 8px 24px 0 rgba(0, 0, 0, 0.16),
-        0 16px 48px 0 rgba(0, 0, 0, 0.08);
+      background: #f8faff;
+      box-shadow: 0px 2px 4px 0px rgba(46, 51, 68, 0.0373);
     }
 
     p {
-      color: #7e7d84;
+      color: #979797;
     }
 
     &.active {
@@ -1676,12 +1699,24 @@ input[type="number"]::-webkit-outer-spin-button {
       background: #e6e9ff;
 
       h1 {
-        color: #275eff;
+        color: #6356ea;
       }
 
       p {
-        color: #275eff;
+        font-size: 12px;
+        color: #7487fe;
       }
+    }
+  }
+}
+
+.document-more-dropdown {
+  .ant-dropdown-menu-item:hover {
+    background-color: #f2f5fe !important;
+  }
+  .ant-dropdown-menu-item-active {
+    .ant-dropdown-menu-title-content {
+      color: #6356ea;
     }
   }
 }
@@ -1692,9 +1727,9 @@ input[type="number"]::-webkit-outer-spin-button {
     .ant-dropdown-menu-item {
       padding: 4px;
     }
-    .ant-dropdown-menu-item[data-type="delete"] {
+    .ant-dropdown-menu-item[data-type='delete'] {
       .delete-icon {
-        background-image: url("@/assets/imgs/workflow/delete.svg");
+        background-image: url('@/assets/imgs/workflow/delete.svg');
         background-repeat: no-repeat;
         background-position: center center;
         background-size: auto;
@@ -1705,17 +1740,132 @@ input[type="number"]::-webkit-outer-spin-button {
       &:hover {
         background-color: #feedec;
         .delete-icon {
-          background-image: url("@/assets/imgs/workflow/delete_hover.svg");
+          background-image: url('@/assets/imgs/workflow/delete_hover.svg');
         }
         .delete-text {
           color: #f74e43;
         }
       }
     }
-    .ant-dropdown-menu-item:not([data-type="delete"]) {
+    .ant-dropdown-menu-item:not([data-type='delete']) {
       &:hover {
         background-color: #f2f5fe;
       }
     }
   }
+}
+
+.common-btn-white {
+  background: #ffffff !important;
+  color: #333333;
+  border: none;
+  border-radius: 8px;
+  &:hover {
+    color: inherit !important;
+    border-color: none !important;
+  }
+}
+
+.common-btn-primary {
+  background: var(--primary-color) !important;
+  color: #ffffff;
+  border: none;
+}
+
+.common-btn-default {
+  color: #333333;
+  border-color: #d3dbf8;
+  &:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+}
+
+a.ant-typography,
+.ant-typography .ant-typography-copy {
+  color: var(--primary-color);
+  &:hover {
+    color: var(--primary-color);
+    opacity: 0.6;
+  }
+}
+
+.ant-spin {
+  .ant-spin-dot-holder {
+    color: var(--primary-color);
+  }
+}
+// Speaker modal popover styles
+.spearker-modal-type-tip-pop {
+  .ant-popover-inner-content {
+    color: #fff;
+  }
+}
+.speaker-segment.ant-segmented {
+  display: flex;
+  margin: 0 auto;
+  width: 372px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f7f6ff;
+
+  .ant-segmented-group {
+    gap: 4px;
+  }
+  .ant-segmented-item {
+    font-family: 'PingFang SC';
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .ant-segmented-item:active:not(.ant-segmented-item-selected):not(
+      .ant-segmented-item-disabled
+    )::after {
+    background-color: transparent;
+  }
+  .ant-segmented-item:hover:not(.ant-segmented-item-selected):not(
+      .ant-segmented-item-disabled
+    )::after {
+    background-color: transparent;
+  }
+
+  .ant-segmented-item-selected {
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0px 2px 4px 0px rgba(46, 51, 68, 0.0373);
+    color: #6356ea;
+  }
+  .ant-segmented-item-label {
+    height: 32px;
+    line-height: 32px;
+  }
+}
+
+// Voice training wave animation
+@keyframes wave-animation {
+  0% {
+    opacity: 1;
+    width: 0px;
+    height: 0px;
+  }
+  100% {
+    opacity: 0;
+    width: 120px;
+    height: 120px;
+  }
+}
+
+.animate-wave-1 {
+  animation: wave-animation 3s linear infinite;
+}
+
+.animate-wave-2 {
+  animation: wave-animation 3s linear infinite;
+  animation-delay: 2s;
+}
+
+.animate-wave-3 {
+  animation: wave-animation 3s linear infinite;
+  animation-delay: 4s;
 }

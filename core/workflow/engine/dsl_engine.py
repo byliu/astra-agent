@@ -35,7 +35,6 @@ from workflow.engine.entities.variable_pool import VariablePool
 from workflow.engine.entities.workflow_dsl import Edge, Node, NodeRef, WorkflowDSL
 from workflow.engine.node import NodeFactory, SparkFlowEngineNode
 from workflow.engine.nodes.base_node import BaseNode
-from workflow.engine.nodes.cache_node import tool_classes
 from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
     WorkflowNodeExecutionStatus,
@@ -381,6 +380,10 @@ class RetryableErrorHandler(ExceptionHandlerBase):
             )
             input_dict.update({input_key: input_value})
 
+        if node.node_instance.stream_node_first_token.empty():
+            node.node_instance.stream_node_first_token.put_nowait(
+                CustomException(CodeEnum.NODE_RUN_ERROR)
+            )
         # Create result
         run_result = NodeRunResult(
             status=WorkflowNodeExecutionStatus.SUCCEEDED,
@@ -1065,8 +1068,8 @@ class WorkflowEngine(BaseModel):
         :param node_type: The type of the node
         :return: List of next nodes to execute based on branch logic
         """
-        edge_source_handle = run_result.dict().get(
-            "edge_source_handle", "default_chain"
+        edge_source_handle = (
+            run_result.dict().get("edge_source_handle") or "default_chain"
         )
         intents = node.get_classify_class().get(edge_source_handle)
 
@@ -1099,8 +1102,8 @@ class WorkflowEngine(BaseModel):
         )
 
         for intent in intent_chains:
-            if intent.get("name", "") == "default":
-                default_id = intent.get("id", "")
+            if intent.name == "default":
+                default_id = intent.id
                 return node.get_classify_class().get(default_id)
 
         return None
@@ -1169,10 +1172,13 @@ class WorkflowEngine(BaseModel):
         error: CustomException | None = None
         try:
             strategy = self.strategy_manager.get_strategy(node.node_id.split("::")[0])
-            run_result = await strategy.execute_node(
-                node, self.engine_ctx, span_context
+            run_result = await asyncio.wait_for(
+                strategy.execute_node(node, self.engine_ctx, span_context),
+                timeout=node.node_instance._private_config.timeout,
             )
             return run_result, False
+        except TimeoutError:
+            error = CustomException(CodeEnum.NODE_RUN_TIMEOUT_ERROR)
         except Exception as err:
             if isinstance(err, CustomException):
                 error = err
@@ -1293,7 +1299,9 @@ class WorkflowEngine(BaseModel):
 
         # Create waiting task to handle cancellation of failure nodes
         async def wait_and_deactivate() -> None:
-            await node.node_instance.stream_node_first_token.wait()
+            result = await node.node_instance.stream_node_first_token.get()
+            if isinstance(result, Exception):
+                return
             cancel_error_node_ids = [
                 n.id for n in node.fail_nodes if n not in node.next_nodes
             ]
@@ -1691,7 +1699,6 @@ class WorkflowEngine(BaseModel):
             return
 
         node_chains = self.engine_ctx.chains.get_node_chains(node.node_id)
-        tasks = []
 
         for simple_path in node_chains:
             if simple_path.inactive.is_set():
@@ -1705,14 +1712,9 @@ class WorkflowEngine(BaseModel):
                 )
 
                 if current_node_id == node.node_id:
-                    tasks.extend(
-                        self._create_predecessor_wait_tasks(
-                            node, pre_node_id, simple_path
-                        )
+                    await self._create_predecessor_wait_tasks(
+                        node, pre_node_id, simple_path
                     )
-
-        if tasks:
-            await asyncio.wait(tasks)
 
     async def _wait_at_least_one_task_completed(self, tasks: list[Task]) -> None:
         """
@@ -1725,12 +1727,12 @@ class WorkflowEngine(BaseModel):
         _, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         await self._cancel_pending_task(pending)
 
-    def _create_predecessor_wait_tasks(
+    async def _create_predecessor_wait_tasks(
         self,
         node: SparkFlowEngineNode,
         pre_node_id: str,
         simple_path: SimplePath,
-    ) -> List[Task]:
+    ) -> None:
         """
         Create waiting tasks for predecessor nodes.
 
@@ -1739,26 +1741,13 @@ class WorkflowEngine(BaseModel):
         :param simple_path: The simple path containing the nodes
         :return: List of asyncio tasks for waiting
         """
-        tasks = []
         pre_nodes = node.get_pre_nodes()
 
         for pre_node in pre_nodes:
             if pre_node.node_id == pre_node_id:
-                wait_task = asyncio.create_task(
-                    self._wait_at_least_one_task_completed(
-                        [
-                            asyncio.create_task(
-                                self.engine_ctx.node_run_status[
-                                    pre_node.node_id
-                                ].complete.wait()
-                            ),
-                            asyncio.create_task(simple_path.inactive.wait()),
-                        ]
-                    )
-                )
-                tasks.append(wait_task)
-        self.engine_ctx.dfs_tasks.extend(tasks)
-        return tasks
+                await self.engine_ctx.node_run_status[pre_node.node_id].complete.wait()
+
+        return None
 
     def dumps(self, span: Span) -> bytes:
         """
@@ -2025,6 +2014,9 @@ class WorkflowEngineBuilder:
         :return: None
         :raises CustomException: If node validation fails
         """
+
+        from workflow.engine.nodes.cache_node import tool_classes
+
         node_type = node_id.split(":")[0]
         node_class = tool_classes.get(node_type)
 

@@ -283,7 +283,7 @@ const SegmentationSettings: React.FC<{
             {t('knowledge.autoSegmentationAndCleaningDesc')}
           </p>
         </div>
-        <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+        <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
           {sliceType === 'default' ? (
             <img src={check} className="w-4 h-4" alt="" />
           ) : (
@@ -304,7 +304,7 @@ const SegmentationSettings: React.FC<{
             </h2>
             <p className="mt-2 text-desc">{t('knowledge.customDesc')}</p>
           </div>
-          <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+          <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
             {sliceType === 'custom' ? (
               <img src={check} className="w-4 h-4" alt="" />
             ) : (
@@ -468,7 +468,7 @@ const SegmentPreviewHeader: React.FC<{
       </div>
       {!slicing && violationTotal > 0 && (
         <div
-          className="flex items-center gap-1 text-[#275EFF] text-xs cursor-pointer"
+          className="flex items-center gap-1 text-[#6356EA] text-xs cursor-pointer"
           onClick={() => downloadExcel(fileIds, 0, knowledgeDetail.name)}
         >
           <img src={download} className="w-4 h-4" alt="" />

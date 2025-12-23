@@ -3,8 +3,6 @@ import time
 from base64 import b64encode
 from typing import Any, Dict, List, Set, Tuple
 
-import requests  # type: ignore
-
 from workflow.exception.e import CustomException
 from workflow.exception.errors.code_convert import CodeConvert
 from workflow.exception.errors.err_code import CodeEnum
@@ -263,6 +261,9 @@ class Tool:
                 )
 
             # Execute HTTP request to Link system
+
+            import requests  # type: ignore
+
             try:
                 from aiohttp import ClientSession
 
@@ -371,6 +372,9 @@ class Link:
             "versions": [self.version],
             "app_id": self.app_id,
         }
+
+        import requests  # type: ignore
+
         response_json = requests.get(
             self.get_url, headers=self.const_headers, params=params
         ).json()

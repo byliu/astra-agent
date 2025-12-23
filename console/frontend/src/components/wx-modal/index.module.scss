@@ -23,7 +23,24 @@
 
     .ant-modal-content {
       width: fit-content;
+      height: 600px;
+      overflow-y: auto;
       background: #ffffff;
+
+      // 设置滚动条样式，隐藏滚动条
+      &::-webkit-scrollbar {
+        display: none;
+      }
+      &::-webkit-scrollbar-thumb {
+        display: none;
+      }
+      &::-webkit-scrollbar-track {
+        display: none;
+      }
+
+      // .ant-modal-body {
+      //   padding: 24px;
+      // }
     }
   }
 
@@ -102,6 +119,7 @@
     margin: 0 5px;
   }
 }
+
 .xinghao {
   color: red;
   margin-right: 3px;
@@ -149,16 +167,20 @@
       PingFang SC-Medium;
     text-align: center;
     margin-top: 8px;
-    background: #275eff;
+    background: #6356ea;
     border-radius: 5px;
     color: #ffffff;
     cursor: pointer;
   }
+  // .text_spark{
+  //   width: 582px;
+  //   height: 68px;
+  // }
 }
 
 .mcp_fabu {
   width: 652px;
-  height: 102px;
+  // height: 102px;
   padding: 17px 24px 17px 24px;
   display: flex;
   justify-content: space-between;
@@ -189,7 +211,7 @@
     text-align: center;
     //margin-left: 33px;
     margin-top: 18px;
-    background: #275eff;
+    background: #6356ea;
     border-radius: 5px;
     color: #ffffff;
     cursor: pointer;
@@ -234,7 +256,7 @@
   line-height: 32px;
   text-align: center;
   margin-top: 8px;
-  background: #275eff;
+  background: #6356ea;
   border-radius: 8px;
   color: #ffffff;
   cursor: pointer;
@@ -269,7 +291,7 @@
   color: #000000;
 }
 .wx_fabuactive {
-  border: 1px solid #275eff !important;
+  border: 1px solid #6356ea !important;
 }
 .wx_textactive {
   color: #2a6ee9;
@@ -384,7 +406,7 @@
   // font-weight: 600;
   line-height: 32px;
   text-align: center;
-  background: #275eff;
+  background: #6356ea;
   border-radius: 5px;
 }
 
@@ -405,7 +427,7 @@
   // font-weight: 600;
   line-height: 32px;
   text-align: center;
-  background: #275eff;
+  background: #6356ea;
 }
 
 .success_wrap {
@@ -451,12 +473,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #275eff;
+    background: #6356ea;
     border-radius: 8px;
     color: #ffffff;
   }
 }
-
+// :global{
+//   .ant-input {
+//     background-color: #EFF1F9 !important; /* 你想要设置的背景色 */
+//     width: 295px;
+//     height: 32px;
+//     border: none !important;
+//     border-radius: 8px;
+//     // box-shadow: 0px 0px 0px 2px rgba(76,86,187,0.20);
+//   }
+// }
 /* 国际化样式调整 - 英文状态 */
 :global(.lang-en) {
   .wx_flex {
@@ -482,3 +513,25 @@
     white-space: nowrap;
   }
 }
+
+
+.formItem {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.required {
+  color: #ff4d4f;
+  margin-right: 4px;
+}
+
+// .textField {
+//   min-height: 80px;
+// }

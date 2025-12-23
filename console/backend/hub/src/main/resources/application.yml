@@ -15,11 +15,41 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${MYSQL_USER:astron}
     password: ${MYSQL_PASSWORD:astron-dev-env-db}
+    # HikariCP connection pool configuration
+    hikari:
+      # Maximum pool size
+      maximum-pool-size: 10
+      # Minimum idle connections
+      minimum-idle: 2
+      # Connection timeout (ms)
+      connection-timeout: 30000
+      # Idle timeout (ms)
+      idle-timeout: 600000
+      # Max connection lifetime (ms)
+      max-lifetime: 1800000
+      # Validation timeout (ms)
+      validation-timeout: 5000
+      # Connection test query
+      connection-test-query: SELECT 1
+      # Pool name
+      pool-name: AstronHikariCP
+      # Auto commit
+      auto-commit: true
+      # Leak detection threshold (ms)
+      leak-detection-threshold: 60000
   data:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DATABASE_CONSOLE:0}
+      # Lettuce connection pool configuration for reduced memory usage
+      lettuce:
+        pool:
+          max-active: 8      # Maximum number of active connections
+          max-idle: 4        # Maximum number of idle connections
+          min-idle: 1        # Minimum number of idle connections
+          max-wait: 3000ms   # Maximum wait time when pool is exhausted
+      password: ${REDIS_PASSWORD:}
   security:
     oauth2:
       resourceserver:
@@ -32,6 +62,24 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+
+  # Flyway database migration configuration
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    # Migration scripts location
+    locations: classpath:db/migration
+    # Baseline on migrate (for existing databases)
+    baseline-on-migrate: true
+    # Baseline version
+    baseline-version: 1.0
+    # Encoding of SQL migration files
+    encoding: UTF-8
+    # Validate migrations on startup
+    validate-on-migrate: true
+    # Table name for tracking migrations
+    table: flyway_schema_history
+    # Allow out of order migrations
+    out-of-order: false
 
   # Disable static resource mapping
   web:
@@ -67,11 +115,13 @@ mybatis-plus:
 
 # S3(MinIO) basic configuration
 s3:
-  endpoint: ${OSS_REMOTE_ENDPOINT:http://minio:9000}
+  endpoint: ${OSS_ENDPOINT:http://minio:9000}
+  remoteEndpoint: ${OSS_REMOTE_ENDPOINT:http://your-host-domain:9000}
   accessKey: ${OSS_ACCESS_KEY_ID:astron-uploader}
   secretKey: ${OSS_ACCESS_KEY_SECRET:astron-uploader-secret}
   bucket: ${OSS_BUCKET_CONSOLE:astron-agent}
   presignExpirySeconds: ${OSS_PRESIGN_EXPIRY_SECONDS_CONSOLE:600}
+  enablePublicRead: true
 
 # Spark LLM configuration
 spark:
@@ -80,11 +130,13 @@ spark:
   api-secret: ${SPARK_API_SECRET:xxx}
   api:
     password: ${SPARK_API_PASSWORD:xxx}
-  lfasr-key: ${SPARK_LFASR_KEY:xxx}
-  lfasr-appId: ${SPARK_LFASR_APPID:xxx}
+  rtasr-key: ${SPARK_RTASR_KEY:xxx}
+  rtasr-appId: ${SPARK_RTASR_APPID:xxx}
   image-appId: ${SPARK_IMAGE_APP_ID:xxx}
   image-apiKey: ${SPARK_IMAGE_API_KEY:xxx}
   image-apiSecret: ${SPARK_IMAGE_API_SECRET:xxx}
+  virtual-man-apiKey: ${SPARK_VIRTUAL_MAN_API_KEY:xxx}
+  virtual-man-apiSecret: ${SPARK_VIRTUAL_MAN_API_SECRET:xxx}
 
 # Workflow configuration
 workflow:

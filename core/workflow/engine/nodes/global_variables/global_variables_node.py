@@ -6,12 +6,13 @@ It includes a VariablesManage class for cache operations and a GlobalVariablesNo
 that extends BaseNode to handle global variable operations (set/get) in workflow nodes.
 """
 
+import asyncio
 import json
 from typing import Any, Literal
 
 from pydantic import Field
 
-from workflow.engine.entities.variable_pool import VariablePool
+from workflow.engine.entities.variable_pool import ParamKey, VariablePool
 from workflow.engine.nodes.base_node import BaseNode
 from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
@@ -126,7 +127,6 @@ class GlobalVariablesNode(BaseNode):
     """
 
     method: Literal["set", "get"] = Field(...)  # Operation method: "set" or "get"
-    flowId: str = Field(...)  # Flow identifier for variable scope
 
     async def async_execute(
         self,
@@ -151,13 +151,17 @@ class GlobalVariablesNode(BaseNode):
         try:
             inputs: dict = {}
             outputs: dict = {}
+            flow_id: str = variable_pool.system_params.get(ParamKey.FlowId)
+            chat_id: str = variable_pool.system_params.get(ParamKey.ChatId)
+            uid: str = variable_pool.system_params.get(ParamKey.Uid)
+            app_id: str = variable_pool.system_params.get(ParamKey.AppId)
 
             # Build Redis key components for cache operations
             redis_key = {
-                "flow_id": self.flowId,
-                "uid": span.uid,
-                "app_id": span.app_id,
-                "chat_id": variable_pool.chat_id,
+                "flow_id": flow_id,
+                "uid": uid,
+                "app_id": app_id,
+                "chat_id": chat_id,
             }
             span.add_info_events(
                 {"redis_key": json.dumps(redis_key, ensure_ascii=False)}
@@ -165,10 +169,10 @@ class GlobalVariablesNode(BaseNode):
 
             # Initialize variable manager for cache operations
             var_manager = VariablesManage(
-                flow_id=self.flowId,
-                uid=span.uid,
-                app_id=span.app_id,
-                chat_id=variable_pool.chat_id,
+                flow_id=flow_id,
+                uid=uid,
+                app_id=app_id,
+                chat_id=chat_id,
             )
             # Handle 'set' operation: store input variables as global variables
             if self.method == "set":
@@ -176,12 +180,12 @@ class GlobalVariablesNode(BaseNode):
                     inputs[key] = variable_pool.get_variable(
                         node_id=self.node_id, key_name=key, span=span
                     )
-                    var_manager.add_variable(key, inputs[key])
+                    await asyncio.to_thread(var_manager.add_variable, key, inputs[key])
                 span.add_info_events({"set": json.dumps(inputs, ensure_ascii=False)})
 
             # Handle 'get' operation: retrieve global variables
             elif self.method == "get":
-                global_vars = var_manager.get_all_variables()
+                global_vars = await asyncio.to_thread(var_manager.get_all_variables)
                 for key in self.output_identifier:
                     if key in global_vars:
                         # Use global variable if available

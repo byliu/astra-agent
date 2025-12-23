@@ -109,7 +109,7 @@ export interface PostChatItem {
 }
 
 export interface BotInfoType {
-  pc_background: string;
+  pcBackground: string;
   botStatus: number;
   chatId: number;
   supportUploadConfig: SupportUploadConfig[];
@@ -125,6 +125,8 @@ export interface BotInfoType {
   inputExample: string[];
   supportContext: boolean;
   isFavorite: number;
+  vcnCn: string;
+  advancedConfig?: string;
   openedTool?: string;
   config?: string[];
 }
@@ -210,6 +212,7 @@ export interface ChatData {
 
 // web bot 信息
 export interface WebBotInfo {
+  advancedConfig?: string;
   openedTool: string;
   config: string[];
 }
@@ -254,6 +257,10 @@ export interface ChatState {
     option: Option[];
     content?: string;
   }; //工作流选项
+  vmsInteractiveRef: any; //虚拟人sdk实例
+  vmsInteractiveRefStatus: string; //虚拟人实例状态，主要记录是否被打断了
+  vmsInteractiveRefPlayer: any; //虚拟人sdk实例播放器
+  chatType: string; //聊天类型四种:1、文本 2、语音通话 3、虚拟人播报 4、语音虚拟人
 }
 
 // 聊天Store操作接口
@@ -280,6 +287,13 @@ export interface ChatActions {
     option: Option[];
     content?: string;
   }) => void; //设置工作流选项
+  setVmsInteractiveRef: (vmsInteractiveRef: any) => void;
+  setVmsInteractiveRefPlayer: (vmsInteractiveRefPlayer: any) => void;
+  setVmsInteractiveRefStatus: (vmsInteractiveRefStatus: string) => void;
+  getVmsInteractiveRefPlayer: () => any;
+  getVmsInteractiveRefStatus: () => string;
+  setChatType: (chatType: string) => void;
+  getChatType: () => string;
 }
 
 // 文件上传相关类型定义
@@ -318,4 +332,8 @@ export interface UploadFileInfo {
   status: 'uploading' | 'completed' | 'error' | 'pending';
   /** 错误信息 */
   error?: string;
+  /** 参数名称（用于绑定接口） */
+  paramName?: string;
+  /** 输入名称（对应 config.name，用于区分不同输入类型） */
+  inputName?: string;
 }

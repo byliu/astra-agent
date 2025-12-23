@@ -25,6 +25,8 @@ export interface RpaParameter {
   varValue: string;
   varDescribe: string;
   processId: string;
+  required?: boolean;
+  editable?: boolean;
 }
 
 export interface RpaRobot {
@@ -49,6 +51,7 @@ export interface RpaRobot {
   updated_at: string;
 
   icon: string;
+  apiKey?: string;
 }
 
 export interface RpaDetailInfo {

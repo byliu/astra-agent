@@ -23,7 +23,21 @@ class KafkaProducerService(Service):
         :param config: Dictionary containing Kafka producer configuration parameters
         """
         self.config = config
-        self.producer = Producer(**config)
+        if int(os.getenv("KAFKA_ENABLE", 0)) == 0:
+            logger.info("❌ Kafka is disabled")
+        else:
+            self.producer = Producer(**config)
+            self._check_kafka_connection()
+
+    def _check_kafka_connection(self) -> None:
+        """
+        Check if the Kafka connection is established.
+        """
+        try:
+            self.producer.list_topics(timeout=10)
+        except Exception as e:
+            logger.error(f"Kafka connection check failed: {e}")
+            raise e
 
     def send(
         self,
@@ -41,6 +55,10 @@ class KafkaProducerService(Service):
         :param timeout: Poll timeout in seconds for message delivery
         :raises Exception: If message sending fails
         """
+
+        if int(os.getenv("KAFKA_ENABLE", 0)) == 0:
+            return
+
         # Use default delivery report callback if none provided
         if not callback:
             callback = self._delivery_report

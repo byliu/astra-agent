@@ -564,10 +564,6 @@ public class ChatBotDataServiceImpl implements ChatBotDataService {
             botType = 0;
         }
         promptBotDetail.setBotType(BotTypeList.getParentTypeKey(botType));
-        String vcnCn = promptBotDetail.getVcnCn();
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(vcnCn) && getVcnDetail(vcnCn) == null) {
-            promptBotDetail.setVcnCn(null);
-        }
         try {
             LocalDateTime createTime = LocalDateTime.parse(promptBotDetail.getCreateTime().toString().replace(" ", "T"));
             if (createTime.isBefore(LocalDateTime.of(2025, 2, 24, 10, 00))) {

@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Any, Dict, List
 
+from common.otlp.trace.span import Span
 from plugin.link.consts import const
 from plugin.link.domain.entity.tool_schema import Tools
 from plugin.link.domain.models.utils import DatabaseService, session_getter
 from plugin.link.exceptions.sparklink_exceptions import ToolNotExistsException
 from plugin.link.utils.errors.code import ErrCode
-from plugin.link.utils.otlp.trace.span import Span
 from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import select

@@ -432,7 +432,7 @@ const DropDownList = ({
     return (
       <div
         className={isFocused ? 'bg-gray-100 rounded px-1' : ''}
-        onClick={(e) => {
+        onClick={e => {
           e?.stopPropagation();
           handleTreeSelect([value.id]);
         }}

@@ -46,20 +46,27 @@ export const useMultiModleStore = create<MultiModleState>()(
     set => ({
       // 虚拟人列表
       avaList: [],
-      setAvaList: (list: AvatarItem[]): void => set({ avaList: list }),
+      setAvaList: (list: AvatarItem[]): void => {
+        set({ avaList: list });
+      },
 
       // 背景图片列表
       backgroundList: [],
-      setBackgroundList: (list: BackgroundItem[]): void =>
-        set({ backgroundList: list }),
+      setBackgroundList: (list: BackgroundItem[]): void => {
+        set({ backgroundList: list });
+      },
 
       // 背景音列表
       bgmList: [],
-      setBgmList: (list: BgmItem[]): void => set({ bgmList: list }),
+      setBgmList: (list: BgmItem[]): void => {
+        set({ bgmList: list });
+      },
 
       // 发音人列表
       speakList: [],
-      setSpeakList: (list: SpeakerItem[]): void => set({ speakList: list }),
+      setSpeakList: (list: SpeakerItem[]): void => {
+        set({ speakList: list });
+      },
     }),
     {
       name: 'multi-modle-storage', // 本地存储键名

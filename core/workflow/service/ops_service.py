@@ -39,7 +39,9 @@ def kafka_report(
             # Get Kafka topic from environment variables
             topic = os.getenv("KAFKA_TOPIC") or ""
             # Send workflow log as JSON to Kafka topic
-            get_kafka_producer_service().send(topic, workflow_log.to_json())
+            workflow_data = workflow_log.to_json()
+            logger.info(f"Workflow trace data: {workflow_data}")
+            get_kafka_producer_service().send(topic, workflow_data)
         except Exception as err:
             logger.error("Failed to produce message: {}".format(err))
 

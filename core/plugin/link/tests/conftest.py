@@ -270,9 +270,7 @@ def app(test_env: Any) -> Generator:
         )
         stack.enter_context(patch("plugin.link.utils.log.logger.configure"))
         mock_span = stack.enter_context(patch("common.otlp.trace.span.Span"))
-        mock_local_span = stack.enter_context(
-            patch("plugin.link.utils.otlp.trace.span.Span")
-        )
+        mock_local_span = stack.enter_context(patch("common.otlp.trace.span.Span"))
         # Configure mock SID generator
         mock_sid_generator = Mock()
         mock_sid_generator.gen.return_value = "test_sid_123"

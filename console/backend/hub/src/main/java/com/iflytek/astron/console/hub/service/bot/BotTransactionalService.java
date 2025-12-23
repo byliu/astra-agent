@@ -4,8 +4,6 @@ package com.iflytek.astron.console.hub.service.bot;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * @author cczhu10
- * @date 2025-06-30
  * @description Helper transaction operations: Directly using the service itself within the service
  *              will cause AOP to fail, thereby leading to transaction failure.
  */

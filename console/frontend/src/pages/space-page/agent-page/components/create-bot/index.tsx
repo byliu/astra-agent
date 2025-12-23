@@ -31,6 +31,7 @@ import {
 import { appType, robotType } from '@/types/types-services';
 import MoreIcons from '@/components/modal/more-icons/index';
 import globalStore from '@/store/global-store';
+import { useTranslation } from 'react-i18next';
 
 import formSelect from '@/assets/imgs/main/icon_nav_dropdown.svg';
 
@@ -43,6 +44,7 @@ interface CreateBotProps {
 }
 
 function index({ setCreateModal }: CreateBotProps): React.ReactElement {
+  const { t } = useTranslation();
   const avatarIcon = globalStore(state => state.avatarIcon);
   const avatarColor = globalStore(state => state.avatarColor);
   const getAvatarConfig = globalStore(state => state.getAvatarConfig);
@@ -312,7 +314,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
       domainFromForm ?? (firstVersion ? firstVersion.domain : '');
     if (!resolvedDomain) {
       setLoading(false);
-      message.error('暂无可用模型');
+      message.error(t('agentPage.createBot.noAvailableModel'));
       return;
     }
     const params = {
@@ -334,7 +336,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
     } else {
       Promise.all([createBotAPI(params), autoAuth(appId)])
         .then(([botData]: [robotType, unknown]) => {
-          message.success('ok');
+          message.success(t('agentPage.createBot.successMessage'));
           setCreateModal(false);
           navigate('/space/config/' + botData.id + '/base');
         })
@@ -366,7 +368,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                 <div
                   className="w-[18px] h-[18px] rounded-full text-center text-sm"
                   style={{
-                    background: step === 1 ? '#275EFF' : '#F6F6FD',
+                    background: step === 1 ? '#6356EA' : '#F6F6FD',
                     color: step === 1 ? '#fff' : '#a4a4a4',
                   }}
                 >
@@ -376,7 +378,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                   className="ml-1"
                   style={{ color: step === 1 ? 'rgba(0,0,0,0.80)' : '#a4a4a4' }}
                 >
-                  创建Bot
+                  {t('agentPage.createBot.createBotStep')}
                 </div>
               </div>
               <div
@@ -391,7 +393,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                 <div
                   className="w-[18px] h-[18px] rounded-full text-center text-sm"
                   style={{
-                    background: step === 2 ? '#275EFF' : '#F6F6FD',
+                    background: step === 2 ? '#6356EA' : '#F6F6FD',
                     color: step === 2 ? '#fff' : '#a4a4a4',
                   }}
                 >
@@ -401,7 +403,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                   className="ml-1"
                   style={{ color: step === 2 ? 'rgba(0,0,0,0.80)' : '#a4a4a4' }}
                 >
-                  Bot授权绑定
+                  {t('agentPage.createBot.authBindingStep')}
                 </div>
               </div>
             </>
@@ -412,7 +414,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
             <div
               className={`${commonUser ? 'mt-0' : 'mt-7'} text-second font-medium text-sm`}
             >
-              Bot名称
+              {t('agentPage.createBot.botName')}
             </div>
             <div className="flex items-center mt-1.5">
               <div
@@ -437,13 +439,15 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                 maxLength={20}
                 showCount
                 onChange={e => setName(e.target.value)}
-                placeholder="请输入"
+                placeholder={t('agentPage.createBot.pleaseEnter')}
                 className="global-input flex-1"
               />
             </div>
-            <div className="mt-6 text-second font-medium text-sm">Bot描述</div>
+            <div className="mt-6 text-second font-medium text-sm">
+              {t('agentPage.createBot.botDescription')}
+            </div>
             <p className="mt-1.5 text-xs font-medium desc-color max-w-[400px]">
-              以下文字将展示在客户端中，用于对用户进行解释说明应用的功能并进行基本引导。
+              {t('agentPage.createBot.botDescriptionTip')}
             </p>
             <div className="relative">
               <TextArea
@@ -452,7 +456,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
                 className="mt-1.5 global-textarea"
                 style={{ height: 104, maxHeight: '30vh' }}
                 maxLength={200}
-                placeholder="请输入"
+                placeholder={t('agentPage.createBot.pleaseEnter')}
               />
               <div className="absolute bottom-3 right-3 ant-input-limit ">
                 {desc.length} / 200
@@ -468,14 +472,14 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
             onClick={createNewBot}
             disabled={!name?.trim() || !desc?.trim()}
           >
-            提交
+            {t('agentPage.createBot.submit')}
           </Button>
           <Button
             type="text"
             className="origin-btn w-[125px]"
             onClick={() => setCreateModal(false)}
           >
-            取消
+            {t('agentPage.createBot.cancel')}
           </Button>
           {step === 2 && (
             <Button
@@ -484,7 +488,7 @@ function index({ setCreateModal }: CreateBotProps): React.ReactElement {
               style={{ padding: '0 29px 0 34px' }}
               onClick={() => setStep(1)}
             >
-              上一步
+              {t('agentPage.createBot.previousStep')}
             </Button>
           )}
         </div>

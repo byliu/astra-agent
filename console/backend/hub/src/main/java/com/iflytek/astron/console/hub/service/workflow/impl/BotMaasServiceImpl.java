@@ -16,6 +16,7 @@ import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
 import com.iflytek.astron.console.hub.entity.maas.MaasDuplicate;
 import com.iflytek.astron.console.hub.entity.maas.MaasTemplate;
 import com.iflytek.astron.console.hub.entity.maas.WorkflowTemplateQueryDto;
+import com.iflytek.astron.console.commons.enums.bot.BotVersionEnum;
 import com.iflytek.astron.console.hub.mapper.MaasTemplateMapper;
 import com.iflytek.astron.console.hub.service.workflow.BotMaasService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,19 +63,19 @@ public class BotMaasServiceImpl implements BotMaasService {
             throw new BusinessException(ResponseEnum.BOT_NOT_EXIST);
         }
         redissonClient.getBucket(MaasUtil.generatePrefix(uid, Math.toIntExact(userLangChainInfo.getId()))).set(userLangChainInfo.getId().toString(), Duration.ofSeconds(60));
-        BotInfoDto botInfoDto = botService.insertWorkflowBot(uid, maasDuplicate, spaceId);
+        BotInfoDto botInfoDto = botService.insertWorkflowBot(uid, maasDuplicate, spaceId, BotVersionEnum.WORKFLOW.getVersion());
         // Check if response is successful
         if (botInfoDto == null) {
             throw new BusinessException(ResponseEnum.CREATE_BOT_FAILED);
         }
         // Copy a new workflow for the assistant
-        JSONObject res = maasUtil.copyWorkFlow(maasDuplicate.getMaasId(), request);
+        JSONObject res = maasUtil.copyWorkFlow(maasDuplicate.getMaasId(), request, BotVersionEnum.WORKFLOW.getVersion(), Long.valueOf(botInfoDto.getBotId()), null);
         if (Objects.isNull(res) || res.isEmpty()) {
             throw new BusinessException(ResponseEnum.CREATE_BOT_FAILED);
         }
         Integer botId = botInfoDto.getBotId();
         botService.addMaasInfo(uid, res, botId, spaceId);
-        botInfoDto.setFlowId((Long) res.getByPath("data.id"));
+        botInfoDto.setFlowId(res.getJSONObject("data").getLong("id"));
         return botInfoDto;
     }
 

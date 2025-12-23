@@ -2,6 +2,7 @@ import json
 from typing import Annotated, Any, AsyncGenerator
 
 from fastapi import APIRouter, Header
+from openai.types.completion_usage import CompletionUsage
 from starlette.responses import StreamingResponse
 
 from api.dependencies.auth_permission import verify_bot_permission_from_body

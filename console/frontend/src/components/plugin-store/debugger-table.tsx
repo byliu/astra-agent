@@ -295,7 +295,7 @@ function DebuggerTable({
       render: (required: boolean) => (
         <div
           style={{
-            color: required ? '#275EFF' : '#F74E43',
+            color: required ? '#6356EA' : '#F74E43',
           }}
         >
           {required

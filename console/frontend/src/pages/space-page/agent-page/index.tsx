@@ -25,13 +25,21 @@ import favorite from '@/assets/imgs/main/favorite.png';
 import unfavorite from '@/assets/imgs/main/icon_bot_tag@2x.png';
 import formSelect from '@/assets/imgs/main/icon_nav_dropdown.svg';
 import agentOperationMore from '@/assets/imgs/main/agent-operation-more.svg';
+import chatIcon from '@/assets/imgs/main/chat-bot.svg';
+import botNoIcon from '@/assets/imgs/main/bot-no.png';
+import shareIcon from '@/assets/imgs/main/share-bot.svg';
 
 import styles from './index.module.scss';
 import useSpaceStore from '@/store/space-store';
 import { getInputsType } from '@/services/flow';
 import { handleShare } from '@/utils';
+import { PlusOutlined } from '@ant-design/icons';
+
+import VirtualConfig from '@/components/virtual-config-modal';
+import { upgradeWorkflow } from '@/services/spark-common';
 
 function index() {
+  const [showbotNo, setShowbotNo] = useState(false);
   const typePublished = [1, 2, 4]; // 已发布状态
   const typeUnblished = [];
   const typeAudit = [];
@@ -56,8 +64,11 @@ function index() {
     useState<boolean>(false); //创建应用
   const [operationId, setOperationId] = useState<string | null>(null);
   const { spaceId } = useSpaceStore();
-
   const { handleToChat } = useChat();
+
+  // 复制成虚拟人需要的参数
+  const [copyParams, setCopyParams] = useState<any>({});
+  const [virtualModal, setVirtualModal] = useState<boolean>(false); //复制成虚拟人
 
   /* statusMap为createList接口查询时参数
   NOTE: 原本为：1 审核中，2 已发布，3 审核不通过，4修改审核中， -9 || 0 未发布 => 后来改为已发布、未发布、发布中、审核不通过；
@@ -119,6 +130,11 @@ function index() {
 
     getAgentList(params)
       .then((data: GetAgentListResponse) => {
+        if (data.pageData.length === 0) {
+          setShowbotNo(true);
+        } else {
+          setShowbotNo(false);
+        }
         setRobots(() => data.pageData);
         setPageIndex(() => 2);
         if (20 < data.totalCount) {
@@ -261,7 +277,7 @@ function index() {
         />
       )}
 
-      <div className="pt-6 h-full flex flex-col overflow-hidden gap-6">
+      <div className="pt-[20px] h-full flex flex-col overflow-hidden gap-6">
         <div
           className="flex justify-between mx-auto max-w-[1425px]"
           style={{
@@ -271,33 +287,48 @@ function index() {
           <div className={styles.modelTitle}>
             {t('agentPage.agentPage.myAgents')}
           </div>
-          <div
-            className="flex items-center gap-4"
-            style={{ marginRight: '4px' }}
-          >
+        </div>
+        <div
+          className="flex justify-between mx-auto max-w-[1425px]"
+          style={{
+            width: 'calc(0.85 * (100% - 8px))',
+          }}
+        >
+          <div className="flex items-center" style={{ marginRight: '4px' }}>
             <Select
               suffixIcon={<img src={formSelect} className="w-4 h-4 " />}
               className="search-select"
-              style={{ height: 32, width: 160, marginRight: '8px' }}
+              style={{
+                height: 32,
+                width: 160,
+                marginRight: '8px',
+                border: '1px solid #E7E7F0',
+                borderRadius: 10,
+              }}
               value={version}
               onChange={value => {
                 setVersion(value);
-                setPageIndex(1);
               }}
               options={[
                 { label: t('agentPage.agentPage.allTypes'), value: 0 },
                 { label: t('agentPage.agentPage.instructionType'), value: 1 },
                 { label: t('agentPage.agentPage.workflowType'), value: 3 },
+                { label: '语音*虚拟人', value: 4 },
               ]}
             />
             <Select
               suffixIcon={<img src={formSelect} className="w-4 h-4 " />}
               className="search-select"
-              style={{ height: 32, width: 160, marginRight: '8px' }}
+              style={{
+                height: 32,
+                width: 160,
+                marginRight: '8px',
+                border: '1px solid #E7E7F0',
+                borderRadius: 10,
+              }}
               value={sort}
               onChange={value => {
                 setSort(value);
-                setPageIndex(1);
               }}
               options={[
                 {
@@ -313,314 +344,402 @@ function index() {
             <Select
               suffixIcon={<img src={formSelect} className="w-4 h-4 " />}
               className="search-select"
-              style={{ height: 32, width: 160, marginRight: '8px' }}
+              style={{
+                height: 32,
+                width: 160,
+                marginRight: '8px',
+                border: '1px solid #E7E7F0',
+                borderRadius: 10,
+              }}
               value={status}
               onChange={value => {
                 setStatus(value);
-                setPageIndex(1);
               }}
               options={[
                 { label: t('agentPage.agentPage.allStatus'), value: 0 },
                 { label: t('agentPage.agentPage.published'), value: 1 },
                 { label: t('agentPage.agentPage.unpublished'), value: 2 },
-                // NOTE: 发布中并入已发布, 仅从状态说明中做区分 -- 09.01
-                // { label: t('agentPage.agentPage.publishing'), value: 1 },
                 { label: t('agentPage.agentPage.rejected'), value: 3 },
               ]}
             />
+          </div>
+          <div className="flex items-center gap-[8px]">
             <RetractableInput
               restrictFirstChar={true}
               onChange={getRobotsDebounce}
             />
+            <div
+              className={styles.addBot}
+              onClick={() => {
+                if (!user?.login && !user?.uid) {
+                  return jumpToLogin();
+                }
+                setCreateModalVisible(true);
+              }}
+            >
+              <PlusOutlined />
+              <span className={styles.addText}>
+                {t('agentPage.agentPage.createAgent')}
+              </span>
+            </div>
           </div>
         </div>
+        {robots?.length > 0 && (
+          <div className="w-full flex-1 overflow-scroll relative">
+            <div
+              className="w-full h-full mx-auto max-w-[1425px]"
+              style={{
+                width: '85%',
+              }}
+              ref={robotRef}
+              onScroll={handleScroll}
+            >
+              <div className="grid lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-3 gap-6 items-end">
+                {robots.map((k: any, index) => (
+                  <div
+                    className={`common-card-item group h-[162px] ${styles.angentItemBox}`}
+                    key={k.botId}
+                    onClick={() => {
+                      k.version === 1
+                        ? navigate(`/space/config/base?botId=${k?.botId}`)
+                        : navigate(
+                            `/work_flow/${k?.maasId}/arrange?botId=${k?.botId}`
+                          );
+                    }}
+                  >
+                    <div className="px-6">
+                      <div className="flex items-start gap-6 overflow-hidden">
+                        <span className="flex items-center justify-center rounded-lg flex-shrink-0">
+                          <img
+                            src={k.avatar}
+                            className={styles.agentAvatar}
+                            alt=""
+                          />
+                        </span>
+                        <div className="flex flex-col gap-2 overflow-hidden">
+                          <div
+                            className="flex-1 text-overflow font-medium text-xl title-color title-size"
+                            title={k.botName}
+                          >
+                            {k.botName}
+                          </div>
+                          <div
+                            className="text-[#7F7F7F] text-[14px] overflow-hidden text-ellipsis h-[43px] w-full line-clamp-2"
+                            title={k.botDesc}
+                          >
+                            {k.botDesc}
+                          </div>
+                        </div>
+                        <Tooltip
+                          title={
+                            k.botStatus === 2
+                              ? t('agentPage.agentPage.searchableInMarketplace')
+                              : k.botStatus === -9 || k.botStatus === 0
+                                ? t('agentPage.agentPage.personalUseOnly')
+                                : k.botStatus === 1 || k.botStatus === 4
+                                  ? t('agentPage.agentPage.underReview')
+                                  : t('agentPage.agentPage.needsModification') +
+                                    k.blockReason
+                          }
+                        >
+                          <div
+                            className="px-1.5 py-0.5 rounded-md font-medium text-sm absolute right-[0px] top-[0px]"
+                            style={{
+                              background:
+                                k.botStatus === 2 ||
+                                k.botStatus === 1 ||
+                                k.botStatus === 4
+                                  ? '#CFF4E1'
+                                  : k.botStatus === -9 || k.botStatus === 0
+                                    ? '#E6E6E8'
+                                    : '#FEEDEC',
+                              color:
+                                k.botStatus === 2 ||
+                                k.botStatus === 1 ||
+                                k.botStatus === 4
+                                  ? '#477D62'
+                                  : k.botStatus === -9 || k.botStatus === 0
+                                    ? '#666666'
+                                    : '#F74E43',
+                              borderRadius: '0px 18px 0px 8px',
+                            }}
+                          >
+                            {k.botStatus === 2 ||
+                            k.botStatus === 1 ||
+                            k.botStatus === 4
+                              ? t('agentPage.agentPage.published')
+                              : k.botStatus === -9 || k.botStatus === 0
+                                ? t('agentPage.agentPage.unpublished')
+                                : t('agentPage.agentPage.rejected')}
+                          </div>
+                        </Tooltip>
+                      </div>
+                    </div>
 
-        <div className="w-full flex-1 overflow-scroll relative">
-          <div
-            className="w-full h-full mx-auto max-w-[1425px]"
-            style={{
-              width: '85%',
-            }}
-            ref={robotRef}
-            onScroll={handleScroll}
-          >
-            <div className="grid lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-3 gap-6 items-end">
+                    <div
+                      className="flex justify-between items-center "
+                      style={{
+                        padding: '0px 24px 0 24px',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                      }}
+                    >
+                      <span className="text-[#7F7F7F] text-xs flex items-center">
+                        <div className="flex gap-4">
+                          <div className={styles.angentType}>
+                            {k.version === 1 &&
+                              t('agentPage.agentPage.instructionType')}
+                            {k.version === 3 &&
+                              t('agentPage.agentPage.workflowType')}
+                            {k.version === 4 &&
+                              t('agentPage.agentPage.voiceVirtualType')}
+                          </div>
+                        </div>
+                      </span>
+                      <div className="flex items-center text-desc flex-1 max-w-[200px] justify-between">
+                        <div
+                          className="card-chat cursor-pointer flex justify-center items-center"
+                          style={{
+                            width: '76px',
+                            height: '32px',
+                            background: '#F1F0FF',
+                            borderRadius: '6px',
+                            textAlign: 'center',
+                          }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (k.version === 3) {
+                              getInputsType({ botId: k.botId }).then(
+                                (res: any) => {
+                                  // 合并不支持对话的条件
+                                  if (
+                                    res.length > 1 &&
+                                    res
+                                      .slice(1)
+                                      .some(
+                                        (item: { fileType?: string }) =>
+                                          item.fileType !== 'file'
+                                      )
+                                  ) {
+                                    return message.info(
+                                      t('agentPage.agentPage.notSupported')
+                                    );
+                                  }
+                                  handleToChat(k.botId);
+                                }
+                              );
+                            } else {
+                              handleToChat(k.botId);
+                            }
+                          }}
+                        >
+                          <img src={chatIcon} alt="" />
+                          <span
+                            className="ml-1 whitespace-nowrap"
+                            style={{
+                              color: '#222529',
+                              fontSize: '14px',
+                            }}
+                          >
+                            {t('agentPage.agentPage.chat')}
+                          </span>
+                        </div>
+                        <Popover
+                          placement="bottom"
+                          overlayClassName="my-botlist-share-pop"
+                        >
+                          <div
+                            className="card-chat cursor-pointer flex justify-center items-center"
+                            style={{
+                              width: '76px',
+                              height: '32px',
+                              background: '#F1F0FF',
+                              borderRadius: '6px',
+                              textAlign: 'center',
+                            }}
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleShareAgent(k.botName, k.botId);
+                            }}
+                          >
+                            <img src={shareIcon} alt="" />
+
+                            <span
+                              className="ml-1 whitespace-nowrap"
+                              style={{
+                                color: '#222529',
+                                fontSize: '14px',
+                              }}
+                            >
+                              {t('agentPage.agentPage.share')}
+                            </span>
+                          </div>
+                        </Popover>
+                        {
+                          <div
+                            className="bg-[#F1F0FF] rounded flex items-center justify-center relative"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                            }}
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (operationId === k.botId) {
+                                setOperationId(null);
+                              } else {
+                                setOperationId(k.botId);
+                              }
+                            }}
+                            onMouseEnter={e => {
+                              e.stopPropagation();
+                              setOperationId(k.botId);
+                            }}
+                            onMouseLeave={e => {
+                              e.stopPropagation();
+                              setOperationId(null);
+                            }}
+                          >
+                            <img
+                              src={agentOperationMore}
+                              className="w-[14px] h-[14px]"
+                              alt=""
+                            />
+                            {operationId === k.botId && (
+                              <div
+                                className={`absolute top-[28px] right-0 bg-white rounded p-1 shadow-md flex flex-col gap-1  ${k.version === 3 ? styles.propBox1 : styles.propBox2}`}
+                                style={{
+                                  zIndex: 1,
+                                }}
+                              >
+                                <div
+                                  className="p-1 rounded hover:bg-[#F2F5FE] block"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    copyBotNow(k.botId);
+                                  }}
+                                >
+                                  {t('agentPage.agentPage.copy')}
+                                </div>
+                                {k?.version === 3 && (
+                                  <a
+                                    className="p-1 rounded hover:bg-[#F2F5FE] block"
+                                    href={`${window.location.origin}/xingchen-api/workflow/export/${k?.maasId}`}
+                                    download={`${k?.botName}.yml`}
+                                    onClick={e => {
+                                      e?.stopPropagation();
+                                      e.preventDefault();
+                                      setOperationId(null);
+                                      downloadFileWithHeaders(
+                                        getFixedUrl(
+                                          `/workflow/export/${k?.maasId}`
+                                        ),
+                                        `${k?.botName}.yml`
+                                      );
+                                    }}
+                                  >
+                                    {t('agentPage.agentPage.export')}
+                                  </a>
+                                )}
+
+                                {k?.version === 3 && (
+                                  <div
+                                    className="p-1 rounded hover:bg-[#F2F5FE] text-[#666666]"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setCopyParams({ ...k, name: k.botName });
+                                      setVirtualModal(true);
+                                    }}
+                                  >
+                                    {t(
+                                      'agentPage.agentPage.copyToVirtualAgent'
+                                    )}
+                                  </div>
+                                )}
+                                {![1, 4].includes(k?.botStatus) && (
+                                  <div
+                                    className="p-1 rounded hover:bg-[#F2F5FE] text-[#F74E43]"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setBotDetail(k);
+                                      setDeleteModal(true);
+                                      setOperationId(null);
+                                    }}
+                                  >
+                                    {t('agentPage.agentPage.delete')}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {showbotNo && (
+          <>
+            <div style={{ textAlign: 'center', paddingTop: '128px' }}>
               <div
-                className={`common-card-add-container relative ${
-                  isHovered === null
-                    ? ''
-                    : isHovered
-                      ? 'knowledge-no-hover'
-                      : ' knowledge-hover'
-                }`}
-                onMouseLeave={e => {
-                  setIsHovered(true);
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginBottom: '4px',
                 }}
-                onMouseEnter={e => {
-                  setIsHovered(false);
+              >
+                <img src={botNoIcon} alt="" />
+              </div>
+              <div
+                style={{
+                  marginBottom: '20px',
+                  fontSize: '16px',
+                  color: '#666',
                 }}
+              >
+                {t('agentPage.agentPage.noAgentsYet')}
+              </div>
+              <div
+                className={styles.addBot}
                 onClick={() => {
                   if (!user?.login && !user?.uid) {
                     return jumpToLogin();
                   }
                   setCreateModalVisible(true);
                 }}
+                style={{ margin: '0 auto' }}
               >
-                <div className="color-mask"></div>
-                <div className="knowledge-card-add flex flex-col w-full">
-                  <div className="w-full flex justify-between">
-                    <span className="agent-icon"></span>
-                    <span className="add-icon"></span>
-                  </div>
-                  <div
-                    className="mt-4 font-semibold add-name"
-                    style={{ fontSize: 22 }}
-                  >
-                    {t('agentPage.agentPage.createNewAgent')}
-                  </div>
-                </div>
+                <PlusOutlined />
+                <span className={styles.addText}>
+                  {t('agentPage.agentPage.createAgent')}
+                </span>
               </div>
-              {robots?.map((k: any) => (
-                <div
-                  className={`common-card-item group h-[192px] ${styles.angentItemBox}`}
-                  key={k.botId}
-                  onClick={() => {
-                    k.version === 1
-                      ? navigate(`/space/config/base?botId=${k?.botId}`)
-                      : navigate(
-                          `/work_flow/${k?.maasId}/arrange?botId=${k?.botId}`
-                        );
-                  }}
-                >
-                  <div className="px-6">
-                    <div className="flex items-start gap-6 overflow-hidden">
-                      <span className="w-12 h-12 flex items-center justify-center rounded-lg flex-shrink-0">
-                        <img
-                          src={k.avatar}
-                          className="w-[48px] h-[48px] rounded-[12px]"
-                          alt=""
-                        />
-                      </span>
-                      <div className="flex flex-col gap-2 overflow-hidden">
-                        <div
-                          className="flex-1 text-overflow font-medium text-xl title-color title-size"
-                          title={k.botName}
-                        >
-                          {k.botName}
-                        </div>
-                        <div
-                          className="text-[#7F7F7F] text-[14px] whitespace-nowrap overflow-hidden text-ellipsis h-8 w-full"
-                          title={k.botDesc}
-                        >
-                          {k.botDesc}
-                        </div>
-                      </div>
-                      <Tooltip
-                        title={
-                          k.botStatus === 2
-                            ? t('agentPage.agentPage.searchableInMarketplace')
-                            : k.botStatus === -9 || k.botStatus === 0
-                              ? t('agentPage.agentPage.personalUseOnly')
-                              : k.botStatus === 1 || k.botStatus === 4
-                                ? t('agentPage.agentPage.underReview')
-                                : t('agentPage.agentPage.needsModification') +
-                                  k.blockReason
-                        }
-                      >
-                        <div
-                          className="px-1.5 py-0.5 rounded-md font-medium text-sm absolute right-[-1px] top-[-1px]"
-                          // NOTE: 本期定下：1 审核中，2 已发布，3 审核不通过，4修改审核中， -9 || 0 未发布
-                          style={{
-                            background:
-                              k.botStatus === 2 ||
-                              k.botStatus === 1 ||
-                              k.botStatus === 4
-                                ? '#CFF4E1'
-                                : k.botStatus === -9 || k.botStatus === 0
-                                  ? '#E6E6E8'
-                                  : '#FEEDEC',
-                            color:
-                              k.botStatus === 2 ||
-                              k.botStatus === 1 ||
-                              k.botStatus === 4
-                                ? '#477D62'
-                                : k.botStatus === -9 || k.botStatus === 0
-                                  ? '#666666'
-                                  : '#F74E43',
-                            borderRadius: '0px 18px 0px 8px',
-                          }}
-                        >
-                          {k.botStatus === 2 ||
-                          k.botStatus === 1 ||
-                          k.botStatus === 4
-                            ? t('agentPage.agentPage.published')
-                            : k.botStatus === -9 || k.botStatus === 0
-                              ? t('agentPage.agentPage.unpublished')
-                              : t('agentPage.agentPage.rejected')}
-                        </div>
-                      </Tooltip>
-                    </div>
-                  </div>
-
-                  <div className="flex ml-24 gap-4">
-                    <div className={styles.angentType}>
-                      {k.version === 1
-                        ? t('home.instructionType')
-                        : t('home.workflowType')}
-                    </div>
-                  </div>
-
-                  <div
-                    className="flex justify-between items-center mt-3"
-                    style={{
-                      padding: '17px 24px 0 24px',
-                      borderTop: '1px dashed #e2e8ff',
-                      scrollbarWidth: 'none', // 隐藏滚动条
-                      msOverflowStyle: 'none', // IE/Edge隐藏滚动条
-                    }}
-                  >
-                    <span className="text-[#7F7F7F] text-xs go-setting flex items-center">
-                      <span className="whitespace-nowrap">
-                        {t('agentPage.agentPage.goToEdit')}
-                      </span>
-                      <span className="setting-icon setting-act"></span>
-                    </span>
-                    <div className="flex items-center text-desc flex-1 max-w-[210px] justify-between">
-                      <div
-                        className="card-chat cursor-pointer flex items-center"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (k.version === 3) {
-                            getInputsType({ botId: k.botId }).then(
-                              (res: any) => {
-                                // 合并不支持对话的条件
-                                if (
-                                  (res.length === 2 &&
-                                    res[1].fileType === 'file' &&
-                                    res[1].schema.type === 'array-string') ||
-                                  (res.length === 2 &&
-                                    res[1].fileType !== 'file') ||
-                                  res.length > 2
-                                ) {
-                                  return message.info(
-                                    t('agentPage.agentPage.notSupported')
-                                  );
-                                }
-                                handleToChat(k.botId);
-                              }
-                            );
-                          } else {
-                            handleToChat(k.botId);
-                          }
-                        }}
-                      >
-                        <span
-                          className={`chat-icon chat-act ${styles.only_css}`}
-                        ></span>
-                        <span className="ml-1 whitespace-nowrap">
-                          {t('agentPage.agentPage.chat')}
-                        </span>
-                      </div>
-                      <div
-                        className="card-chat cursor-pointer flex items-center"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleShareAgent(k.botName, k.botId);
-                        }}
-                      >
-                        <span
-                          className={`share-icon ${styles.only_css}`}
-                        ></span>
-                        <span className="ml-1 whitespace-nowrap">
-                          {t('agentPage.agentPage.share')}
-                        </span>
-                      </div>
-                      <div
-                        className="card-chat cursor-pointer flex items-center"
-                        onClick={e => {
-                          e.stopPropagation();
-                          copyBotNow(k.botId);
-                        }}
-                      >
-                        <span className={`copy-icon ${styles.only_css}`}></span>
-                        <span className="ml-1 whitespace-nowrap">
-                          {t('agentPage.agentPage.copy')}
-                        </span>
-                      </div>
-                      {(![1, 4].includes(k?.botStatus) || k?.version === 3) && (
-                        <div
-                          className="w-6 h-6 bg-[#F2F5FE] rounded flex items-center justify-center relative"
-                          onClick={e => {
-                            e.stopPropagation();
-                            if (operationId === k.botId) {
-                              setOperationId(null);
-                            } else {
-                              setOperationId(k.botId);
-                            }
-                          }}
-                          onMouseEnter={e => {
-                            e.stopPropagation();
-                            setOperationId(k.botId);
-                          }}
-                        >
-                          <img
-                            src={agentOperationMore}
-                            className="w-[14px] h-[14px]"
-                            alt=""
-                          />
-                          {operationId === k.botId && (
-                            <div
-                              className="absolute top-[28px] right-0 bg-white rounded p-1 shadow-md flex flex-col gap-1 w-[48px]"
-                              style={{
-                                zIndex: 1,
-                              }}
-                              onMouseLeave={e => {
-                                e.stopPropagation();
-                                setOperationId(null);
-                              }}
-                            >
-                              {k?.version === 3 && (
-                                <span
-                                  className="p-1 rounded hover:bg-[#F2F5FE] block"
-                                  onClick={e => {
-                                    e?.stopPropagation();
-                                    e.preventDefault();
-                                    setOperationId(null);
-                                    downloadFileWithHeaders(
-                                      getFixedUrl(
-                                        `/workflow/export/${k?.maasId}`
-                                      ),
-                                      `${k?.botName}.yml`
-                                    );
-                                  }}
-                                >
-                                  {t('agentPage.agentPage.export')}
-                                </span>
-                              )}
-                              {![1, 4].includes(k?.botStatus) && (
-                                <div
-                                  className="p-1 rounded hover:bg-[#F2F5FE] text-[#F74E43]"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setBotDetail(k);
-                                    setDeleteModal(true);
-                                    setOperationId(null);
-                                  }}
-                                >
-                                  {t('agentPage.agentPage.delete')}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
-          </div>
-        </div>
+          </>
+        )}
+
+        <VirtualConfig
+          visible={virtualModal}
+          formValues={copyParams}
+          onSubmit={values => {
+            upgradeWorkflow({ sourceId: copyParams?.botId, ...values })
+              .then((res: any) => {
+                message.success(t('agentPage.agentPage.copyToVirtualSuccess'));
+                navigate(
+                  `/work_flow/${res?.maasId}/arrange?botId=${res?.botId}`
+                );
+                setVirtualModal(false);
+              })
+              .catch((err: any) => {
+                message.error(err?.message || err);
+              });
+          }}
+          onCancel={() => {
+            setVirtualModal(false);
+          }}
+        />
       </div>
     </div>
   );

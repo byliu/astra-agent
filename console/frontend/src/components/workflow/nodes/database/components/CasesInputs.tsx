@@ -72,7 +72,7 @@ const OperatorSelect = ({
           <div className="absolute left-1/2 right-0 top-0 bottom-0 rounded-tl-lg border-solid border-0 border-t border-l border-[#C4C4C4]"></div>
         </div>
         <div
-          className="w-full flex justify-center items-center gap-0.5 text-xs text-[#275EFF] font-medium relative hover:bg-[#dfdfe0] cursor-pointer rounded-md py-1.5"
+          className="w-full flex justify-center items-center gap-0.5 text-xs text-[#6356EA] font-medium relative hover:bg-[#dfdfe0] cursor-pointer rounded-md py-1.5"
           onClick={(e): void => {
             e.stopPropagation();
             setOperatorId(item?.id);
@@ -820,7 +820,7 @@ function index({ id, data, allFields = [], children }): React.ReactElement {
             ))}
             {!canvasesDisabled && (
               <div
-                className="w-fit text-[#275EFF] text-xs font-medium inline-flex items-center gap-1.5 pl-4"
+                className="w-fit text-[#6356EA] text-xs font-medium inline-flex items-center gap-1.5 pl-4"
                 onClick={handleAddLine}
               >
                 <img src={inputAddIcon} className="w-3 h-3" alt="" />

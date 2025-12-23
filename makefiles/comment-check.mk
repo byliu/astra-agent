@@ -39,7 +39,7 @@ check-comments-go: ## Check Go comments for English language
 		for dir in $(GO_DIRS); do \
 			if [ -d "$$dir" ]; then \
 				echo "  Processing $$dir..."; \
-				find $$dir -name "*.go" -exec grep -l '//' {} \; 2>/dev/null | while read file; do \
+				find $$dir -name "*.go" ! -path "*/vendor/*" -exec grep -l '//' {} \; 2>/dev/null | while read file; do \
 					echo "    Checking: $$file"; \
 					grep -n '//' "$$file" | while IFS=: read -r line_num comment; do \
 						comment_text=$$(echo "$$comment" | sed 's|^\s*//\s*||'); \
@@ -70,7 +70,7 @@ check-comments-java: ## Check Java comments for English language
 		for dir in $(JAVA_DIRS); do \
 			if [ -d "$$dir" ]; then \
 				echo "  Processing $$dir..."; \
-				find $$dir -name "*.java" -exec grep -l '//' {} \; 2>/dev/null | while read file; do \
+				find $$dir -name "*.java" ! -path "*/target/*" -exec grep -l '//' {} \; 2>/dev/null | while read file; do \
 					echo "    Checking: $$file"; \
 					grep -n '//' "$$file" | while IFS=: read -r line_num comment; do \
 						comment_text=$$(echo "$$comment" | sed 's|^\s*//\s*||'); \
@@ -101,7 +101,7 @@ check-comments-python: ## Check Python comments for English language
 		for dir in $(PYTHON_DIRS); do \
 			if [ -d "$$dir" ]; then \
 				echo "  Processing $$dir..."; \
-				find $$dir -name "*.py" -exec grep -l '#' {} \; 2>/dev/null | while read file; do \
+				find $$dir -name "*.py" ! -path "*/.venv/*" ! -path "*/venv/*" ! -path "*/__pycache__/*" ! -path "*.egg-info/*" -exec grep -l '#' {} \; 2>/dev/null | while read file; do \
 					echo "    Checking: $$file"; \
 					grep -n '#' "$$file" | while IFS=: read -r line_num comment; do \
 						comment_text=$$(echo "$$comment" | sed 's|^\s*#\s*||'); \
@@ -132,7 +132,7 @@ check-comments-typescript: ## Check TypeScript comments for English language
 		for dir in $(TS_DIRS); do \
 			if [ -d "$$dir" ]; then \
 				echo "  Processing $$dir..."; \
-				find $$dir -name "*.ts" -o -name "*.tsx" | grep -v node_modules | while read file; do \
+				find $$dir \( -name "*.ts" -o -name "*.tsx" \) ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/build/*" | while read file; do \
 					echo "    Checking: $$file"; \
 					grep -n '//' "$$file" 2>/dev/null | while IFS=: read -r line_num comment; do \
 						comment_text=$$(echo "$$comment" | sed 's|^\s*//\s*||'); \
@@ -165,7 +165,7 @@ check-comments-typescript: ## Check TypeScript comments for English language
 smart_check_with_comments: smart_check check-comments ## Smart check including comment language verification
 
 # Add comment check to CI workflow
-smart_ci_with_comments: smart_format smart_check check-comments smart_test smart_build ## Full CI with comment checks
+smart_ci_with_comments: smart_check check-comments smart_test smart_build ## Full CI with comment checks
 
 # =============================================================================
 # Help and Info

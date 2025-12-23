@@ -366,7 +366,7 @@ const CaseRow = ({
                     <div className="absolute left-1/2 right-0 top-0 bottom-0 rounded-tl-lg border-solid border-0 border-t border-l border-[#C4C4C4]"></div>
                   </div>
                   <div
-                    className="w-full flex justify-center items-center gap-0.5 text-xs text-[#275EFF] font-medium relative hover:bg-[#dfdfe0] cursor-pointer rounded-md py-1.5"
+                    className="w-full flex justify-center items-center gap-0.5 text-xs text-[#6356EA] font-medium relative hover:bg-[#dfdfe0] cursor-pointer rounded-md py-1.5"
                     onClick={e => {
                       e.stopPropagation();
                       setOperatorId(item?.id);
@@ -414,7 +414,7 @@ const CaseRow = ({
           </div>
           {!canvasesDisabled && (
             <div
-              className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5"
+              className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5"
               onClick={() => handleAddLine(item.id)}
             >
               <img src={inputAddIcon} className="w-3 h-3" alt="" />
@@ -760,7 +760,7 @@ export const IfElseDetail = memo((props): React.ReactElement => {
                 <div>{t('workflow.nodes.ifElseNode.branch')}</div>
                 {!canvasesDisabled && (
                   <div
-                    className="flex items-center cursor-pointer text-[#275EFF] text-xs font-medium gap-1"
+                    className="flex items-center cursor-pointer text-[#6356EA] text-xs font-medium gap-1"
                     onClick={e => {
                       e.stopPropagation();
                       handleAddCase();

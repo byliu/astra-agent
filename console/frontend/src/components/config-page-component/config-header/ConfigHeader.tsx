@@ -92,22 +92,12 @@ function ConfigHeader(props: ConfigHeaderProps) {
                 className={`${styles.botStatu_fabu} ${
                   props.detailInfo?.botStatus === 2
                     ? ''
-                    : props.detailInfo?.botStatus === 3
-                      ? styles.botStatu_fail
-                      : props.detailInfo?.botStatus === 1 ||
-                          props.detailInfo?.botStatus === 4
-                        ? styles.botStatu_shenhe
-                        : styles.botStatu_weifabu
+                    : styles.botStatu_weifabu
                 }`}
               >
                 {props.detailInfo?.botStatus === 2
                   ? t('configBase.botStatus2')
-                  : props.detailInfo?.botStatus === 3
-                    ? t('configBase.botStatus3')
-                    : props.detailInfo?.botStatus === 1 ||
-                        props.detailInfo?.botStatus === 4
-                      ? t('configBase.botStatus4')
-                      : t('configBase.botStatus0')}
+                  : t('configBase.botStatus0')}
               </span>
             </div>
           </div>

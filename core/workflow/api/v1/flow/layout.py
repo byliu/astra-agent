@@ -9,7 +9,10 @@ import json
 from typing import Annotated, AsyncGenerator, cast
 
 from fastapi import APIRouter, Depends, Header, status
+from pydantic import ValidationError
 from sqlalchemy import ColumnElement, and_
+
+from workflow.utils.validation import ValidationParse
 
 try:
     from sqlmodel import Session  # type: ignore[import]
@@ -20,7 +23,6 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from workflow.cache.flow import del_flow_by_id
 from workflow.consts.comparisons import Tag
-from workflow.consts.flow import FlowStatus
 from workflow.domain.entities.compare_flow import DeleteComparisonVo, SaveComparisonVo
 from workflow.domain.entities.flow import FlowRead, FlowUpdate
 from workflow.domain.entities.response import Resp, Streaming
@@ -33,7 +35,7 @@ from workflow.extensions.middleware.cache.base import BaseCacheService
 from workflow.extensions.middleware.getters import get_cache_service, get_session
 from workflow.extensions.otlp.metric.meter import Meter
 from workflow.extensions.otlp.trace.span import Span
-from workflow.service import app_service, flow_service, license_service
+from workflow.service import app_service, flow_service
 
 router = APIRouter(tags=["Flows"])
 
@@ -56,12 +58,6 @@ def add(
     ) as current_span:
         try:
             current_span.add_info_event(f"add flow vo: {flow.json()}")
-            if flow.status not in [FlowStatus.DRAFT.value, FlowStatus.PUBLISHED.value]:
-                raise CustomException(
-                    err_code=CodeEnum.PROTOCOL_CREATE_ERROR,
-                    err_msg=f"status value can only be 0 or 1, "
-                    f"current value is {flow.status}",
-                )
 
             app_info = app_service.get_info(flow.app_id, session, current_span)
             db_flow = flow_service.save(flow, app_info, session, current_span)
@@ -76,6 +72,12 @@ def add(
                         WorkflowDSL.model_validate(flow.data.get("data")), current_span
                     )
                     current_span.add_info_event("Protocol validation end")
+                except ValidationError as err:
+                    current_span.record_exception(err)
+                    raise CustomException(
+                        err_code=CodeEnum.PARAM_ERROR,
+                        err_msg=ValidationParse.validation_error(err),
+                    )
                 except CustomException as err:
                     current_span.record_exception(err)
                     raise err
@@ -118,11 +120,11 @@ def get(flow_read: FlowRead, session: Session = Depends(get_session)) -> JSONRes
             current_span.record_exception(err)
             return Resp.error(err.code, err.message, span.sid)
         except Exception as e:
-            m.in_error_count(CodeEnum.FLOW_GET_ERROR.code, span=current_span)
+            m.in_error_count(CodeEnum.PROTOCOL_GET_ERROR.code, span=current_span)
             current_span.record_exception(e)
             return Resp.error(
-                CodeEnum.FLOW_GET_ERROR.code,
-                CodeEnum.FLOW_GET_ERROR.msg,
+                CodeEnum.PROTOCOL_GET_ERROR.code,
+                CodeEnum.PROTOCOL_GET_ERROR.msg,
                 span.sid,
             )
         m.in_success_count()
@@ -164,13 +166,6 @@ def update(
             if not db_flow:
                 raise CustomException(CodeEnum.FLOW_NOT_FOUND_ERROR)
 
-            # Register app_id to App table for published workflows
-            # and bind in license table
-            if db_flow.status > 0 or (flow.status is not None and flow.status > 0):
-                if not db_flow.app_id:
-                    raise CustomException(CodeEnum.FLOW_NO_APP_ID_ERROR)
-                db_app = app_service.get_info(db_flow.app_id, session, current_span)
-                license_service.bind(session, db_app, db_flow.group_id)
             flow_service.update(session, db_flow, flow, flow_id, current_span)
             m.in_success_count()
             return Resp.success(None, span.sid)
@@ -303,18 +298,18 @@ def get_flow_info(
                 span.sid,
             )
         except Exception as e:
-            m.in_error_count(CodeEnum.FLOW_GET_ERROR.code, span=current_span)
+            m.in_error_count(CodeEnum.PROTOCOL_GET_ERROR.code, span=current_span)
             current_span.record_exception(e)
             return Resp.error(
-                CodeEnum.FLOW_GET_ERROR.code,
-                CodeEnum.FLOW_GET_ERROR.msg,
+                CodeEnum.PROTOCOL_GET_ERROR.code,
+                CodeEnum.PROTOCOL_GET_ERROR.msg,
                 span.sid,
             )
         m.in_success_count()
         return Resp.success(mcp_input_schema, current_span.sid)
 
 
-@router.post("/protocolcompare/save")
+@router.post("/protocol/compare/save")
 def save_comparisons(
     chat_input: SaveComparisonVo,
     session: Session = Depends(get_session),
@@ -337,7 +332,6 @@ def save_comparisons(
                 name=db_flow.name,
                 data=chat_input.data,
                 description=db_flow.description,
-                status=db_flow.status,
                 app_id=db_flow.app_id,
                 source=db_flow.source,
                 version=chat_input.version,

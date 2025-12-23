@@ -42,7 +42,7 @@ export const ImportUpload: FC<{
               <img src={uploadAct} className="w-8 h-8" alt="" />
               <div className="mt-6 text-xl font-medium text-second">
                 {t('knowledge.dragAndDropFile')}{' '}
-                <span className="text-[#275EFF]">
+                <span className="text-[#6356EA]">
                   {t('knowledge.selectFile')}
                 </span>
               </div>

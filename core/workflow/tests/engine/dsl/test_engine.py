@@ -18,6 +18,7 @@ from workflow.engine.entities.variable_pool import VariablePool
 from workflow.engine.entities.workflow_dsl import WorkflowDSL
 from workflow.engine.node import SparkFlowEngineNode
 from workflow.engine.nodes.base_node import BaseNode
+from workflow.engine.nodes.decision.decision_node import IntentChain
 from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
     WorkflowNodeExecutionStatus,
@@ -363,8 +364,17 @@ class TestWorkflowEngineAdvanced:
         """Test retrieval of default intent chain when available."""
         mock_node = Mock(spec=SparkFlowEngineNode)
         mock_node.node_instance = Mock()
-        mock_node.node_instance.intentChains = [{"name": "default", "id": "default_id"}]
-        mock_node.get_classify_class.return_value = {"default_id": ["node1", "node2"]}
+        mock_node.node_instance.intentChains = [
+            IntentChain(
+                id="intent-one-of::default_id",
+                name="default",
+                description="description",
+                intentType=1,
+            )
+        ]
+        mock_node.get_classify_class.return_value = {
+            "intent-one-of::default_id": ["node1", "node2"]
+        }
 
         result = self.engine._get_default_intent_chain(mock_node)
 
@@ -374,7 +384,14 @@ class TestWorkflowEngineAdvanced:
         """Test retrieval of default intent chain when no default is available."""
         mock_node = Mock(spec=SparkFlowEngineNode)
         mock_node.node_instance = Mock()
-        mock_node.node_instance.intentChains = [{"name": "other", "id": "other_id"}]
+        mock_node.node_instance.intentChains = [
+            IntentChain(
+                id="intent-one-of::other_id",
+                name="other",
+                description="description",
+                intentType=1,
+            )
+        ]
 
         result = self.engine._get_default_intent_chain(mock_node)
 

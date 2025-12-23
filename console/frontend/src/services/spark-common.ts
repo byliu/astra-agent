@@ -1,6 +1,8 @@
 import http from '../utils/http';
 import qs from 'qs';
 import { Base64 } from 'js-base64';
+import { VCNTrainingText } from '@/components/speaker-modal/voice-training';
+import { MyVCNItem } from '@/components/speaker-modal';
 
 /**
  * 更新用户个人资料
@@ -70,51 +72,6 @@ export const uploadBotImg = (formData: FormData): Promise<any> => {
       'Content-Type': 'multipart/form-data',
     },
   });
-};
-
-// 获取登录二维码
-export const getLoginQrcode = (params: any) => {
-  return http.post(`/login/scan/qrcode?fd=${params}`);
-};
-
-//获取用户是否扫码并确认
-export const getAppSacnCode = (params: any) => {
-  return http.post(`/login/scan/uids?fd=${params}`);
-};
-
-export const getLoginCaptcha = () => {
-  return http.get(`/plug/validate`);
-};
-
-//获取手机验证码
-export const getVerifyCode = (params: any) => {
-  return http.post(`/login/mobile/send-verify-code`, params, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-//手机号登录
-export const phoneLogin = (params: any) => {
-  return http.post(`/login/phone-quick-login`, params, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-//账号密码登录(默认有极验)
-export const passwordlogin = (params: any) => {
-  return http({
-    url: `/login/check-account`,
-    method: 'POST',
-    data: params,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  });
-  // return http.post(`/login/check-account`, params);
 };
 
 // 检查用户信息
@@ -354,8 +311,16 @@ export const aiGenPrologue = (name: any) => {
 
 // 一句话创建助手
 export const quickCreateBot = (str: string) => {
-  // const params: any = { sentence: str };
-  return http.post(`/bot/ai-sentence-gen?sentence=${str}`);
+  const formData = new FormData();
+  formData.append('sentence', str);
+  return http({
+    url: `/bot/ai-sentence-gen`,
+    method: 'POST',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };
 
 // 模板创建
@@ -387,14 +352,6 @@ export const generateInputExample = (params: any) => {
       'Content-Type': 'multipart/form-data',
     },
   });
-  // return http.post(`/login/check-account`, params);
-};
-
-/**
- * @description 获取任务状态
- */
-export const updateCustomVCN = (params: any): Promise<any> => {
-  return http.post(`/customVCN/updateCustomVCN`, params);
 };
 
 // 新增bot
@@ -543,4 +500,87 @@ export const getVersionList = (params: any) => {
 ///是否有权限在api页面进行修改
 export const getHasEditor = () => {
   return http.get(`/bot/api/hasEditor`);
+};
+
+export const getSceneList = () => {
+  return http.post(`/talkAgent/getSceneList`);
+};
+
+export const getSignedUrl = () => {
+  return http.get(`/talkAgent/signature`);
+};
+
+//
+export const getVCNList = () => {
+  return http.post(`/talkAgent/getVCNList`);
+};
+//
+export const createTalkAgent = (params: any) => {
+  return http.post(`/talkAgent/create`, params);
+};
+
+//
+export const updateTalkAgent = (params: any) => {
+  return http.post(`/talkAgent/updateConfig`, params);
+};
+//
+export const upgradeWorkflow = (params: any) => {
+  return http.post(`/talkAgent/upgradeWorkflow`, params);
+};
+
+/**
+ * @description 创建一句话复刻任务
+ */
+export const createOnceTrainTask = (params: {
+  language?: string;
+  sex: number;
+  segId: number;
+  formData: FormData;
+}): Promise<{ id: string }> => {
+  const filteredParams = Object.fromEntries(
+    Object.entries(params).filter(([_, value]) => value !== undefined)
+  );
+  return http({
+    url: `/speaker/train/create?${qs.stringify(filteredParams)}`,
+    method: 'POST',
+    data: params.formData,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+};
+
+/**
+ * @description get my vcn list
+ */
+export const getMySpeakerList = (): Promise<MyVCNItem[]> => {
+  return http.get(`/speaker/train/train-speaker`);
+};
+
+/**
+ * @description delete my speaker
+ */
+export const deleteMySpeaker = ({ id }: { id: number }): Promise<{}> => {
+  return http.post(`/speaker/train/delete-speaker?id=${id}`);
+};
+
+/**
+ * @description update my speaker name
+ */
+export const updateMySpeaker = (params: {
+  id: number;
+  name: string;
+}): Promise<{}> => {
+  return http.post(
+    `/speaker/train/update-speaker?id=${params.id}&name=${params.name}`
+  );
+};
+
+/**
+ * @description 获取发音人训练文本
+ */
+export const getVCNTrainingText = (): Promise<{
+  textSegs: VCNTrainingText[];
+}> => {
+  return http.get(`/speaker/train/get-text`);
 };

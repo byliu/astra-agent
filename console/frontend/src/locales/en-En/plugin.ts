@@ -130,6 +130,9 @@ const translation = {
   draftVersion: 'Draft Version',
   version: 'Version:',
   publishTime: 'Publish Time:',
+
+  emptyDescription: 'No plugins yet, create one now~',
+  noSearchResults: 'No related plugins found',
 };
 
 export default translation;

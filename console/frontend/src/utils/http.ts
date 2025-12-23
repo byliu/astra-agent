@@ -58,6 +58,15 @@ const getRuntimeBaseURL = (): string | undefined => {
   return window.__APP_CONFIG__?.BASE_URL;
 };
 
+const switchPersonal = (): void => {
+  useSpaceStore.setState({
+    spaceId: '',
+    spaceType: 'personal',
+    spaceName: '',
+    enterpriseId: '',
+  });
+};
+
 /**
  * 带请求头的文件下载函数 -- a标签使用
  * @param url 下载地址
@@ -188,12 +197,7 @@ export const initBusinessError = (
     });
   }
   if ([80000, 90000].includes(result.code)) {
-    useSpaceStore.setState({
-      spaceId: '',
-      spaceType: 'personal',
-      spaceName: '',
-      enterpriseId: '',
-    });
+    switchPersonal();
     // 登陆异常
     if (!specialRouter.includes(window.location.pathname)) {
       jumpToLogin();
@@ -211,7 +215,11 @@ export const initBusinessError = (
     result?.desc === '空间不存在'
   ) {
     message.error(result?.desc || '获取信息失败', 3, () => {
+      if (result.code === 80004) {
+        switchPersonal();
+      }
       window.location.href = '/space/agent';
+      return;
     });
   }
   // 星火注销
@@ -430,6 +438,10 @@ axios.interceptors.response.use(
 //根据环境设置baseURL：本地localhost走 /xingchen-api，dev环境和test环境分别对应不同服务器
 const getBaseURL = (): string => {
   const mode = import.meta.env.MODE;
+  const VITE_TEST_URL = import.meta.env.VITE_TEST_URL;
+  const VITE_DEV_URL = import.meta.env.VITE_DEV_URL;
+  console.log('VITE_TEST_URL', VITE_TEST_URL);
+  console.log('VITE_DEV_URL', VITE_DEV_URL);
 
   if (mode === 'production') {
     return '/console-api';

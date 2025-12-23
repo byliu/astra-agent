@@ -119,13 +119,13 @@ const SelectPromptList = ({
             title={item?.inputs}
             overlayClassName="white-tooltip tool-params-tooltip"
           >
-            <div className="flex items-center cursor-pointer gap-1.5 text-[#275EFF] text-sm font-medium">
+            <div className="flex items-center cursor-pointer gap-1.5 text-[#6356EA] text-sm font-medium">
               <span>{t('workflow.nodes.selectPrompt.parameters')}</span>
             </div>
           </Tooltip>
         )}
         <div
-          className="border border-[#275EFF] rounded-lg text-[#275EFF] font-medium px-6 py-1.5 cursor-pointer"
+          className="border border-[#6356EA] rounded-lg text-[#6356EA] font-medium px-6 py-1.5 cursor-pointer"
           onClick={() => handleAddTemplateDataToNode(item)}
         >
           {t('workflow.nodes.selectPrompt.add')}

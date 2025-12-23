@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Cookie;
 import okhttp3.*;
 import okhttp3.internal.sse.RealEventSource;
-import okhttp3.sse.EventSourceListener;
+import okhttp3.sse.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
@@ -877,6 +877,30 @@ public class OkHttpUtil {
         RealEventSource realEventSource = new RealEventSource(request, listener);
         realEventSource.connect(HTTP_CLIENT); // The actual start of the request
     }
+
+    public static EventSource connectRealEventSourceReturn(
+            String url,
+            Map<String, String> headers,
+            String jsonBody,
+            EventSourceListener listener) {
+
+        RequestBody body = RequestBody.create(jsonBody == null ? "{}" : jsonBody, MediaType.get("application/json; charset=utf-8"));
+        Request.Builder rb = new Request.Builder()
+                .url(url)
+                .addHeader("Accept", "text/event-stream")
+                .addHeader("Content-Type", "application/json");
+
+        if (headers != null)
+            headers.forEach((k, v) -> {
+                if (v != null)
+                    rb.addHeader(k, v);
+            });
+
+        Request req = rb.post(body).build();
+        EventSource.Factory factory = EventSources.createFactory(HTTP_CLIENT);
+        return factory.newEventSource(req, listener);
+    }
+
 
     /**
      * Establish an SSE (Server-Sent Events) connection using a prepared {@link RequestBody}.

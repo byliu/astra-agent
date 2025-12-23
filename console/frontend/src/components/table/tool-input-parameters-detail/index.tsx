@@ -102,7 +102,7 @@ const ToolInputParameters: FC<{ inputParamsData: InputParamsData[] }> = ({
           className="inline-block px-4 py-0 rounded-md font-medium"
           style={{
             // background: required ? '#d0eeda' : '#FF6262',
-            color: required ? '#275EFF' : '#F74E43',
+            color: required ? '#6356EA' : '#F74E43',
           }}
         >
           {required

@@ -115,7 +115,7 @@ const PluginSection = ({
             </Tooltip>
           </div>
           <div
-            className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
+            className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
             onClick={e => {
               e.stopPropagation();
               setShowModal(true);
@@ -226,7 +226,7 @@ const McpAddressSection = ({
           </div>
           {addressList?.length < 3 && (
             <div
-              className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
+              className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5 pl-6"
               onClick={handleAddAddress}
             >
               <img src={Icons.agent.inputAddIcon} className="w-3 h-3" alt="" />
@@ -289,7 +289,7 @@ const PromptSection = ({
           </h4>
           {!canvasesDisabled && (
             <div
-              className="flex items-center gap-1 cursor-pointer text-[#275EFF] text-xs"
+              className="flex items-center gap-1 cursor-pointer text-[#6356EA] text-xs"
               onClick={() =>
                 setSelectAgentPromptModalInfo({
                   open: true,

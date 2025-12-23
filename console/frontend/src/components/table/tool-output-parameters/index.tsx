@@ -82,7 +82,7 @@ const ToolOutputParameters: FC<{
     {
       key: '1',
       label: (
-        <span className="hover:text-[#275EFF]">
+        <span className="hover:text-[#6356EA]">
           {t('workflow.nodes.common.manuallyAdd')}
         </span>
       ),
@@ -91,7 +91,7 @@ const ToolOutputParameters: FC<{
     {
       key: '2',
       label: (
-        <span className="hover:text-[#275EFF]">
+        <span className="hover:text-[#6356EA]">
           {t('workflow.nodes.common.jsonExtract')}
         </span>
       ),
@@ -135,7 +135,7 @@ const ToolOutputParameters: FC<{
                 }}
                 placement="bottomLeft"
               >
-                <div className="flex items-center gap-1.5 text-[#275eff] cursor-pointer">
+                <div className="flex items-center gap-1.5 text-[#6356EA] cursor-pointer">
                   <img src={inputAddIcon} className="w-2.5 h-2.5" alt="" />
                   <span>{t('workflow.nodes.common.add')}</span>
                 </div>

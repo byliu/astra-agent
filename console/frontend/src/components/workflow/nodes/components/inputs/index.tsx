@@ -206,14 +206,14 @@ export function ErrorMessages({ item }: unknown): React.ReactElement {
 }
 
 function index({ id, data }): React.ReactElement {
-  const { inputs, isIteratorNode, handleAddInputLine, handleChangeInputParam } =
-    useNodeCommon({ id, data });
+  const {
+    inputs,
+    isIteratorNode,
+    handleAddInputLine,
+    handleChangeInputParam,
+    allowAddInput,
+  } = useNodeCommon({ id, data });
   const { t } = useTranslation();
-  const canvasesDisabled = useFlowsManager(state => state.canvasesDisabled);
-
-  const stringSplitMode = useMemo(() => {
-    return data?.nodeParam?.mode === 1;
-  }, [data]);
 
   return (
     <FLowCollapse
@@ -265,9 +265,9 @@ function index({ id, data }): React.ReactElement {
               </div>
             ))}
           </div>
-          {!canvasesDisabled && !stringSplitMode && (
+          {allowAddInput && (
             <div
-              className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5"
+              className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5"
               onClick={() => handleAddInputLine()}
             >
               <img src={inputAddIcon} className="w-3 h-3" alt="" />

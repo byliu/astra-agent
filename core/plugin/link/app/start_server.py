@@ -1,8 +1,10 @@
+import functools
 import os
 from pathlib import Path
 
 import uvicorn
 from common.initialize.initialize import initialize_services
+from common.settings.polaris import ConfigFilter, Polaris
 from fastapi import FastAPI
 from loguru import logger
 from plugin.link.api.router import router
@@ -18,6 +20,8 @@ from plugin.link.utils.json_schemas.read_json_schemas import (
 from plugin.link.utils.log.logger import configure
 from plugin.link.utils.sid.sid_generator2 import spark_link_init_sid
 
+print = functools.partial(print, flush=True)
+
 
 class SparkLinkServer:
 
@@ -29,8 +33,53 @@ class SparkLinkServer:
         This method orchestrates the complete server startup process including
         environment configuration, server setup, and HTTP server initialization.
         """
+        self.load_polaris()
         self.setup_server()
         self.start_uvicorn()
+
+    @staticmethod
+    def load_polaris() -> None:
+        """
+        Load remote configuration and override environment variables
+        """
+        use_polaris = os.getenv("USE_POLARIS", "false").lower()
+        print(f"🔧 Config: USE_POLARIS :{use_polaris}")
+        if use_polaris == "false":
+            return
+
+        base_url = os.getenv("POLARIS_URL")
+        project_name = os.getenv("PROJECT_NAME", "hy-spark-agent-builder")
+        cluster_group = os.getenv("POLARIS_CLUSTER", "")
+        service_name = os.getenv("SERVICE_NAME", "spark-link")
+        version = os.getenv("VERSION", "2.0.0")
+        config_file = os.getenv("CONFIG_FILE", "config.env")
+        config_filter = ConfigFilter(
+            project_name=project_name,
+            cluster_group=cluster_group,
+            service_name=service_name,
+            version=version,
+            config_file=config_file,
+        )
+        username = os.getenv("POLARIS_USERNAME")
+        password = os.getenv("POLARIS_PASSWORD")
+
+        # Ensure required parameters are not None
+        if not base_url or not username or not password or not cluster_group:
+            return  # Skip polaris config if required params are missing
+
+        polaris = Polaris(base_url=base_url, username=username, password=password)
+        try:
+            _ = polaris.pull(
+                config_filter=config_filter,
+                retry_count=3,
+                retry_interval=5,
+                set_env=True,
+            )
+        except (ConnectionError, TimeoutError, ValueError) as e:
+            print(
+                f"⚠️ Polaris configuration loading failed, "
+                f"continuing with local configuration: {e}"
+            )
 
     @staticmethod
     def setup_server() -> None:
@@ -64,7 +113,7 @@ class SparkLinkServer:
             port=int(service_port),
             workers=20,
             reload=False,
-            # log_config=None
+            log_config=None,
         )
         uvicorn_server = uvicorn.Server(uvicorn_config)
         uvicorn_server.run()

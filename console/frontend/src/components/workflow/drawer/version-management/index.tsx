@@ -187,7 +187,7 @@ const VersionList = ({
             bordered={true}
             style={{
               borderColor:
-                selectedCardId === currentFlow?.flowId ? '#275EFF' : '#e8e8e8',
+                selectedCardId === currentFlow?.flowId ? '#6356EA' : '#e8e8e8',
             }}
             onClick={() => handleCardClick(currentFlow?.flowId)}
             hoverable
@@ -219,7 +219,7 @@ const VersionList = ({
               title={`${t('workflow.versionManagement.version')}${item.name}`}
               bordered={true}
               style={{
-                borderColor: selectedCardId === item.id ? '#275EFF' : '#e8e8e8',
+                borderColor: selectedCardId === item.id ? '#6356EA' : '#e8e8e8',
                 cursor: 'pointer',
               }}
               onClick={() => handleCardClick(item.id)}
@@ -235,7 +235,7 @@ const VersionList = ({
                   {dayjs(item.createdTime)?.format('YYYY-MM-DD HH:mm:ss')}
                 </p>
               </div>
-              <div className="flex justify-between border-t border-dashed border-[#E4EAFF] py-2 px-3 text-[#275EFF]">
+              <div className="flex justify-between border-t border-dashed border-[#E4EAFF] py-2 px-3 text-[#6356EA]">
                 <div
                   className="flex items-center justify-center cursor-pointer"
                   onClick={() => {
@@ -300,7 +300,7 @@ const FeedbackList = ({
                   bordered={true}
                   style={{
                     borderColor:
-                      selectedQsId === item.id ? '#275EFF' : '#e8e8e8',
+                      selectedQsId === item.id ? '#6356EA' : '#e8e8e8',
                     cursor: 'pointer',
                     width: '98%',
                   }}
@@ -317,7 +317,7 @@ const FeedbackList = ({
                       <span className="text-[#333333]">{item.createTime}</span>
                     </div>
                     <div
-                      className="absolute right-[16px] top-[12px] text-[#275EFF]"
+                      className="absolute right-[16px] top-[12px] text-[#6356EA]"
                       onClick={() => handleViewDetail(item)}
                     >
                       {t('workflow.versionManagement.detail')}

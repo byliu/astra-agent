@@ -86,7 +86,7 @@ function MultipleCanvasesTip(): React.ReactElement | null {
           {t('workflow.nodes.multipleCanvasesTip.multipleWindowsTip')}
         </div>
         <div
-          className="text-[#275EFF] cursor-pointer"
+          className="text-[#6356EA] cursor-pointer"
           onClick={() => setConfirmModal(true)}
         >
           {t('workflow.nodes.multipleCanvasesTip.continueEditing')}

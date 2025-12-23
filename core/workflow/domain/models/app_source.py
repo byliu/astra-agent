@@ -7,9 +7,8 @@ tracking the origin and metadata of applications in the system.
 
 from datetime import datetime
 
+from common.utils.snowfake import get_id
 from sqlmodel import Field, SQLModel  # type: ignore
-
-from workflow.utils.snowfake import get_id
 
 
 class AppSource(SQLModel, table=True):  # type: ignore

@@ -41,7 +41,11 @@ public class SecurityConfig {
                 // Enable OAuth2 resource server support with JWT format tokens
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults()))
-                // Disable CSRF as we are not using Cookies for session tracking
+                // CSRF protection disabled - Safe because:
+                // 1. Using OAuth2 Bearer token authentication (via Authorization header)
+                // 2. Stateless session management (no cookies)
+                // 3. CSRF attacks only affect cookie-based authentication
+                // 4. Bearer tokens cannot be automatically sent by browsers
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(restfulAuthenticationEntryPoint)
@@ -68,7 +72,10 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        // Set to false for OAuth2 Bearer token authentication
+        // Bearer tokens are sent via Authorization header, not cookies
+        // allowCredentials is only needed for cookie-based authentication
+        configuration.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

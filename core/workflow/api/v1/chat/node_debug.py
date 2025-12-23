@@ -6,6 +6,7 @@ including code execution and node-specific debugging functionality.
 """
 
 import json
+from typing import Any, Dict
 
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
@@ -13,6 +14,7 @@ from starlette.responses import JSONResponse
 from workflow.domain.entities.node_debug_vo import CodeRunVo, NodeDebugVo
 from workflow.domain.entities.response import Resp
 from workflow.engine.entities.node_entities import NodeType
+from workflow.engine.entities.workflow_dsl import WorkflowDSL
 from workflow.engine.nodes.code.code_node import CodeNode
 from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
@@ -80,10 +82,14 @@ async def node_debug(node_debug_vo: NodeDebugVo) -> JSONResponse:
     span = Span()
     with span.start(attributes={"flow_id": node_debug_vo.id}) as span_context:
         try:
-            if node_debug_vo.data.nodes[0].id.split("::")[0] in NodeType.DATABASE.value:
+            if (
+                node_debug_vo.data.nodes
+                and node_debug_vo.data.nodes[0].id.split("::")[0]
+                in NodeType.DATABASE.value
+            ):
                 span.uid = node_debug_vo.data.nodes[0].data.nodeParam.get("uid", "")
             node_debug_resp_vo = await flow_service.node_debug(
-                node_debug_vo.data, span_context
+                node_debug_vo.data, node_debug_vo.id, span_context
             )
 
         except CustomException as err:
@@ -105,3 +111,34 @@ async def node_debug(node_debug_vo: NodeDebugVo) -> JSONResponse:
             }
         )
         return Resp.success(node_debug_resp_vo.dict(), span.sid)
+
+
+@router.post("/node/debug/{node_id}", status_code=200)
+async def node_debug_old(node_id: str, data: Dict[str, Any]) -> JSONResponse:
+    """
+    Debug a node in the workflow, this is for legacy interface compatibility, will be removed in the future.
+    :param node_id: Node ID
+    :param data: Workflow data
+    :return: Debug execution result
+    """
+    nodes = data.get("data", {}).get("data", {}).get("nodes", [{}])
+    span = Span()
+    for node in nodes:
+        if node.get("id", "") == node_id:
+            node_debug_vo = NodeDebugVo(
+                id=data.get("id", ""),
+                name=data.get("name", ""),
+                description=data.get("description", ""),
+                data=WorkflowDSL(nodes=[node], edges=[]),
+            )
+            resp = await node_debug(node_debug_vo)
+            content = json.loads(resp.body)
+            code = content.get("code", 0)
+            if code != 0:
+                return JSONResponse(content=content)
+            content["payload"] = content.get("data", {})
+            content.pop("data")
+            return JSONResponse(content=content)
+    return Resp.error(
+        code=CodeEnum.NODE_DEBUG_ERROR.code, message="Node not found", sid=span.sid
+    )

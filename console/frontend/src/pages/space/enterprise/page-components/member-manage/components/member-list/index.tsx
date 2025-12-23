@@ -23,6 +23,7 @@ import {
   roleTypeToRole,
   SUPER_ADMIN_ROLE,
 } from '@/pages/space/config';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 
@@ -41,6 +42,7 @@ interface MemberListProps {
 }
 
 const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
+  const { t } = useTranslation();
   const { user } = useUserStore();
   const tableRef = useRef<SpaceTableRef>(null);
   const { roleTextMap, memberRoleOptions } = useSpaceI18n();
@@ -56,7 +58,7 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
           role: newRole,
         });
 
-        message.success('角色更新成功');
+        message.success(t('space.roleUpdateSuccess'));
         // 判断如果是操作自己，则刷新页面
         if (Number(memberId) === Number(user?.uid)) {
           window.location.reload();
@@ -67,7 +69,7 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
         message.error(error?.msg || error?.desc);
       }
     },
-    []
+    [t]
   );
 
   // 获取角色文本
@@ -118,24 +120,27 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
   );
 
   // 处理删除操作
-  const handleDelete = useCallback(async (record: MemberData) => {
-    try {
-      const res = await removeEnterpriseUser({
-        uid: record.uid,
-      });
+  const handleDelete = useCallback(
+    async (record: MemberData) => {
+      try {
+        const res = await removeEnterpriseUser({
+          uid: record.uid,
+        });
 
-      message.success(`已删除用户 ${record.nickname}`);
-      tableRef.current?.reload();
-    } catch (err: any) {
-      message.error(err?.msg || err?.desc);
-    }
-  }, []);
+        message.success(t('common.userDeleted', { username: record.nickname }));
+        tableRef.current?.reload();
+      } catch (err: any) {
+        message.error(err?.msg || err?.desc);
+      }
+    },
+    [t]
+  );
 
   // 列配置
   const columns: SpaceColumnConfig<MemberData>[] = useMemo(
     () => [
       {
-        title: '用户名',
+        title: t('common.username'),
         dataIndex: 'nickname',
         key: 'nickname',
         width: 200,
@@ -146,7 +151,7 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
         ),
       },
       {
-        title: '角色',
+        title: t('common.username'),
         dataIndex: 'role',
         key: 'role',
         width: 120,
@@ -178,25 +183,25 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
         },
       },
       {
-        title: '加入时间',
+        title: t('common.username'),
         dataIndex: 'createTime',
         key: 'createTime',
         width: 180,
       },
     ],
-    [getRoleText, memberRoleOptions, handleRoleChange, permissionInfo]
+    [t, getRoleText, memberRoleOptions, handleRoleChange, permissionInfo]
   );
 
   // 操作列配置
   const actionColumn: ActionColumnConfig<MemberData> = useMemo(
     () => ({
-      title: '操作',
+      title: t('common.action'),
       width: 100,
       getActionButtons: (record: MemberData) => {
         const buttons: ButtonConfig[] = [
           {
             key: 'delete',
-            text: '删除',
+            text: t('common.delete'),
             type: 'link',
             // danger: true,
             permission: {
@@ -214,10 +219,10 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
             onClick: () => {
               // 使用确认弹窗
               Modal.confirm({
-                title: '确认删除',
-                content: '确定要删除这个成员吗？',
-                okText: '确认',
-                cancelText: '取消',
+                title: t('common.confirmDelete'),
+                content: t('common.confirmDeleteMember'),
+                okText: t('common.confirm'),
+                cancelText: t('common.cancel'),
                 onOk: () => handleDelete(record),
               });
             },
@@ -227,7 +232,7 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
         return buttons;
       },
     }),
-    [handleDelete]
+    [t, handleDelete]
   );
 
   return (
@@ -244,7 +249,7 @@ const MemberList: React.FC<MemberListProps> = ({ searchValue, roleFilter }) => {
       pagination={{
         pageSize: 10,
         showSizeChanger: true,
-        showTotal: (total, range) => `共 ${total} 项数据`,
+        showTotal: (total, range) => t('common.totalItems', { total }),
         pageSizeOptions: ['10', '20', '50'],
       }}
     />

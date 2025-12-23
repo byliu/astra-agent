@@ -66,13 +66,13 @@ const UploadHeader: FC<UploadHeaderProps> = props => {
         <div className="flex items-center ml-5">
           <div className="flex items-center px-3 py-1">
             <div
-              className={`w-6 h-6 rounded-full bg-[${step == 1 ? '#275EFF' : '#dee2f9'}] leading-6 text-center text-[#fff] text-xs flex justify-center items-center`}
+              className={`w-6 h-6 rounded-full bg-[${step == 1 ? '#6356EA' : '#dee2f9'}] leading-6 text-center text-[#fff] text-xs flex justify-center items-center`}
               style={{ border: step > 1 ? '1px solid #d3d3d3' : '' }}
             >
               {step > 1 ? <img src={check} className="w-3 h-3" /> : 1}
             </div>
             <div
-              className={`ml-2 text-[${step == 1 ? '#275EFF' : '#757575'}] text-sm`}
+              className={`ml-2 text-[${step == 1 ? '#6356EA' : '#757575'}] text-sm`}
             >
               {t('knowledge.importData')}
             </div>
@@ -80,13 +80,13 @@ const UploadHeader: FC<UploadHeaderProps> = props => {
           <div className="ml-2 w-[44px] h-[1px] bg-[#d3d3d3]"></div>
           <div className="flex items-center px-3 py-1">
             <div
-              className={`w-6 h-6 rounded-full bg-[${step == 2 ? '#275EFF' : step > 2 ? '#dee2f9' : ''}] leading-6 text-center text-[${step == 2 ? '#fff' : '#757575'}] text-xs flex justify-center items-center`}
+              className={`w-6 h-6 rounded-full bg-[${step == 2 ? '#6356EA' : step > 2 ? '#dee2f9' : ''}] leading-6 text-center text-[${step == 2 ? '#fff' : '#757575'}] text-xs flex justify-center items-center`}
               style={{ border: step !== 2 ? '1px solid #d3d3d3' : '' }}
             >
               {step > 2 ? <img src={check} className="w-3 h-3" /> : 2}
             </div>
             <div
-              className={`ml-2 text-[${step == 2 ? '#275EFF' : step > 2 ? '#757575' : '#a4a4a4'}] text-sm`}
+              className={`ml-2 text-[${step == 2 ? '#6356EA' : step > 2 ? '#757575' : '#a4a4a4'}] text-sm`}
             >
               {t('knowledge.dataClean')}
             </div>
@@ -94,13 +94,13 @@ const UploadHeader: FC<UploadHeaderProps> = props => {
           <div className="ml-2 w-[44px] h-[1px] bg-[#d3d3d3]"></div>
           <div className="flex items-center px-3 py-1">
             <div
-              className={`w-6 h-6 rounded-full bg-[${step == 3 ? '#275EFF' : ''}] leading-6 text-center text-[${step == 3 ? '#fff' : '#757575'}] text-xs flex justify-center items-center`}
+              className={`w-6 h-6 rounded-full bg-[${step == 3 ? '#6356EA' : ''}] leading-6 text-center text-[${step == 3 ? '#fff' : '#757575'}] text-xs flex justify-center items-center`}
               style={{ border: step !== 3 ? '1px solid #d3d3d3' : '' }}
             >
               3
             </div>
             <div
-              className={`ml-2 text-[${step == 3 ? '#275EFF' : '#a4a4a4'}] text-sm`}
+              className={`ml-2 text-[${step == 3 ? '#6356EA' : '#a4a4a4'}] text-sm`}
             >
               {t('knowledge.processingCompletion')}
             </div>

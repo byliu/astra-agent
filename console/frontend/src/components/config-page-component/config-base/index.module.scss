@@ -97,15 +97,16 @@
     gap: 8px;
     bottom: 13px;
     left: 20px;
-    width: 97px;
+    width: auto;
+    padding: 0 10px;
     height: 32px;
     line-height: 30px;
-    // border: 1px solid #275eff;
+    // border: 1px solid #6356EA;
     border-radius: 8px;
     text-align: center;
     opacity: 1;
     cursor: pointer;
-    color: #275eff;
+    color: #6356EA;
     background: #ffffff;
 
     &::before {
@@ -113,7 +114,7 @@
       width: calc(100% + 2px);
       height: calc(100% + 2px);
       border-radius: 9px;
-      background: linear-gradient(270deg, #275eff 0%, #c927ff 100%);
+      background: linear-gradient(270deg, #6356EA 0%, #c927ff 100%);
       position: absolute;
       top: -1px;
       left: -1px;
@@ -138,7 +139,8 @@
       display: flex;
       justify-content: center;
       gap: 8px;
-      width: 126px;
+      width: auto;
+      padding: 0 10px;
       height: 32px;
       line-height: 30px;
       border-radius: 8px;
@@ -146,10 +148,10 @@
       opacity: 1;
       background: #ffffff;
       box-sizing: border-box;
-      border: 1px solid #275eff;
+      border: 1px solid #6356EA;
       margin-right: 15px;
       cursor: pointer;
-      color: #275eff;
+      color: #6356EA;
     }
   }
 }
@@ -162,7 +164,7 @@
 
   .tipPkItemActive {
     border-radius: 8px;
-    border: 1px solid #275eff;
+    border: 1px solid #6356EA;
     margin-bottom: 8px;
     padding: 10px;
     position: relative;
@@ -261,7 +263,7 @@
           background: #ffffff;
           box-sizing: border-box;
           border: 1px solid #e4eaff;
-          color: #275eff;
+          color: #6356EA;
           margin-left: 12px;
 
           &:hover {

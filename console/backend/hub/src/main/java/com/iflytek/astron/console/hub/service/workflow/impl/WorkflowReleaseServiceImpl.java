@@ -55,9 +55,9 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
 
     // Release status constants (reserved for future use)
     @SuppressWarnings("unused")
-    private static final String RELEASE_SUCCESS = "成功";
+    private static final String RELEASE_SUCCESS = "Success";
     @SuppressWarnings("unused")
-    private static final String RELEASE_FAIL = "失败";
+    private static final String RELEASE_FAIL = "Failed";
 
     // HTTP client configuration
     private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
@@ -103,7 +103,7 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
             request.setBotId(botId.toString());
             request.setFlowId(flowId);
             request.setPublishChannel(getPublishChannelCode(publishType));
-            request.setPublishResult("成功");
+            request.setPublishResult("Success");
             request.setDescription("");
             request.setName(versionName);
 
@@ -117,7 +117,7 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
             syncToApiSystem(botId, flowId, versionName, appId);
 
             // 6. Update audit result to success
-            updateAuditResult(response.getWorkflowVersionId(), "成功");
+            updateAuditResult(response.getWorkflowVersionId(), "Success");
 
             log.info("Workflow bot publish and sync successful: botId={}, versionId={}, versionName={}",
                     botId, response.getWorkflowVersionId(), response.getWorkflowVersionName());
@@ -172,7 +172,7 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
                 }
             }
         } catch (Exception e) {
-            log.error("getVersionName-获取助手版本号异常,flowId={}", flowId, e);
+            log.error("Exception occurred while getting version name, flowId={}", flowId, e);
             return null;
         }
 
@@ -271,7 +271,7 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
 
                 if (!StringUtils.hasText(responseBody)) {
                     log.error("Empty response when creating workflow version");
-                    return createErrorResponse("响应数据格式错误");
+                    return createErrorResponse("Invalid response data format");
                 }
 
                 log.debug("Create workflow version response: {}", responseBody);
@@ -279,7 +279,7 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
                 JSONObject responseJson = JSON.parseObject(responseBody);
                 if (responseJson == null) {
                     log.error("Failed to parse workflow version response: {}", responseBody);
-                    return createErrorResponse("响应数据格式错误");
+                    return createErrorResponse("Invalid response data format");
                 }
 
                 JSONObject data = responseJson.getJSONObject("data");
@@ -298,39 +298,39 @@ public class WorkflowReleaseServiceImpl implements WorkflowReleaseService {
                         result.setWorkflowVersionName(request.getName());
                     }
 
-                    log.info("创建工作流版本成功: versionId={}, versionName={}",
+                    log.info("Successfully created workflow version: versionId={}, versionName={}",
                             result.getWorkflowVersionId(), result.getWorkflowVersionName());
                     return result;
                 }
 
-                return createErrorResponse("响应数据格式错误");
+                return createErrorResponse("Invalid response data format");
             }
 
         } catch (Exception e) {
-            log.error("创建工作流版本异常: request={}", request, e);
-            return createErrorResponse("创建版本异常: " + e.getMessage());
+            log.error("Exception occurred while creating workflow version: request={}", request, e);
+            return createErrorResponse("Exception occurred while creating version: " + e.getMessage());
         }
     }
 
     private void syncToApiSystem(Integer botId, String flowId, String versionName, String appId) {
-        log.info("同步工作流到API系统: botId={}, flowId={}, versionName={}, appId={}",
+        log.info("Syncing workflow to API system: botId={}, flowId={}, versionName={}, appId={}",
                 botId, flowId, versionName, appId);
 
         try {
-            // 1. 获取版本的系统数据
+            // 1. Get version system data
             JSONObject versionData = getVersionSysData(botId, versionName);
             if (versionData == null) {
-                log.error("获取版本系统数据失败: botId={}, versionName={}", botId, versionName);
+                log.error("Failed to get version system data: botId={}, versionName={}", botId, versionName);
                 return;
             }
 
-            // 2. 使用 MaasUtil 的 createApi 方法进行发布和绑定
+            // 2. Use MaasUtil's createApi method to publish and bind
             maasUtil.createApi(flowId, appId, versionName, versionData);
 
-            log.info("同步工作流到API系统成功: botId={}, flowId={}, versionName={}", botId, flowId, versionName);
+            log.info("Successfully synced workflow to API system: botId={}, flowId={}, versionName={}", botId, flowId, versionName);
 
         } catch (Exception e) {
-            log.error("同步工作流到API系统异常: botId={}, flowId={}, versionName={}, appId={}",
+            log.error("Exception occurred while syncing workflow to API system: botId={}, flowId={}, versionName={}, appId={}",
                     botId, flowId, versionName, appId, e);
         }
     }

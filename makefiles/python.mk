@@ -62,25 +62,6 @@ check-tools-python: ## ✅ Check Python development tools availability
 		echo "  Pip version: $$($(PYTHON) -m pip --version)"; \
 	fi
 
-fmt-python: ## ✨ Format Python code
-	@if [ -n "$(PYTHON_DIRS)" ]; then \
-		echo "$(YELLOW)Formatting Python code in: $(PYTHON_DIRS)$(RESET)"; \
-		for dir in $(PYTHON_DIRS); do \
-			if [ -d "$$dir" ]; then \
-				echo "$(YELLOW)  Processing $$dir...$(RESET)"; \
-				cd $$dir && \
-				$(PYTHON) -m $(ISORT) . && \
-				$(PYTHON) -m $(BLACK) .; \
-				cd - > /dev/null; \
-			else \
-				echo "$(RED)    Directory $$dir does not exist$(RESET)"; \
-			fi; \
-		done; \
-		echo "$(GREEN)Python code formatting completed$(RESET)"; \
-	else \
-		echo "$(BLUE)Skipping Python formatting (no Python projects configured)$(RESET)"; \
-	fi
-
 check-python: ## 🔍 Check Python code quality
 	@if [ -n "$(PYTHON_DIRS)" ]; then \
 		echo "$(YELLOW)Checking Python code quality in: $(PYTHON_DIRS)$(RESET)"; \
@@ -91,10 +72,10 @@ check-python: ## 🔍 Check Python code quality
 				if (cd $$dir && \
 				echo "$(YELLOW)    1. Running flake8 code style check...$(RESET)" && \
 				$(PYTHON) -m $(FLAKE8) . && \
-				echo "$(YELLOW)    2. Running isort import formatting...$(RESET)" && \
-				$(PYTHON) -m $(ISORT) . && \
-				echo "$(YELLOW)    3. Running black code formatting...$(RESET)" && \
-				$(PYTHON) -m $(BLACK) . && \
+				echo "$(YELLOW)    2. Checking isort import order...$(RESET)" && \
+				$(PYTHON) -m isort --check-only --profile black . && \
+				echo "$(YELLOW)    3. Checking black code format...$(RESET)" && \
+				$(PYTHON) -m black --check . && \
 				echo "$(YELLOW)    4. Running mypy type checking...$(RESET)" && \
 				$(PYTHON) -m $(MYPY) . && \
 				echo "$(YELLOW)    5. Running pylint code analysis...$(RESET)" && \

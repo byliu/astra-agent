@@ -50,7 +50,6 @@ class DatabaseService(Service):
         self.max_overflow = max_overflow
         self.pool_recycle = pool_recycle
         self.engine = self._create_engine()
-        logger.debug("database init success")
 
     def _create_engine(self) -> "Engine":
         """

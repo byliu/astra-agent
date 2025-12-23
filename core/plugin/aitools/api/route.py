@@ -28,7 +28,7 @@ from plugin.aitools.api.schema.types import (
     TranslationInput,
 )
 from plugin.aitools.common.logger import log
-from plugin.aitools.const.const import IMAGE_GENERATE_MAX_PROMPT_LEN
+from plugin.aitools.const import const
 from plugin.aitools.const.err_code.code import CodeEnum
 from plugin.aitools.const.err_code.code_convert import CodeConvert
 from plugin.aitools.service.ase_sdk.common.entities.req_data import Credentials
@@ -118,7 +118,7 @@ def req_ase_ability_ocr(
         log.info("req_ase_ability_ocr request: %s", ase_ocr_llm_vo.json())
         try:
             image_byte_arrays.append(
-                requests.get(ase_ocr_llm_vo.file_url, timeout=30).content
+                requests.get(url=ase_ocr_llm_vo.file_url, timeout=30).content
             )
             client = OcrLLMClientMultithreading(url=os.getenv("OCR_LLM_WS_URL"))
             asyncio.run(
@@ -143,30 +143,31 @@ def req_ase_ability_ocr(
             log.info("content: %s", content)
         except CustomException as e:
             response = ErrorCResponse(code=e.code, message=e.message)
-            m.in_error_count(response.code)
-            node_trace.answer = response.message
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
             log.error("request: %s, error: %s", ase_ocr_llm_vo.json(), str(e))
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_error_count(response.code)
+                node_trace.answer = response.message
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
         except Exception as e:
             log.error("request: %s, error: %s", ase_ocr_llm_vo.json(), str(e))
             response = ErrorResponse.from_enum(CodeEnum.OCR_FILE_HANDLING_ERROR)
-            m.in_error_count(response.code)
-
-            node_trace.answer = response.message
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_error_count(response.code)
+                node_trace.answer = response.message
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
 
         response = SuccessDataResponse(data=content)
-        m.in_success_count()
-
-        node_trace.answer = str(response.data)
-        node_trace.status = Status(code=response.code, message=response.message)
-        kafka_service.send("spark-agent-builder", node_trace.to_json())
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+            m.in_success_count()
+            node_trace.answer = str(response.data)
+            node_trace.status = Status(code=response.code, message=response.message)
+            kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
         return response
 
@@ -207,9 +208,7 @@ def req_ase_ability_image_generate(
 
         try:
             from plugin.aitools.service.ase_sdk.__base.entities.req_data import ReqData
-            from plugin.aitools.service.ase_sdk.common.client import (
-                CommonClient,
-            )
+            from plugin.aitools.service.ase_sdk.common.client import CommonClient
             from plugin.aitools.service.ase_sdk.common.entities.req_data import (
                 CommonReqSourceData,
             )
@@ -248,7 +247,7 @@ def req_ase_ability_image_generate(
                                             "role": "user",
                                             # 文生图prompt最大长度为510
                                             "content": content[
-                                                :IMAGE_GENERATE_MAX_PROMPT_LEN
+                                                : const.IMAGE_GENERATE_MAX_PROMPT_LEN
                                             ],
                                         }
                                     ]
@@ -279,21 +278,21 @@ def req_ase_ability_image_generate(
                 data={"image_url": image_url, "image_url_md": f"![]({image_url})"},
                 sid=sid,
             )
-            m.in_success_count()
-
-            node_trace.answer = json.dumps(response.data, ensure_ascii=False)
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_success_count()
+                node_trace.answer = json.dumps(response.data, ensure_ascii=False)
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
         except Exception as e:
             logging.error("request: %s, error: %s", image_generate_vo.json(), str(e))
             response = ErrorResponse.from_enum(CodeEnum.IMAGE_GENERATE_ERROR)
-            m.in_error_count(response.code)
-
-            node_trace.answer = response.message
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_error_count(response.code)
+                node_trace.answer = response.message
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
 

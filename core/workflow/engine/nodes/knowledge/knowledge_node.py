@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import Field
 
 from workflow.engine.entities.history import EnableChatHistoryV2, History
-from workflow.engine.entities.variable_pool import VariablePool
+from workflow.engine.entities.variable_pool import ParamKey, VariablePool
 from workflow.engine.nodes.base_node import BaseNode
 from workflow.engine.nodes.entities.node_run_result import (
     NodeRunResult,
@@ -37,7 +37,6 @@ class KnowledgeNode(BaseNode):
     docIds: list = Field(
         default_factory=list
     )  # Optional list of specific document IDs to search
-    flowId: str = Field(default="")  # Optional flow ID for context
     score: float = Field(default=0.1)  # Minimum similarity threshold for results
     enableChatHistoryV2: EnableChatHistoryV2 = Field(
         default_factory=EnableChatHistoryV2
@@ -100,13 +99,14 @@ class KnowledgeNode(BaseNode):
             knowledge_recall_url = (
                 f"{os.getenv('KNOWLEDGE_BASE_URL')}/knowledge/v1/chunk/query"
             )
+            flow_id: str = variable_pool.system_params.get(ParamKey.FlowId)
             knowledge_config = KnowledgeConfig(
                 top_n=self.topN,
                 rag_type=self.ragType,
                 repo_id=self.repoId,
                 url=knowledge_recall_url,
                 query=str(query),
-                flow_id=self.flowId,
+                flow_id=flow_id,
                 doc_ids=self.docIds,
                 threshold=self.score,
                 history=history,

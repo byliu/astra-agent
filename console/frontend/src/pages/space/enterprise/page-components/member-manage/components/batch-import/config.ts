@@ -17,7 +17,7 @@ export interface BatchImportProps {
 // 批量导入按钮配置
 const batchImportButtonConfig: ButtonConfig = {
   key: 'batchImport',
-  text: '批量导入',
+  text: 'spaceManagement.batchImport',
   type: 'primary',
   size: 'small',
   permission: {
@@ -29,14 +29,14 @@ const batchImportButtonConfig: ButtonConfig = {
 // 导入模板按钮配置
 const importTemplateButtonConfig: ButtonConfig = {
   key: 'importTemplate',
-  text: '导入模板',
+  text: 'spaceManagement.importTemplate',
   type: 'link',
 };
 
 // 解析结果按钮配置
 const exportResultButtonConfig: ButtonConfig = {
   key: 'exportResult',
-  text: '解析结果',
+  text: 'spaceManagement.exportResult',
   type: 'link',
 };
 

@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { CloseOutlined } from '@ant-design/icons';
 import RetractableInput from '@/components/ui/global/retract-table-input';
 import { Select } from 'antd';
+import { SpaceButton } from '@/components/button-group';
 import { ModelInfo } from '@/types/model';
+import ArrowDownIconWhite from '@/assets/svgs/arrow-down-white.svg';
+import { useModelContext } from '../context/model-context';
 
 interface ModelManagementHeaderProps {
   activeTab: string;
@@ -31,6 +34,7 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialActiveTab);
   const { pathname } = useLocation();
+  const { state, actions } = useModelContext();
 
   useEffect(() => {
     setActiveTab(initialActiveTab);
@@ -65,12 +69,17 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
     }
   };
 
+  const handleCreateClick = (): void => {
+    actions.setCurrentEditModel(undefined);
+    actions.setCreateModal(true);
+  };
+
   return (
     <div>
       <div className="w-full relative z-10 flex flex-col justify-between rounded-2xl">
-        <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-3 w-full pt-5">
           {/* 标题 */}
-          <h1 className="font-medium text-[20px] text-[#333] leading-none">
+          <h1 className="font-medium text-[20px] text-[#222529] leading-[26px] font-[PingFang-Sim]">
             {t('model.modelManagement')}
           </h1>
 
@@ -83,7 +92,7 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
 
               {/* 快速筛选 */}
               <span
-                className="ml-auto mr-2 text-[#275eff] cursor-pointer hover:underline"
+                className="ml-auto mr-2 text-[#6356EA] cursor-pointer hover:underline"
                 onClick={() => refreshModels?.()}
               >
                 {t('model.quickFilter')}
@@ -106,8 +115,8 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
               className={`min-w-[70px] h-8 px-3 rounded-lg text-sm flex items-center justify-center cursor-pointer transition-colors
             ${
               pathname === '/management/model'
-                ? 'bg-white text-[#275eff] shadow'
-                : 'text-[#7f7f7f] hover:text-[#275eff]'
+                ? 'bg-white text-[#6356EA] shadow'
+                : 'text-[#7f7f7f] hover:text-[#6356EA]'
             }`}
               onClick={() => navigate('/management/model')}
             >
@@ -117,8 +126,8 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
               className={`min-w-[70px] h-8 px-3 rounded-lg text-sm flex items-center justify-center cursor-pointer transition-colors
             ${
               pathname === '/management/model/personalModel'
-                ? 'bg-white text-[#275eff] shadow'
-                : 'text-[#7f7f7f] hover:text-[#275eff]'
+                ? 'bg-white text-[#6356EA] shadow'
+                : 'text-[#7f7f7f] hover:text-[#6356EA]'
             }`}
               onClick={() => navigate('/management/model/personalModel')}
             >
@@ -127,9 +136,10 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
           </div> */}
 
           {/* 右侧控件 */}
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-2">
             {activeTab === 'personalModel' && (
               <Select
+                className="ant-select-UI"
                 placeholder={t('model.pleaseSelect')}
                 value={filterType}
                 style={{ width: 120 }}
@@ -146,6 +156,24 @@ const ModelManagementHeader: React.FC<ModelManagementHeaderProps> = ({
               restrictFirstChar={true}
               onChange={getRobotsDebounce}
             />
+            {activeTab === 'personalModel' && (
+              <SpaceButton
+                config={{
+                  key: 'create-model',
+                  text: t('model.createModel'),
+                  type: 'primary',
+                  size: 'small',
+                  icon: (
+                    <img
+                      src={ArrowDownIconWhite}
+                      alt="arrow-down"
+                      style={{ width: 14, height: 14 }}
+                    />
+                  ),
+                  onClick: () => handleCreateClick?.(),
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

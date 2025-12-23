@@ -1,7 +1,7 @@
 """Module for creating and querying RPA tasks."""
 
 import os
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
 import httpx
 from fastapi import HTTPException
@@ -16,6 +16,7 @@ from plugin.rpa.utils.urls.url_util import is_valid_url
 async def create_task(
     access_token: str,
     project_id: str,
+    version: Optional[int],
     exec_position: Optional[str],
     params: Optional[dict],
 ) -> str:
@@ -32,7 +33,14 @@ async def create_task(
         "Content-Type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
-    body = {"project_id": project_id, "exec_position": exec_position, "params": params}
+    body: Dict[str, Optional[Union[str, dict, int]]] = {
+        "project_id": project_id,
+        "exec_position": exec_position,
+        "params": params,
+    }
+    if version:
+        body["version"] = version
+
     async with httpx.AsyncClient() as client:
         try:
             assert task_create_url is not None

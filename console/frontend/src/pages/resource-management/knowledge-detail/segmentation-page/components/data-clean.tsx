@@ -216,7 +216,7 @@ export const SegmentationSettings: FC<{
               {t('knowledge.autoSegmentationAndCleaningDesc')}
             </p>
           </div>
-          <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+          <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
             {sliceType === 'default' ? (
               <img src={check} className="w-4 h-4" alt="" />
             ) : (
@@ -241,7 +241,7 @@ export const SegmentationSettings: FC<{
                 {t('knowledge.customDescription')}
               </p>
             </div>
-            <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+            <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
               {sliceType === 'custom' ? (
                 <img src={check} className="w-4 h-4" alt="" />
               ) : (
@@ -348,7 +348,7 @@ export const SegmentationSettings: FC<{
           </span>
         </div>
         {/* <div className='mt-3 text-desc'>
-      要更改索引方法，请转到 <span className='text-[#275EFF] cursor-pointer'>知识库设置</span>
+      要更改索引方法，请转到 <span className='text-[#6356EA] cursor-pointer'>知识库设置</span>
     </div> */}
         <div className="mt-3 border border-[#009dff] rounded-lg px-6 py-4 flex items-center justify-between">
           <div>
@@ -362,7 +362,7 @@ export const SegmentationSettings: FC<{
           执行嵌入预估消耗 <span className='text-[#1F2A37]' style={{ fontFamily: 'SF Pro Text, SF Pro Text-500' }}>8,665 tokens(<span className='text-[#13A10E]'>$0.0008665</span>)</span>
         </p> */}
           </div>
-          {/* <div className='w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center'>
+          {/* <div className='w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center'>
         <img src={check} className="w-4 h-4" alt="" />
       </div> */}
         </div>
@@ -429,7 +429,7 @@ export const SegmentPreview: FC<{
         </div>
         {!slicing && violationTotal > 0 && (
           <div
-            className="flex items-center gap-1 text-[#275EFF] text-xs cursor-pointer"
+            className="flex items-center gap-1 text-[#6356EA] text-xs cursor-pointer"
             onClick={() => downloadExcel([fileId], 0, fileInfo?.name)}
           >
             <img src={download} className="w-4 h-4" alt="" />

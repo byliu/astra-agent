@@ -1110,6 +1110,7 @@ public class ToolBoxService extends ServiceImpl<ToolBoxMapper, ToolBox> {
             toolBoxVo.setName(mcp.getName());
             toolBoxVo.setDescription(mcp.getBrief());
             toolBoxVo.setAddress(mcp.getLogoUrl());
+            toolBoxVo.setIcon(mcp.getLogoUrl());
             toolBoxVo.setHeatValue(0L);
             toolBoxVo.setIsFavorite(false);
             toolBoxVo.setMcpTooId(mcp.getId());

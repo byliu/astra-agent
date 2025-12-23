@@ -1,5 +1,7 @@
 const translation = {
   createRpa: '新建RPA',
+  emptyDescription: '暂无RPA，快去创建吧~',
+  noSearchResults: '未找到相关RPA',
   back: '返回',
   deleteRpa: '删除RPA',
   deleteRpaConfirm: '确定删除吗？',
@@ -25,6 +27,10 @@ const translation = {
   parameterName: '参数名称',
   parameterDescription: '参数描述',
   parameterType: '参数类型',
+  parameterValue: '参数值',
+  operation: '操作',
+  run: '运行',
+  runResult: '运行结果',
   defaultValue: '默认值',
   inputParameter: '输入参数',
   outputParameter: '输出参数',

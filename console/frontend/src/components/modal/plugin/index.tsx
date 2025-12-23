@@ -53,7 +53,7 @@ const StepIndicator: React.FC<{
             className="w-4 h-4 rounded-full text-center text-[#fff]"
             style={{
               lineHeight: '16px',
-              background: step === 1 ? '#275eff' : '#333333',
+              background: step === 1 ? '#6356EA' : '#333333',
             }}
           >
             1
@@ -61,7 +61,7 @@ const StepIndicator: React.FC<{
           <span
             className="font-medium text-lg"
             style={{
-              color: step === 1 ? '#275eff' : '',
+              color: step === 1 ? '#6356EA' : '',
               lineHeight: '28px',
             }}
           >
@@ -71,7 +71,7 @@ const StepIndicator: React.FC<{
         <div
           className="w-full h-[7px] mt-1"
           style={{
-            background: step === 1 ? '#275eff' : '#E2E3E5',
+            background: step === 1 ? '#6356EA' : '#E2E3E5',
           }}
         ></div>
         <p className="text-desc mt-2.5">{t('plugin.fillPluginIntro')}</p>
@@ -86,7 +86,7 @@ const StepIndicator: React.FC<{
             className="w-4 h-4 rounded-full text-center text-[#fff]"
             style={{
               lineHeight: '16px',
-              background: step === 2 ? '#275eff' : '#333333',
+              background: step === 2 ? '#6356EA' : '#333333',
             }}
           >
             2
@@ -94,7 +94,7 @@ const StepIndicator: React.FC<{
           <span
             className="font-medium text-lg"
             style={{
-              color: step === 2 ? '#275eff' : '',
+              color: step === 2 ? '#6356EA' : '',
               lineHeight: '28px',
             }}
           >
@@ -104,7 +104,7 @@ const StepIndicator: React.FC<{
         <div
           className="w-full h-[7px] mt-1"
           style={{
-            background: step === 2 ? '#275eff' : '#E2E3E5',
+            background: step === 2 ? '#6356EA' : '#E2E3E5',
           }}
         ></div>
         <p className="text-desc mt-2.5">{t('plugin.submitPluginParams')}</p>
@@ -119,7 +119,7 @@ const StepIndicator: React.FC<{
             className="w-4 h-4 rounded-full text-center text-[#fff]"
             style={{
               lineHeight: '16px',
-              background: step === 3 ? '#275eff' : '#333333',
+              background: step === 3 ? '#6356EA' : '#333333',
             }}
           >
             3
@@ -127,7 +127,7 @@ const StepIndicator: React.FC<{
           <span
             className="font-medium text-lg"
             style={{
-              color: step === 3 ? '#275eff' : '',
+              color: step === 3 ? '#6356EA' : '',
               lineHeight: '28px',
             }}
           >
@@ -137,7 +137,7 @@ const StepIndicator: React.FC<{
         <div
           className="w-full h-[7px] mt-1"
           style={{
-            background: step === 3 ? '#275eff' : '#E2E3E5',
+            background: step === 3 ? '#6356EA' : '#E2E3E5',
           }}
         ></div>
         <p className="text-desc mt-2.5">{t('plugin.debugAndVerifyDesc')}</p>
@@ -404,7 +404,7 @@ const AuthTypeSelector: React.FC<{
               <div
                 className="text-[#333333] font-medium"
                 style={{
-                  color: authType === 1 ? '#275EFF' : '',
+                  color: authType === 1 ? '#6356EA' : '',
                 }}
               >
                 {t('plugin.noAuthorization')}
@@ -433,7 +433,7 @@ const AuthTypeSelector: React.FC<{
               <div
                 className="text-[#333333] font-medium"
                 style={{
-                  color: authType === 2 ? '#275EFF' : '',
+                  color: authType === 2 ? '#6356EA' : '',
                 }}
               >
                 {t('plugin.service')}
@@ -660,7 +660,7 @@ const DebuggerForm: React.FC<{
           style={{
             height: '36px',
           }}
-          className="flex items-center w-[80px] gap-1.5 text-[#275eff] cursor-pointer"
+          className="flex items-center w-[80px] gap-1.5 text-[#6356EA] cursor-pointer"
           onClick={handleDebuggerTool}
         >
           <span>{t('plugin.debug')}</span>
@@ -1013,7 +1013,7 @@ export const ToolDebugger: FC<{
             <Button
               loading={debugLoading}
               type="primary"
-              className="flex items-center w-[80px] gap-1.5 text-[#275eff] cursor-pointer"
+              className="flex items-center w-[80px] gap-1.5 text-[#6356EA] cursor-pointer"
               onClick={handleDebuggerTool}
               style={{
                 height: '36px',
@@ -1138,7 +1138,7 @@ export const ToolDetail: FC<{
                   </p>
                 </div>
                 <div
-                  className="inline-flex w-fit items-center gap-1 text-[#333] bg-[#fff] border border-[#E5E5E5] py-1 px-6 rounded-lg hover:text-[#FFF] hover:bg-[#275EFF] cursor-pointer"
+                  className="inline-flex w-fit items-center gap-1 text-[#333] bg-[#fff] border border-[#E5E5E5] py-1 px-6 rounded-lg hover:text-[#FFF] hover:bg-[#6356EA] cursor-pointer"
                   onClick={() => {
                     handleToolDebugger();
                   }}

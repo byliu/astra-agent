@@ -5,11 +5,13 @@ import decimal
 import re
 import time
 import uuid
-from typing import Any, List
+from typing import Any, List, Union
 
+import sqlglot
 import sqlparse
 from common.otlp.trace.span import Span
 from common.service import get_otlp_metric_service, get_otlp_span_service
+from common.utils.snowfake import get_id
 from fastapi import APIRouter, Depends
 from memory.database.api.schemas.exec_dml_types import ExecDMLInput
 from memory.database.api.v1.common import (
@@ -22,14 +24,117 @@ from memory.database.domain.entity.views.http_resp import format_response
 from memory.database.exceptions.e import CustomException
 from memory.database.exceptions.error_code import CodeEnum
 from memory.database.repository.middleware.getters import get_session
-from memory.database.utils.snowfake import get_id
 from sqlglot import exp, parse_one
+from sqlglot.expressions import Column, Literal
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
 exec_dml_router = APIRouter(tags=["EXEC_DML"])
 
 INSERT_EXTRA_COLUMNS = ["id", "uid", "create_time", "update_time"]
+
+PGSQL_INVALID_KEY = [
+    "all",
+    "analyse",
+    "analyze",
+    "and",
+    "any",
+    "array",
+    "as",
+    "asc",
+    "asymmetric",
+    "authorization",
+    "binary",
+    "both",
+    "case",
+    "cast",
+    "check",
+    "collate",
+    "collation",
+    "column",
+    "concurrently",
+    "constraint",
+    "create",
+    "cross",
+    "current_catalog",
+    "current_date",
+    "current_role",
+    "current_schema",
+    "current_time",
+    "current_timestamp",
+    "current_user",
+    "default",
+    "deferrable",
+    "desc",
+    "distinct",
+    "do",
+    "else",
+    "end",
+    "except",
+    "false",
+    "fetch",
+    "for",
+    "foreign",
+    "freeze",
+    "from",
+    "full",
+    "grant",
+    "group",
+    "having",
+    "ilike",
+    "in",
+    "initially",
+    "inner",
+    "intersect",
+    "into",
+    "is",
+    "isnull",
+    "join",
+    "lateral",
+    "leading",
+    "left",
+    "like",
+    "limit",
+    "localtime",
+    "localtimestamp",
+    "natural",
+    "not",
+    "notnull",
+    "null",
+    "offset",
+    "on",
+    "only",
+    "or",
+    "order",
+    "outer",
+    "overlaps",
+    "placing",
+    "primary",
+    "references",
+    "returning",
+    "right",
+    "select",
+    "session_user",
+    "similar",
+    "some",
+    "symmetric",
+    "table",
+    "tablesample",
+    "then",
+    "to",
+    "trailing",
+    "true",
+    "union",
+    "unique",
+    "user",
+    "using",
+    "variadic",
+    "verbose",
+    "when",
+    "where",
+    "window",
+    "with",
+]
 
 
 def rewrite_dml_with_uid_and_limit(
@@ -39,7 +144,7 @@ def rewrite_dml_with_uid_and_limit(
     limit_num: int,
     env: str,  # pylint: disable=unused-argument
     span_context: Span,  # pylint: disable=unused-argument
-) -> tuple[str, list]:
+) -> tuple[str, list, dict]:
     """
     Rewrite DML with UID and limit expressions.
 
@@ -52,7 +157,7 @@ def rewrite_dml_with_uid_and_limit(
         span_context: Span context for tracing
 
     Returns:
-        tuple: (rewritten_sql, insert_ids)
+        tuple: (rewritten_sql, insert_ids, params_dict)
     """
     parsed = parse_one(dml)
     insert_ids: List[int] = []
@@ -70,7 +175,34 @@ def rewrite_dml_with_uid_and_limit(
     if isinstance(parsed, exp.Insert):
         _dml_insert_add_params(parsed, insert_ids, app_id, uid)
 
-    return parsed.sql(dialect="postgres"), insert_ids
+    # Parameterization: parameterize values in SQL statements
+    params_dict: dict[str, Any] = {}
+
+    # Traverse AST nodes to find all literal values
+    for node in parsed.walk():
+        if isinstance(node, exp.Literal):
+            value = node.this
+            # If it's an integer, use the original value directly
+            if isinstance(value, (int, float)) or (
+                isinstance(value, str) and value.isdigit()
+            ):
+                continue
+            # If it's not an integer, use parameterization
+            elif isinstance(value, str):
+                # original string
+                converted_value: Union[str, datetime.datetime] = value
+                # Check if it's a datetime string in format "2025-11-14 14:56:36"
+                if re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$", value):
+                    converted_value = datetime.datetime.strptime(
+                        value, "%Y-%m-%d %H:%M:%S"
+                    )
+                # Generate unique parameter name
+                param_name = f"param_{len(params_dict)}"
+                # Replace original value with parameter placeholder
+                node.replace(exp.Placeholder(this=param_name))
+                params_dict[param_name] = converted_value
+
+    return parsed.sql(dialect="postgres"), insert_ids, params_dict
 
 
 def _dml_add_where(parsed: Any, tables: List[str], app_id: str, uid: str) -> None:
@@ -157,6 +289,192 @@ def to_jsonable(obj: Any) -> Any:
     return obj
 
 
+def _collect_column_names(parsed: Any) -> list:
+    """Collect column names."""
+    columns_to_validate = []
+    for node in parsed.walk():
+        if not isinstance(node, Column):
+            continue
+
+        column_name = node.name
+        if not column_name:
+            continue
+
+        columns_to_validate.append(column_name)
+    return columns_to_validate
+
+
+def _collect_insert_keys(parsed: Any) -> list:
+    """Collect key names from INSERT statements."""
+    keys_to_validate = []
+    for node in parsed.walk():
+        if not isinstance(node, exp.Insert):
+            continue
+
+        if not (node.this and hasattr(node.this, "expressions")):
+            continue
+
+        for col in node.this.expressions:
+            if isinstance(col, Column):
+                keys_to_validate.append(col.name)
+    return keys_to_validate
+
+
+def _collect_update_keys(parsed: Any) -> list:
+    """Collect key names from UPDATE statements."""
+    keys_to_validate = []
+    for node in parsed.walk():
+        if not isinstance(node, exp.Update):
+            continue
+
+        for set_expr in node.expressions:
+            if not isinstance(set_expr, exp.EQ):
+                continue
+
+            left = set_expr.left
+            if isinstance(left, Column):
+                keys_to_validate.append(left.name)
+            elif not isinstance(left, Column):
+                raise ValueError(
+                    f"Column names must be used in UPDATE SET clause: {set_expr}"
+                )
+    return keys_to_validate
+
+
+def _collect_columns_and_keys(parsed: Any) -> tuple[list, list]:
+    """Collect column names and key names that need validation."""
+    columns_to_validate = _collect_column_names(parsed)
+    insert_keys = _collect_insert_keys(parsed)
+    update_keys = _collect_update_keys(parsed)
+    keys_to_validate = insert_keys + update_keys
+    return columns_to_validate, keys_to_validate
+
+
+def _validate_comparison_nodes(parsed: Any, uid: str, span_context: Any, m: Any) -> Any:
+    """Validate comparison operation nodes."""
+    for node in parsed.walk():
+        # Check keys in WHERE conditions
+        if (
+            isinstance(node, exp.EQ)
+            or isinstance(node, exp.NEQ)
+            or isinstance(node, exp.GT)
+            or isinstance(node, exp.LT)
+            or isinstance(node, exp.GTE)
+            or isinstance(node, exp.LTE)
+        ):
+            # Get left side (usually column name)
+            left = node.left
+            if isinstance(left, Column):
+                # These column names will be collected in _collect_columns_and_keys
+                continue
+            elif not isinstance(left, (Column, Literal)):
+                m.in_error_count(
+                    CodeEnum.DMLNotAllowed.code,
+                    lables={"uid": uid},
+                    span=span_context,
+                )
+                span_context.add_error_event(
+                    f"DML statement contains illegal expression: {node}"
+                )
+                return format_response(
+                    code=CodeEnum.DMLNotAllowed.code,
+                    message=f"DML statement contains illegal expression: {node}",
+                    sid=span_context.sid,
+                )
+    return None
+
+
+def _validate_name_pattern(
+    names: list, name_type: str, uid: str, span_context: Any, m: Any
+) -> Any:
+    """Validate name pattern."""
+    pattern = r"^[a-zA-Z_]+$"
+    for name in names:
+        if not bool(re.match(pattern, name)):
+            m.in_error_count(
+                CodeEnum.DMLNotAllowed.code,
+                lables={"uid": uid},
+                span=span_context,
+            )
+            span_context.add_error_event(
+                f"{name_type}: '{name}' does not conform to rules, only letters and underscores are supported"
+            )
+            return format_response(
+                code=CodeEnum.DMLNotAllowed.code,
+                message=f"{name_type}: '{name}' does not conform to rules, only letters and underscores are supported",
+                sid=span_context.sid,
+            )
+    return None
+
+
+def _validate_reserved_keywords(keys: list, uid: str, span_context: Any, m: Any) -> Any:
+    """Validate reserved keywords."""
+    for key_name in keys:
+        if key_name.lower() in PGSQL_INVALID_KEY:
+            m.in_error_count(
+                CodeEnum.DMLNotAllowed.code,
+                lables={"uid": uid},
+                span=span_context,
+            )
+            span_context.add_error_event(
+                f"Key name '{key_name}' is a reserved keyword and is not allowed"
+            )
+            return format_response(
+                code=CodeEnum.DMLNotAllowed.code,
+                message=f"Key name '{key_name}' is a reserved keyword and is not allowed",
+                sid=span_context.sid,
+            )
+    return None
+
+
+async def _validate_dml_legality(dml: str, uid: str, span_context: Any, m: Any) -> Any:
+    try:
+        parsed = sqlglot.parse_one(dml, dialect="postgres")
+
+        # Validate comparison operation nodes
+        error_result = _validate_comparison_nodes(parsed, uid, span_context, m)
+        if error_result:
+            return error_result
+
+        # Collect column names and keys that need validation
+        columns_to_validate, keys_to_validate = _collect_columns_and_keys(parsed)
+
+        # Validate column names
+        error_result = _validate_name_pattern(
+            columns_to_validate, "Column name", uid, span_context, m
+        )
+        if error_result:
+            return error_result
+
+        # Validate key names
+        error_result = _validate_name_pattern(
+            keys_to_validate, "Key name", uid, span_context, m
+        )
+        if error_result:
+            return error_result
+
+        # Validate reserved keywords
+        error_result = _validate_reserved_keywords(
+            keys_to_validate, uid, span_context, m
+        )
+        if error_result:
+            return error_result
+
+        return None
+    except Exception as parse_error:  # pylint: disable=broad-except
+        span_context.record_exception(parse_error)
+        m.in_error_count(
+            CodeEnum.SQLParseError.code,
+            lables={"uid": uid},
+            span=span_context,
+        )
+        return format_response(
+            code=CodeEnum.SQLParseError.code,
+            message="SQL parsing failed",
+            sid=span_context.sid,
+        )
+
+
 async def _validate_and_prepare_dml(
     db: Any, dml_input: Any, span_context: Any, m: Any
 ) -> Any:
@@ -198,12 +516,16 @@ async def _validate_and_prepare_dml(
 
 
 async def _process_dml_statements(
-    dmls: List[str], app_id: str, uid: str, env: str, span_context: Any
+    dmls: List[str], app_id: str, uid: str, env: str, span_context: Any, m: Any
 ) -> Any:
     """Process and rewrite DML statements."""
     rewrite_dmls = []
     for statement in dmls:
-        rewrite_dml, insert_ids = rewrite_dml_with_uid_and_limit(
+        error_legality = await _validate_dml_legality(statement, uid, span_context, m)
+        if error_legality:
+            return None, error_legality
+
+        rewrite_dml, insert_ids, params = rewrite_dml_with_uid_and_limit(
             dml=statement,
             app_id=app_id,
             uid=uid,
@@ -211,14 +533,17 @@ async def _process_dml_statements(
             env=env,
             span_context=span_context,
         )
-        span_context.add_info_event(f"rewrite dml: {rewrite_dml}")
+        span_context.add_info_event(f"rewrite dml sql: {rewrite_dml}")
+        span_context.add_info_event(f"rewrite dml params: {params}")
+        span_context.add_info_event(f"rewrite dml insert_ids: {insert_ids}")
         rewrite_dmls.append(
             {
                 "rewrite_dml": rewrite_dml,
                 "insert_ids": insert_ids,
+                "params": params,
             }
         )
-    return rewrite_dmls
+    return rewrite_dmls, None
 
 
 @exec_dml_router.post("/exec_dml", response_class=JSONResponse)
@@ -266,9 +591,11 @@ async def exec_dml(
             if error_split:
                 return error_split  # type: ignore[no-any-return]
 
-            rewrite_dmls = await _process_dml_statements(
-                dmls, app_id, uid, env, span_context
+            rewrite_dmls, error_legality = await _process_dml_statements(
+                dmls, app_id, uid, env, span_context, m
             )
+            if error_legality:
+                return error_legality  # type: ignore[no-any-return]
 
             final_exec_success_res, exec_time, error_exec = await _exec_dml_sql(
                 db, rewrite_dmls, uid, span_context, m
@@ -317,8 +644,13 @@ async def _exec_dml_sql(
         for dml_info in rewrite_dmls:
             rewrite_dml = dml_info["rewrite_dml"]
             insert_ids = dml_info["insert_ids"]
+            params = dml_info.get("params", {})
 
-            result = await exec_sql_statement(db, rewrite_dml)
+            # If there are parameters, use parameterized query, otherwise execute directly
+            if params:
+                result = await parse_and_exec_sql(db, rewrite_dml, params)
+            else:
+                result = await exec_sql_statement(db, rewrite_dml)
             try:
                 exec_result = result.mappings().all()
                 exec_result_dicts = [dict(row) for row in exec_result]

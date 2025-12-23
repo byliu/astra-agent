@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { Row, Col, Spin, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import SpaceCard from '../space-card';
 import Empty from '../empty';
@@ -51,6 +52,7 @@ const SpaceList: React.FC<SpaceListProps> = ({
   suffix,
   minCardWidth = 460,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { spaceType, setSpaceId, setSpaceName, setSpaceAvatar } =
     useSpaceStore();
@@ -92,13 +94,13 @@ const SpaceList: React.FC<SpaceListProps> = ({
     async (space: SpaceItem) => {
       try {
         await joinEnterpriseSpace({ spaceId: `${space.id}` });
-        message.success('申请成功');
+        message.success(t('space.applySuccess'));
         refresh?.();
       } catch (err) {
         // message.error();
       }
     },
-    [refresh]
+    [refresh, t]
   );
 
   // 处理按钮点击事件
@@ -138,10 +140,10 @@ const SpaceList: React.FC<SpaceListProps> = ({
             console.log('未知操作:', action, space.id);
         }
       } catch (error: any) {
-        message.error(error.msg || error.desc || '访问空间失败');
+        message.error(error.msg || error.desc || t('space.accessSpaceFailed'));
       }
     },
-    [navigate, setSpaceId, setSpaceName, spaceApply]
+    [navigate, setSpaceId, setSpaceName, spaceApply, setSpaceAvatar, t]
   );
 
   const content = useMemo(() => {
@@ -211,7 +213,7 @@ const SpaceList: React.FC<SpaceListProps> = ({
     >
       {content}
       {dataSource.length === 0 && !prefix && !suffix && (
-        <Empty text="暂无空间，请先创建" />
+        <Empty text={t('space.noSpaceYet')} />
       )}
     </div>
   );

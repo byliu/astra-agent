@@ -18,7 +18,7 @@ import com.iflytek.astron.console.hub.dto.publish.BotApiInfoDTO;
 import com.iflytek.astron.console.hub.dto.publish.CreateAppVo;
 import com.iflytek.astron.console.hub.dto.publish.CreateBotApiVo;
 import com.iflytek.astron.console.hub.dto.user.TenantAuth;
-import com.iflytek.astron.console.hub.enums.BotVersionEnum;
+import com.iflytek.astron.console.commons.enums.bot.BotVersionEnum;
 import com.iflytek.astron.console.hub.service.chat.ChatBotApiService;
 import com.iflytek.astron.console.hub.service.publish.PublishApiService;
 import com.iflytek.astron.console.hub.service.publish.ReleaseManageClientService;
@@ -133,7 +133,8 @@ public class PublishApiServiceImpl implements PublishApiService {
             throw new BusinessException(ResponseEnum.BOT_API_CREATE_LIMIT_ERROR);
         }
         try {
-            if (botBase.getVersion().equals(BotVersionEnum.WORKFLOW.getVersion())) {
+            List<Integer> maasSupportedVersions = List.of(BotVersionEnum.WORKFLOW.getVersion());
+            if (maasSupportedVersions.contains(botBase.getVersion())) {
                 return createMaasApi(uid, appMst, botBase, request);
             } else {
                 throw new BusinessException(ResponseEnum.BOT_TYPE_NOT_SUPPORT);

@@ -60,6 +60,7 @@ $fontSizeLarge: 14px;
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  box-shadow: none !important;
 
   &:focus-visible {
     outline: 2px solid #1890ff;
@@ -161,7 +162,7 @@ $fontSizeLarge: 14px;
         8px 20px,
         $fontSizeLarge,
         $lineHeightLarge,
-        10px,
+        14px,
         500,
         80px,
         8px
@@ -174,7 +175,7 @@ $fontSizeLarge: 14px;
         6px 16px,
         $fontSizeMiddle,
         $lineHeightMiddle,
-        9px,
+        12px,
         500,
         64px,
         6px
@@ -187,7 +188,7 @@ $fontSizeLarge: 14px;
         4px 12px,
         $fontSizeSmall,
         $lineHeightSmall,
-        8px,
+        10px,
         400,
         48px,
         4px

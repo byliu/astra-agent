@@ -112,7 +112,7 @@ func (biz *AuthService) Query(appId string) ([]*models.Auth, error) {
 func (biz *AuthService) QueryAppByAPIKey(apiKey string) (*models.App, error) {
 	data, err := biz.authDao.Select(biz.authDao.WithApiKey(apiKey), biz.authDao.WithIsDelete(false))
 	if err != nil {
-		log.Printf("query auth biz info by api key %s error: %v", apiKey, err)
+		log.Printf("query auth biz info error: %v", err)
 		return nil, NewBizErr(ErrCodeSystem, err.Error())
 	}
 	if len(data) == 0 {

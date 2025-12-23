@@ -9,7 +9,6 @@ import logoutIcon from '@/assets/imgs/sidebar/logout.svg';
 // import HeaderFeedbackModal from '@/components/header-feedback-modal';
 import spaceChooseIcon from '@/assets/imgs/sidebar/space-choosed.png';
 // import config from '@/config/index';
-// import SSO from '@/lib/sso.min.js';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
@@ -24,9 +23,9 @@ import { handleLogout } from '@/utils/auth';
 import LanguageSwitcher from '@/components/language-switcher';
 
 const spaceRole = {
-  '1': '超级管理者',
-  '2': '管理员',
-  '3': '成员',
+  '1': 'sidebar.spaceRoles.superAdmin',
+  '2': 'sidebar.spaceRoles.admin',
+  '3': 'sidebar.spaceRoles.member',
 } as const;
 
 const ControlModal = ({
@@ -53,26 +52,25 @@ const ControlModal = ({
   // 根据spaceType统一获取当前空间列表和配置
   const spaceConfig = useMemo(() => {
     const isPersonal = spaceType === 'personal';
-    console.log('song serviceType', info?.serviceType);
     return {
       icon: isPersonal ? personalIcon : teamIcon,
       displayType: isPersonal
-        ? '个人版'
+        ? t('sidebar.personalEdition')
         : info?.serviceType === 3
-          ? '定制版'
+          ? t('sidebar.customEdition')
           : info?.serviceType === 2
-            ? '企业版'
-            : '团队版',
+            ? t('sidebar.enterpriseEdition')
+            : t('sidebar.teamEdition'),
       oppositeType: isPersonal
         ? info?.serviceType === 2
-          ? '企业版'
-          : '团队版'
-        : '个人版',
+          ? t('sidebar.enterpriseEdition')
+          : t('sidebar.teamEdition')
+        : t('sidebar.personalEdition'),
       oppositeIcon: isPersonal ? teamIcon : personalIcon,
       oppositeSpaceType: isPersonal ? 'team' : 'personal', // 相反的spaceType值
       chooseSpaceId: isPersonal ? spaceId : enterpriseId,
     };
-  }, [spaceType, spaceId, enterpriseId]);
+  }, [spaceType, spaceId, enterpriseId, info?.serviceType, t]);
 
   // 统一的空间点击处理函数
   const handleSpaceClick = (item: any) => {
@@ -132,7 +130,7 @@ const ControlModal = ({
             className={styles.team_icon}
           />
           <div className={styles.title_text}>
-            <div className={styles.title_name}>星辰</div>
+            <div className={styles.title_name}>{t('sidebar.xingchen')}</div>
             <div className={styles.title_sub}>{spaceConfig.oppositeType}</div>
           </div>
         </div>
@@ -171,15 +169,15 @@ const ControlModal = ({
                     <div className={styles.text_name}>{item.name}</div>
                   </Tooltip>
                   <div className={styles.team_permission}>
-                    {spaceRole[String(item.role) as keyof typeof spaceRole]}
+                    {t(spaceRole[String(item.role) as keyof typeof spaceRole])}
                   </div>
                 </div>
                 <div className={styles.text_sub}>
                   {item.serviceType === 3
-                    ? '定制版'
+                    ? t('sidebar.customEdition')
                     : item.serviceType === 2
-                      ? '企业版'
-                      : '团队版'}
+                      ? t('sidebar.enterpriseEdition')
+                      : t('sidebar.teamEdition')}
                 </div>
               </div>
               {/* {item.id === Number(spaceConfig.chooseSpaceId) && (
@@ -212,19 +210,6 @@ const ControlModal = ({
     setFeedbackModalVisible(true);
     onClose?.();
   };
-
-  //退出登录点击
-  // const handleLogout = async () => {
-  //   const SSONeed = {
-  //     passportOrigin: config.PASSPORT,
-  //     ssoOrigin: config.AUTH_SITE,
-  //   };
-  //   await SSO.setOrigin(SSONeed);
-  //   await SSO.logout();
-  //   localStorage.removeItem('registerFrom');
-  //   // window.location.reload();
-  //   window.location.href = '/home';
-  // };
 
   useEffect(() => {
     if (enterpriseId) {
@@ -269,7 +254,7 @@ const ControlModal = ({
               overlayClassName="black-tooltip"
             >
               <div className={styles.title_name}>
-                {spaceType === 'personal' ? '星辰' : info.name}
+                {spaceType === 'personal' ? t('sidebar.xingchen') : info.name}
               </div>
             </Tooltip>
             <div className={styles.title_sub}>{spaceConfig.displayType}</div>
@@ -299,7 +284,7 @@ const ControlModal = ({
         </div> */}
 
         <div className={styles.content_item}>
-          <LanguageSwitcher />
+          <LanguageSwitcher className={styles.content_item} />
         </div>
 
         <div

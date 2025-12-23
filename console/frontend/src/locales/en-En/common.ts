@@ -8,6 +8,7 @@ const translation = {
   save: 'Save',
   reset: 'Reset',
   submit: 'Submit',
+  run: 'Run',
   edit: 'Edit',
   delete: 'Delete',
   add: 'Add',
@@ -22,6 +23,76 @@ const translation = {
   conversationRounds: 'Conversation Rounds',
   conversationRoundsDescription:
     'Set the number of conversation rounds to use chat history in the node. More rounds mean higher relevance in multi-turn conversations, but also consume more tokens',
+  // Common messages
+  submitSuccess: 'Submit Successfully',
+  submitFailed: 'Submit Failed',
+  submitFailedRetry: 'Submit failed, please try again',
+  answeringPleaseTryLater: 'Answering, please try again later',
+  pleaseEnterQuestion: 'Please enter your question',
+  answering: 'Answering...',
+  stopOutput: 'Stop Output',
+  // Member management
+  roleUpdateSuccess: 'Role updated successfully',
+  userDeleted: 'User {{username}} deleted',
+  username: 'Username',
+  role: 'Role',
+  joinTime: 'Join Time',
+  action: 'Action',
+  confirmDelete: 'Confirm Delete',
+  confirmDeleteMember: 'Are you sure you want to delete this member?',
+  totalItems: 'Total {{total}} items',
+  // Apply management
+  applyIdNotExist: 'Application ID does not exist',
+  confirmReject: 'Confirm Rejection',
+  confirmRejectUser: 'Are you sure you want to reject this user?',
+  rejectSuccess: 'Rejected successfully',
+  rejectFailed: 'Rejection failed',
+  confirmApprove: 'Confirm Approval',
+  confirmApproveApplication:
+    'Are you sure you want to approve this application?',
+  approveSuccess: 'Approved successfully',
+  approveFailed: 'Approval failed',
+  reject: 'Reject',
+  approve: 'Approve',
+  applyTime: 'Apply Time',
+  applyStatus: 'Application Status',
+  // Transfer ownership
+  pleaseSelectMemberToTransfer: 'Please select a member to transfer',
+  transferSuccess: 'Transferred successfully',
+  transferSpaceOwnership: 'Transfer Space Ownership',
+  transferOwnershipWarning:
+    'After transferring ownership, your status will be changed to administrator',
+  transferOwnershipTo: 'Transfer ownership to',
+  pleaseSelectMember: 'Please select a member',
+  // Delete space
+  verificationCodeSent: 'Verification code sent',
+  pleaseEnterVerificationCode: 'Please enter verification code',
+  deleteSpaceSuccess: 'Space deleted successfully',
+  deleteSpace: 'Delete Space',
+  deleteSpaceWarning:
+    'Please delete carefully! After deletion, all data in the space will be lost, and the allocated quota will be deducted.',
+  enterVerificationCodeForMobile:
+    "Please enter the verification code received by the space owner's reserved phone number {{mobile}}",
+  sendVerificationCode: 'Send Code',
+  resendAfterSeconds: 'Resend in {{seconds}}s',
+  // Space detail
+  loadSpaceInfoFailed: 'Failed to load space information',
+  inviteSuccess: 'Invited successfully',
+  selectRole: 'Select role',
+  selectStatus: 'Select status',
+  pleaseEnterUsername: 'Please enter username',
+  // Invitation list
+  invitationStatus: 'Invitation Status',
+  invitationTime: 'Invitation Time',
+  joinSpace: 'Join Space',
+  invitationResentToUser: 'Invitation has been resent to {{username}}',
+  invitationRevokedForUser: 'Invitation for user {{username}} has been revoked',
+  invitationRecordDeleted:
+    'Invitation record for {{username}} has been deleted',
+  revoke: 'Revoke',
+  confirmRevokeInvitation: 'Confirm Revoke Invitation',
+  confirmRevokeInvitationContent:
+    'Are you sure you want to revoke the invitation to this user?',
   // Common validation messages
   valueCannotBeEmpty: 'Value cannot be empty',
   valueCannotBeRepeated: 'Value cannot be repeated',

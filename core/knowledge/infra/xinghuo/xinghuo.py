@@ -577,7 +577,7 @@ def _handle_form_request_error(e: Exception, url: str, span_context: Any) -> Non
         ThirdPartyException: Unified third-party exception
     """
     if isinstance(e, asyncio.TimeoutError):
-        error_msg = f"Request to {url} timed out after 60 seconds"
+        error_msg = f"Request to {url} timed out "
         logger.error(error_msg)
         if span_context:
             span_context.record_exception(e)

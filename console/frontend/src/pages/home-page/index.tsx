@@ -15,7 +15,7 @@ import {
   cancelFavorite,
 } from '@/services/agent-square';
 import styles from './index.module.scss';
-import { Input, message, Spin, Tooltip } from 'antd';
+import { Input, message, Popover, Spin, Tooltip } from 'antd';
 import classnames from 'classnames';
 import eventBus from '@/utils/event-bus';
 import { debounce } from 'lodash';
@@ -26,6 +26,7 @@ import { getLanguageCode } from '@/utils/http';
 import { BotType, Bot, SearchBotParam, Banner } from '@/types/agent-square';
 import type { ResponseResultPage } from '@/types/global';
 import { handleShare } from '@/utils';
+import { useLocaleStore } from '@/store/spark-store/locale-store';
 
 const PAGE_SIZE = 10;
 
@@ -41,7 +42,7 @@ const HomePage: React.FC = () => {
   const currentLang = getLanguageCode();
 
   const [bannerList] = useState<Banner[]>([
-    // NOTE: isOpen: 是否新开页面跳转
+    // NOTE: isOpen: open new page
     {
       src: 'https://openres.xfyun.cn/xfyundoc/2025-09-01/ec2409cf-17cc-4276-b8f3-acdca4abac42/1756696685915/agentRewardBanner.png',
       srcEn:
@@ -49,7 +50,6 @@ const HomePage: React.FC = () => {
       url: `${window.location.origin}/activitySummer`,
       isOpen: false,
     },
-    // NOTE: 0728新banner 4张
     {
       src: 'https://openres.xfyun.cn/xfyundoc/2025-07-28/1b4d1b3b-5fc0-44e5-938a-f11cd399ea09/1753666916737/banner01-07.28.jpg',
       srcEn:
@@ -88,24 +88,26 @@ const HomePage: React.FC = () => {
     searchInputValue,
     setBotType,
     setBotOrigin,
-    setScrollTop,
     setLoadingPage,
     setSearchInputValue,
   } = useHomeStore();
   const homeRef = useRef<HTMLDivElement>(null);
-  const [pageInfo, setPageInfo] = useState<SearchBotParam>(PAGE_INFO_ORIGIN); // 页面信息
-  const [searchLoading, setSearchLoading] = useState<boolean>(false); // 是否正在加载资源
-  const [agentList, setAgentList] = useState<Bot[]>([]); // 智能体列表
-  const [loading, setLoading] = useState(false); // 加载更多状态
-  const [hasMore, setHasMore] = useState(true); // 是否还有更多数据
+  const [pageInfo, setPageInfo] = useState<SearchBotParam>(PAGE_INFO_ORIGIN); // page info
+  const [searchLoading, setSearchLoading] = useState<boolean>(false); // is searching
+  const [agentList, setAgentList] = useState<Bot[]>([]); // bot list
+  const [loading, setLoading] = useState(false); // loading more
+  const [hasMore, setHasMore] = useState(true); // has more data
   const onGettingPage = useRef(false);
   const user = useUserStore((state: any) => state.user);
   const { handleToChat } = useChat();
   const [pendingBotTypeChange, setPendingBotTypeChange] = useState<
     number | null
   >(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { locale: localeNow } = useLocaleStore();
 
-  // 根据语言环境过滤并选择banner图片
+  // filter banner by language
   const filteredBanners: Banner[] = bannerList
     .filter((banner: Banner) => currentLang !== 'en' || banner.srcEn)
     .map((banner: Banner) => ({
@@ -113,7 +115,7 @@ const HomePage: React.FC = () => {
       src: currentLang === 'en' ? banner.srcEn : banner.src,
     }));
 
-  // 处理banner点击事件
+  // handle banner click
   const handleBannerClick = (item: Banner): void => {
     if (item.url) {
       if (item.isOpen) {
@@ -124,7 +126,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  //获取智能体类型
+  // get agent type list
   const loadAgentTypeList = async (): Promise<void> => {
     const res: BotType[] = await getAgentType();
     setBotTypes(res || []);
@@ -136,12 +138,12 @@ const HomePage: React.FC = () => {
     });
   };
 
-  // 搜索框前缀图标
+  // search box prefix icon
   const prefixIcon = (): React.ReactNode => {
     return <img src={require('@/assets/svgs/search.svg')} alt="" />;
   };
 
-  //开始搜索
+  // start search
   const handleStartSearch = (value: string, pageInfo: SearchBotParam) => {
     setBotOrigin('search');
     setSearchLoading(true);
@@ -152,7 +154,7 @@ const HomePage: React.FC = () => {
       page: 1,
     });
   };
-  //切换助手类型
+  // switch bot type
   const handleBotTypeChange = async (type: number): Promise<void> => {
     onGettingPage.current = false;
     setAgentList([]);
@@ -168,34 +170,9 @@ const HomePage: React.FC = () => {
     setBotType(type);
   };
 
-  // 滚动时获取新列表
-  const handleScroll: React.UIEventHandler<HTMLDivElement> = (e): void => {
-    const { scrollTop, scrollHeight, clientHeight } =
-      e.target as HTMLDivElement;
-    // 滚动到距离底部100px时触发
-    debouncedSetScrollTop(scrollTop); // 使用防抖的滚动位置更新
-    if (
-      scrollHeight - scrollTop - clientHeight < 100 &&
-      !loading &&
-      hasMore &&
-      !onGettingPage.current &&
-      // botOrigin !== 'home' &&
-      !searchLoading
-    ) {
-      onGettingPage.current = true;
-      loadMore()
-        .then(() => {
-          setLoadingPage(loadingPage + 1);
-        })
-        .catch(err => {
-          console.error('加载更多失败:', err);
-        });
-    }
-  };
-
   /**
-   * 加载更多智能体列表数据
-   * @param customPageIndex 自定义页码
+   * load more agent list data
+   * @param customPageIndex custom page index
    * @returns
    */
   const loadMore = (customPageIndex?: number): Promise<void> => {
@@ -211,7 +188,7 @@ const HomePage: React.FC = () => {
     });
   };
   /**
-   * 加载所有智能体列表
+   * load all agent list
    */
   const loadAgentListAll = (): void => {
     getAgentList({ ...pageInfo })
@@ -225,7 +202,7 @@ const HomePage: React.FC = () => {
       })
       .catch(err => {
         setSearchLoading(false);
-        message.error(err?.msg || '网络出小差了，请稍后再试~');
+        message.error(err?.msg || t('networkError'));
       })
       .finally(() => {
         setLoading(false);
@@ -234,7 +211,7 @@ const HomePage: React.FC = () => {
   };
 
   /**
-   * 取消或者收藏智能体
+   * collect or cancel collect bot
    * @param item
    * @param e
    */
@@ -250,15 +227,10 @@ const HomePage: React.FC = () => {
         .then(() => {
           message.success(t('home.collectionSuccess'));
           eventBus.emit('getFavoriteBotList');
-          setAgentList((agents: Bot[]) => {
-            const currentBot: Bot | undefined =
-              agents.find((t: Bot) => t.botId === item.botId) || ({} as Bot);
-            currentBot.isFavorite = true;
-            return [...agents];
-          });
+          updateBotList(item.botId, true);
         })
         .catch(err => {
-          message.error(err?.msg || '网络出小差了，请稍后再试~');
+          message.error(err?.msg || t('networkError'));
         });
     } else {
       cancelFavorite({
@@ -267,24 +239,29 @@ const HomePage: React.FC = () => {
         .then(() => {
           message.success(t('home.cancelCollectionSuccess'));
           eventBus.emit('getFavoriteBotList');
-          setAgentList((agents: Bot[]) => {
-            const currentBot: Bot | undefined =
-              agents.find((t: Bot) => t.botId === item.botId) || ({} as Bot);
-            currentBot.isFavorite = false;
-            return [...agents];
-          });
+          updateBotList(item.botId, false);
         })
         .catch(err => {
-          message.error(err?.msg || '网络出小差了，请稍后再试~');
+          message.error(err?.msg);
         });
     }
   };
-  /**
-   * 跳转到智能体详情页开始对话
-   * @param item
-   */
-  const handleNavigateToChat = (botId: number): void => {
-    handleToChat(botId);
+
+  // update bot list
+  const updateBotList = (botId: string | number, isFavorite: boolean) => {
+    setAgentList((agents: Bot[]) => {
+      const currentBot: Bot | undefined =
+        agents.find((t: Bot) => t.botId === botId) || ({} as Bot);
+      currentBot.isFavorite = isFavorite;
+      return [...agents];
+    });
+  };
+
+  // observer favorite change
+  const handleFavoriteChange = (botId: string | number) => {
+    if (botId) {
+      updateBotList(botId, false);
+    }
   };
 
   useEffect(() => {
@@ -296,25 +273,21 @@ const HomePage: React.FC = () => {
       getCommonConfig(params);
     }
     loadAgentTypeList();
+    eventBus.on('favoriteChange', handleFavoriteChange);
+    return () => {
+      eventBus.off('favoriteChange', handleFavoriteChange);
+    };
   }, []);
 
   const handleSearch = useCallback(
     debounce((value, pageInfo) => {
       handleStartSearch(value, pageInfo);
-    }, 500), // 500ms延迟
+    }, 500),
     [handleBotTypeChange, handleStartSearch]
   );
   const debouncedSearchRef = useRef(handleSearch);
 
-  // 创建防抖的滚动位置更新函数
-  const debouncedSetScrollTop = useCallback(
-    debounce((scrollTop: number) => {
-      setScrollTop(scrollTop);
-    }, 100),
-    [setScrollTop]
-  );
-
-  // 监听scrollTop变化，如果有待处理的botType变更，则执行
+  // observe scrollTop change, if there is a pending botType change, execute
   useEffect(() => {
     if (pendingBotTypeChange !== null && scrollTop === 0) {
       handleBotTypeChange(pendingBotTypeChange);
@@ -322,13 +295,58 @@ const HomePage: React.FC = () => {
     }
   }, [scrollTop, pendingBotTypeChange]);
 
+  // IntersectionObserver observe sentinel element, implement infinite scroll loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          // sentinel element enter or near viewport
+          if (
+            entry.isIntersecting &&
+            !loading &&
+            hasMore &&
+            !onGettingPage.current &&
+            !searchLoading
+          ) {
+            onGettingPage.current = true;
+            loadMore()
+              .then(() => {
+                setLoadingPage(loadingPage + 1);
+              })
+              .catch(err => {
+                onGettingPage.current = false;
+              });
+          }
+        });
+      },
+      {
+        root: homeRef.current, // homeRef container as root element
+        rootMargin: '100px', // before 100px
+        threshold: 0, // sentinel element just enter
+      }
+    );
+
+    // observe sentinel element
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    observerRef.current = observer;
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore, onGettingPage, searchLoading, loadingPage, loadMore]);
+
   const handleValueChange = (e: any) => {
     const value = e.target.value;
     setSearchInputValue(value);
     debouncedSearchRef.current(value, pageInfo);
   };
 
-  //分享智能体
+  // share bot
   const handleShareAgent = async (botInfo: Bot): Promise<void> => {
     await handleShare(botInfo.botName, botInfo.botId, t);
   };
@@ -355,67 +373,72 @@ const HomePage: React.FC = () => {
                     <div
                       className={styles.recent_card_item}
                       key={index}
-                      onClick={() => handleNavigateToChat(item.botId)}
+                      onClick={() => handleToChat(item?.botId)}
                     >
-                      <img
-                        src={item?.botCoverUrl}
-                        alt=""
-                        className={styles.bot_avatar}
-                      />
                       <div className={styles.info}>
-                        <div className={styles.title}>
-                          <Tooltip
-                            placement="bottomLeft"
-                            title={item?.botName}
-                            arrow={false}
-                            overlayClassName="black-tooltip"
-                          >
-                            <span>{item?.botName}</span>
-                          </Tooltip>
-                          <div onClick={e => e.stopPropagation()}>
-                            <div onClick={() => handleShareAgent(item)} />
-                            <div
-                              className={classnames({
-                                [styles.collect as string]: !!item?.isFavorite,
-                              })}
-                              onClick={e => {
-                                handleCollect(item, e);
-                              }}
-                            />
+                        <div className={styles.bot_info}>
+                          <img
+                            src={item?.botCoverUrl}
+                            alt=""
+                            className={styles.bot_avatar}
+                          />
+                          <div className={styles.bot_info_content}>
+                            <div className={styles.title}>
+                              <span>{item?.botName}</span>
+                              <div onClick={e => e.stopPropagation()}>
+                                <div onClick={() => handleShareAgent(item)} />
+                                <div
+                                  className={classnames({
+                                    [styles.collect as string]:
+                                      !!item?.isFavorite,
+                                  })}
+                                  onClick={e => {
+                                    handleCollect(item, e);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <Tooltip
+                              placement="bottomLeft"
+                              title={item?.botDesc}
+                              arrow={false}
+                              overlayClassName="black-tooltip"
+                            >
+                              <div className={styles.desc}>{item?.botDesc}</div>
+                            </Tooltip>
                           </div>
                         </div>
-                        <Tooltip
-                          placement="bottomLeft"
-                          title={item?.botDesc}
-                          arrow={false}
-                          overlayClassName="black-tooltip"
-                        >
-                          <div className={styles.desc}>{item?.botDesc}</div>
-                        </Tooltip>
-                        <div className={styles.tags}>
-                          {[1, 5].includes(item?.version as number) && (
-                            <div className={styles.itag}>
-                              {t('home.instructionType')}
-                            </div>
-                          )}
-                          {[2, 3, 4].includes(item?.version as number) && (
-                            <div className={styles.itag}>
-                              {t('home.workflowType')}
-                            </div>
-                          )}
-                        </div>
+
                         <div className={styles.author}>
-                          <img
-                            src={require('@/assets/svgs/author.svg')}
-                            alt=""
-                          />
-                          <span>{item?.creator || '@讯飞星火'}</span>
-                          {/* <img src={require('@/assets/svgs/fire.svg')} alt="" />
-                          <span>{item?.hotNum}</span> */}
+                          <div className={styles.author_info}>
+                            <img
+                              src={require('@/assets/imgs/home/author.svg')}
+                              alt=""
+                            />
+                            <span>
+                              {item?.creator || t('home.officialAssistant')}
+                            </span>
+                          </div>
+                          <div className={styles.tags}>
+                            {item?.version &&
+                              [1, 5].includes(item?.version) && (
+                                <div className={styles.itag}>
+                                  {t('home.instructionType')}
+                                </div>
+                              )}
+                            {item?.version &&
+                              [2, 3, 4].includes(item?.version) && (
+                                <div className={styles.itag}>
+                                  {t('home.workflowType')}
+                                </div>
+                              )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {/* observer sentinel element */}
+                  <div ref={sentinelRef} style={{ height: '1px' }} />
                 </div>
               </div>
             ) : (
@@ -448,15 +471,12 @@ const HomePage: React.FC = () => {
   }, [pageInfo]);
 
   return (
-    <div className={styles.home} onScroll={handleScroll} ref={homeRef}>
-      <div className={styles.all_agent}>
-        {/* 助手类型 */}
-        <div className={styles.all_agent_title}>
-          <div className={styles.all_agent_title_left}>
-            {/* NOTE: 这里的 友伴 需要翻译吗 */}
-            {botTypes
-              ?.filter?.(item => item.typeName !== '友伴')
-              .map((item: BotType) => (
+    <div className={styles.homeWrapper} ref={homeRef}>
+      <div className={styles.home}>
+        <div className={styles.all_agent}>
+          <div className={styles.all_agent_title}>
+            <div className={styles.all_agent_title_left}>
+              {botTypes.map((item: BotType) => (
                 <div
                   key={item.typeKey}
                   className={classnames(styles.bot_type_item, 'relative', {
@@ -464,35 +484,25 @@ const HomePage: React.FC = () => {
                   })}
                   onClick={() => {
                     handleBotTypeChange(item.typeKey);
-                    // 记录发现频道已点击
-                    if (item.typeName === '发现') {
-                      localStorage.setItem('discoveryClicked', 'true');
-                    }
                   }}
                 >
-                  {item.typeName}
-                  {/* 发现频道小红点 */}
-                  {item.typeName === '发现' &&
-                    !localStorage.getItem('discoveryClicked') &&
-                    new Date() < new Date(2025, 7, 24) && (
-                      <span className="absolute top-[4px] right-[2px] w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
+                  {localeNow === 'en' ? item.typeNameEn : item.typeName}
                 </div>
               ))}
+            </div>
+            <div className={styles.all_agent_title_right}>
+              <Input
+                placeholder={t('home.searchPlaceholder')}
+                value={searchInputValue}
+                onChange={e => {
+                  handleValueChange(e);
+                }}
+                prefix={prefixIcon()}
+              />
+            </div>
           </div>
-          <div className={styles.all_agent_title_right}>
-            <Input
-              placeholder={t('home.searchPlaceholder')}
-              value={searchInputValue}
-              onChange={e => {
-                handleValueChange(e);
-              }}
-              prefix={prefixIcon()}
-            />
-          </div>
+          {renderCardWrapper()}
         </div>
-        {/* 助手列表 */}
-        {renderCardWrapper()}
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import com.iflytek.astron.console.commons.util.MaasUtil;
 import com.iflytek.astron.console.commons.util.RequestContextUtil;
 import com.iflytek.astron.console.commons.util.space.SpaceInfoUtil;
 import com.iflytek.astron.console.hub.dto.bot.MaasDuplicate;
+import com.iflytek.astron.console.commons.enums.bot.BotVersionEnum;
 import com.iflytek.astron.console.hub.service.bot.BotTransactionalService;
 import com.iflytek.astron.console.hub.util.BotPermissionUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -83,10 +84,10 @@ public class BotController {
             }
         } else {
             // Create workflow assistant
-            BotInfoDto dto = botService.insertWorkflowBot(uid, bot, spaceId);
+            BotInfoDto dto = botService.insertWorkflowBot(uid, bot, spaceId, BotVersionEnum.WORKFLOW.version);
             int botId = dto.getBotId();
             bot.setBotId(botId);
-            JSONObject maas = maasUtil.synchronizeWorkFlow(null, bot, request, spaceId);
+            JSONObject maas = maasUtil.synchronizeWorkFlow(null, bot, request, spaceId, BotVersionEnum.WORKFLOW.getVersion(), null);
             dto.setFlowId(maas.getJSONObject("data").getLong("flowId"));
             dto.setMaasId(maas.getJSONObject("data").getLong("id"));
             botService.addMaasInfo(uid, maas, botId, spaceId);

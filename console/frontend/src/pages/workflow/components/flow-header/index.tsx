@@ -3,14 +3,18 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import useFlowsManager from '@/components/workflow/store/use-flows-manager';
 import FlowEdit from '@/components/workflow/modal/flow-edit';
+import VirtualConfig from '@/components/virtual-config-modal';
 import dayjs from 'dayjs';
+import { isJSON } from '@/utils';
+import { saveFlowAPI } from '@/services/flow';
 
 import arrowLeft from '@/assets/imgs/knowledge/workflow-back.png';
 import flowEditIcon from '@/assets/imgs/workflow/flow-edit-icon.png';
 import flowSuccessIcon from '@/assets/imgs/workflow/flow-success-icon.png';
 import flowRunningIcon from '@/assets/imgs/workflow/flow-running-icon.png';
 import flowFailedIcon from '@/assets/imgs/workflow/flow-failed-icon.png';
-
+import flowEditNormal from '@/assets/imgs/workflow/flow-edit-normal.svg';
+import { TFunction } from 'i18next';
 interface FlowHeaderProps {
   currentTab?: 'arrange' | 'overview';
   children?: ReactNode;
@@ -18,7 +22,7 @@ interface FlowHeaderProps {
 
 interface FlowStatusProps {
   flowResult: unknown;
-  t: unknown;
+  t: TFunction;
 }
 
 const FlowStatus: React.FC<FlowStatusProps> = ({ flowResult, t }) => {
@@ -82,7 +86,7 @@ const FlowStatus: React.FC<FlowStatusProps> = ({ flowResult, t }) => {
 interface FlowTabsProps {
   currentTab: 'arrange' | 'overview';
   id: string;
-  t: unknown;
+  t: TFunction;
   navigate: ReturnType<typeof useNavigate>;
 }
 
@@ -115,19 +119,84 @@ const FlowHeader: React.FC<FlowHeaderProps> = ({ children, currentFlow }) => {
   const flowResult = useFlowsManager(state => state.flowResult);
   const historyVersion = useFlowsManager(state => state.historyVersion);
   const historyVersionData = useFlowsManager(state => state.historyVersionData);
+  const setCurrentFlow = useFlowsManager(state => state.setCurrentFlow);
   const [currentTab, setCurrentTab] = useState('arrange');
-  const [editModal, setEditModal] = useState(false);
+  const [modalType, setModalType] = useState<string>('');
+
+  const isVirtualFlow = useMemo(() => {
+    return currentFlow?.type === 4;
+  }, [currentFlow]);
+
+  const flowConfig = useMemo(() => {
+    return isJSON(currentFlow?.flowConfig)
+      ? JSON.parse(currentFlow?.flowConfig)
+      : {};
+  }, [currentFlow?.flowConfig]);
+
+  const handleEditSumbit = fields => {
+    const config = {
+      ...fields.talkAgentConfig,
+    };
+    const params = {
+      id: currentFlow?.id,
+      flowId: currentFlow?.flowId,
+      name: fields?.name,
+      description: fields?.botDesc,
+      avatarIcon: fields.avatar,
+      category: fields.botType,
+      flowConfig: config,
+    };
+    let advancedConfig = JSON.parse(currentFlow?.advancedConfig);
+    saveFlowAPI(params).then(data => {
+      setModalType('');
+      setCurrentFlow(currentFlow => ({
+        ...currentFlow,
+        name: fields.name,
+        description: fields.botDesc,
+        updateTime: currentFlow.updateTime,
+        avatarIcon: fields.avatar,
+        category: fields.botType,
+        flowConfig: JSON.stringify(config),
+        advancedConfig: JSON.stringify({
+          ...advancedConfig,
+          textToSpeech: { ...advancedConfig.textToSpeech, vcn_cn: config.vcn },
+        }),
+      }));
+    });
+  };
 
   useEffect(() => {
-    console.log('location@@', location);
     setCurrentTab(location?.pathname?.split('/')?.pop());
   }, [location]);
 
   return (
     <div onKeyDown={e => e.stopPropagation()}>
-      {editModal && currentFlow && (
-        <FlowEdit currentFlow={currentFlow} setEditModal={setEditModal} />
+      {modalType === 'text' && currentFlow && (
+        <FlowEdit currentFlow={currentFlow} setModalType={setModalType} />
       )}
+      <VirtualConfig
+        visible={modalType === 'virtual'}
+        onCancel={() => {
+          setModalType('');
+        }}
+        formValues={{
+          flowId: currentFlow?.flowId,
+          name: currentFlow?.name,
+          botType: currentFlow?.category,
+          avatar: currentFlow?.avatarIcon,
+          botDesc: currentFlow?.description,
+          talkAgentConfig: {
+            interactType: flowConfig?.interactType,
+            vcn: flowConfig?.vcn,
+            sceneId: flowConfig?.sceneId,
+            sceneMode: flowConfig?.sceneMode,
+            sceneEnable: flowConfig?.sceneEnable,
+            vcnEnable: flowConfig?.vcnEnable,
+            callSceneId: flowConfig?.callSceneId,
+          },
+        }}
+        onSubmit={handleEditSumbit}
+      />
       <div
         className="w-full h-[80px] bg-[#fff] border-b border-[#e2e8ff] flex justify-between px-6 py-5"
         style={{ borderRadius: '0px 0px 24px 24px' }}
@@ -150,15 +219,26 @@ const FlowHeader: React.FC<FlowHeaderProps> = ({ children, currentFlow }) => {
               <div className="flex items-center gap-1 text-center">
                 <span className="font-medium">{currentFlow?.name}</span>
                 {currentTab === 'arrange' && (
-                  <img
-                    src={flowEditIcon}
-                    className="w-[14px] h-[14px] cursor-pointer"
-                    alt=""
-                    onClick={() => setEditModal(true)}
-                  />
+                  <>
+                    {isVirtualFlow ? (
+                      <img
+                        src={flowEditNormal}
+                        className="w-[94px] h-[28px] cursor-pointer"
+                        alt=""
+                        onClick={() => setModalType('virtual')}
+                      />
+                    ) : (
+                      <img
+                        src={flowEditIcon}
+                        className="w-[14px] h-[14px] cursor-pointer"
+                        alt=""
+                        onClick={() => setModalType('text')}
+                      />
+                    )}
+                  </>
                 )}
                 {historyVersion && (
-                  <span className="bg-[#E9EEFF] w-[30px] h-[18px] text-[#275EFF] text-[10px] rounded-[4px] flex items-center justify-center rounded-[7px]">
+                  <span className="bg-[#E9EEFF] w-[30px] h-[18px] text-[#6356EA] text-[10px] flex items-center justify-center rounded-[7px]">
                     {historyVersionData?.name}
                   </span>
                 )}

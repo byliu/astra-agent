@@ -21,14 +21,14 @@ export const FieldActions: React.FC<FieldActionsProps> = ({
   return (
     <div className="flex items-center justify-end gap-[18px]">
       <div
-        className="flex items-center gap-2 text-sm text-[#275EFF] cursor-pointer"
+        className="flex items-center gap-2 text-sm text-[#6356EA] cursor-pointer"
         onClick={onImportClick}
       >
         <img src={importDataTable} className="w-[14px] h-[14px]" alt="" />
         <span>{t('database.importFields')}</span>
       </div>
       <div
-        className="flex items-center gap-2 text-sm text-[#275EFF] cursor-pointer"
+        className="flex items-center gap-2 text-sm text-[#6356EA] cursor-pointer"
         onClick={onAddFieldClick}
       >
         <img src={addTableFields} className="w-[14px] h-[14px]" alt="" />

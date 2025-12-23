@@ -3,12 +3,14 @@ package com.iflytek.astron.console.hub.controller.user;
 import com.iflytek.astron.console.commons.annotation.space.SpacePreAuth;
 import com.iflytek.astron.console.commons.dto.bot.BotModelDto;
 import com.iflytek.astron.console.commons.dto.bot.BotDetail;
+import com.iflytek.astron.console.commons.dto.bot.PersonalityConfigDto;
 import com.iflytek.astron.console.commons.dto.bot.PromptBotDetail;
 import com.iflytek.astron.console.commons.response.ApiResult;
 import com.iflytek.astron.console.commons.service.bot.ChatBotDataService;
 import com.iflytek.astron.console.commons.util.RequestContextUtil;
 import com.iflytek.astron.console.hub.dto.user.MyBotPageDTO;
 import com.iflytek.astron.console.hub.dto.user.MyBotParamDTO;
+import com.iflytek.astron.console.hub.service.bot.PersonalityConfigService;
 import com.iflytek.astron.console.hub.service.chat.ChatListService;
 import com.iflytek.astron.console.hub.service.user.UserBotService;
 import com.iflytek.astron.console.hub.util.BotPermissionUtil;
@@ -47,6 +49,8 @@ public class MyBotController {
 
     @Autowired
     private ChatListService chatListService;
+    @Autowired
+    private PersonalityConfigService personalityConfigService;
 
     /**
      * Display assistants I created
@@ -89,6 +93,10 @@ public class MyBotController {
         // Return model information, if modelId is empty, it indicates default model
         BotModelDto botModelDto = chatListService.getBotModelDto(request, botDetail.getModelId(), botDetail.getModel());
         botDetail.setBotModel(botModelDto);
+
+        // Get personality config
+        PersonalityConfigDto personalityConfigDto = personalityConfigService.getPersonalConfig(botId.longValue());
+        botDetail.setPersonalityConfig(personalityConfigDto);
 
         return ApiResult.success(botDetail);
     }

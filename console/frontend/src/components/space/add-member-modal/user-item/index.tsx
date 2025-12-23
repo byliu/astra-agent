@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import CusCheckBox from '../cus-check-box';
 import styles from './index.module.scss';
 import defaultAvatar from '@/assets/imgs/space/creator.png';
+import { useTranslation } from 'react-i18next';
 interface User {
   uid: string;
   username?: string;
@@ -21,6 +22,7 @@ interface UserItemProps {
 
 const UserItem: React.FC<UserItemProps> = React.memo(
   ({ user, isUserSelected, handleSelectUser, checkboxDisabled }) => {
+    const { t } = useTranslation();
     // 根据用户status判断状态
     const isExisting = useMemo(() => user.status === 1, [user.status]);
     const isInvited = useMemo(() => user.status === 2, [user.status]);
@@ -37,13 +39,13 @@ const UserItem: React.FC<UserItemProps> = React.memo(
 
     const userStatus = useMemo(() => {
       if (isInvited) {
-        return '已邀请';
+        return t('space.invited');
       }
       if (isExisting) {
-        return '已加入';
+        return t('space.joined');
       }
       return '';
-    }, [isInvited, isExisting]);
+    }, [isInvited, isExisting, t]);
 
     const handleCheckboxChange = useCallback(
       (checked: boolean) => {

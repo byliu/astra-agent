@@ -1,11 +1,9 @@
-import json
-import os
 import re
 from typing import Tuple
 
-import requests  # type: ignore
 from pydantic import BaseModel
 
+from workflow.configs import workflow_config
 from workflow.engine.entities.node_entities import NodeType
 from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
@@ -122,6 +120,8 @@ class File(BaseModel):
         """
         try:
             # Send HEAD request
+            import requests  # type: ignore
+
             response = requests.head(input_file_url)
             # Get file metadata from response headers
             content_length = response.headers.get(
@@ -155,28 +155,9 @@ class File(BaseModel):
             span_context.add_info_event(f"input file url: {input_file_url}")
             span_context.add_info_event(f"allowed file type: {allowed_file_type}")
             file_size = int(cls.get_file_size(input_file_url))
-            FILE_SIZE_LIMIT = int(os.getenv("FILE_SIZE_LIMIT", "20971520"))
-            if file_size > FILE_SIZE_LIMIT:
-                span_context.add_error_event(
-                    f"File size: {file_size}, exceeds {FILE_SIZE_LIMIT} bytes"
-                )
-                raise CustomException(
-                    err_code=CodeEnum.FILE_INVALID_ERROR,
-                    err_msg="Error: File size exceeds limit",
-                )
+            pattern = workflow_config.file_config.get_extensions_pattern()
 
             file_extension = ""
-            # Regular expression to match file extensions (e.g., .jpg, .png, .pdf, etc.)
-            if os.getenv("FILE_REGEX_PATTERN"):
-                pattern = rf"{os.getenv('FILE_REGEX_PATTERN')}"
-            else:
-                pattern = r"\/([^\/]+)\.(pdf|png|jpg|jpeg|bmp|doc|docx|ppt|pptx|xls|xlsx|csv|txt)"
-            ALLOWED_FILE_TYPE = json.loads(
-                os.getenv(
-                    "ALLOWED_FILE_TYPE",
-                    '{"image":["jpg","jpeg","png","bmp"],"pdf":["pdf"],"doc":["docx","doc"],"ppt":["ppt","pptx"],"excel":["xls","xlsx","csv"],"txt":["txt"]}',
-                )
-            )
             # Find file extension
             match = re.search(pattern, input_file_url)
             if match:
@@ -184,14 +165,12 @@ class File(BaseModel):
             else:
                 span_context.add_error_event("Failed to match file type")
                 raise CustomException(err_code=CodeEnum.FILE_INVALID_ERROR)
-            if file_extension not in ALLOWED_FILE_TYPE[allowed_file_type]:
-                span_context.add_error_event(
-                    f"File type does not meet requirements. User uploaded file type: {file_extension}, allowed file types: {ALLOWED_FILE_TYPE[allowed_file_type]}"
-                )
-                raise CustomException(
-                    err_code=CodeEnum.FILE_INVALID_ERROR,
-                    err_msg="Error: Unsupported file extension",
-                )
+            workflow_config.file_config.is_valid(
+                category=allowed_file_type,
+                extension=file_extension,
+                file_size=file_size,
+            )
+
         except Exception as e:
             span_context.record_exception(e)
             raise e

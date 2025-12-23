@@ -45,6 +45,7 @@ interface EnterpriseSpaceEmptyMenuProps {
 const EnterpriseSpaceEmptyMenu: FC<EnterpriseSpaceEmptyMenuProps> = ({
   isCollapsed = false,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { handleTeamSwitch } = useSpaceType(navigate);
@@ -78,29 +79,33 @@ const EnterpriseSpaceEmptyMenu: FC<EnterpriseSpaceEmptyMenuProps> = ({
         <div
           className={`${isCollapsed ? 'w-[25px] h-[25px]' : 'w-[94px] h-[94px]'} flex items-center justify-center`}
         >
-          <img src={createSpaceImg} alt="创建空间" className="w-full h-auto" />
+          <img
+            src={createSpaceImg}
+            alt={t('space.createSpace')}
+            className="w-full h-auto"
+          />
         </div>
         {!isCollapsed && (
-          <div className="w-[162px] h-[43px] flex flex-col justify-center items-center py-2.5 px-5 rounded-[10px] bg-white font-medium text-sm leading-6 text-center text-[#1f1f1f] cursor-pointer hover:text-[#275eff]">
-            创建空间
+          <div className="w-[162px] h-[43px] flex flex-col justify-center items-center py-2.5 px-5 rounded-[10px] bg-white font-medium text-sm leading-6 text-center text-[#1f1f1f] cursor-pointer hover:text-[#6356EA]">
+            {t('space.createSpace')}
           </div>
         )}
         {isCollapsed && (
           <div className="w-auto rounded-lg bg-white shadow-[0px_0px_20px_0px_rgba(0,18,70,0.08)] text-[#333333] whitespace-nowrap py-3 px-5 absolute -top-1.5 left-[54px] z-[3] hidden group-hover:block">
-            创建空间
+            {t('space.createSpace')}
           </div>
         )}
       </div>
     );
-  }, [showCreateModal, setShowCreateModal, handleTeamSwitch, isCollapsed]);
+  }, [showCreateModal, setShowCreateModal, handleTeamSwitch, isCollapsed, t]);
 
   const otherMenuList = useMemo(
     () => [
       {
         key: 'create',
         icon: enterpriseShareCreate,
-        desc: '创建团队共享空间',
-        btnText: '创建新空间',
+        desc: t('space.createTeamSharedSpace'),
+        btnText: t('space.createNewSpace'),
         onClick: () => {
           setShowCreateModal(true);
         },
@@ -110,8 +115,8 @@ const EnterpriseSpaceEmptyMenu: FC<EnterpriseSpaceEmptyMenuProps> = ({
             {
               key: 'join',
               icon: enterpriseSpaceJoin,
-              desc: '加入团队下的空间',
-              btnText: '进入空间管理',
+              desc: t('space.joinTeamSpace'),
+              btnText: t('space.enterSpaceManagement'),
               onClick: () => {
                 navigate(`/enterprise/${enterpriseId}/space`);
               },
@@ -119,7 +124,7 @@ const EnterpriseSpaceEmptyMenu: FC<EnterpriseSpaceEmptyMenuProps> = ({
           ]
         : []),
     ],
-    [setShowCreateModal, navigate, enterpriseId, isShowJoinMenu]
+    [setShowCreateModal, navigate, enterpriseId, isShowJoinMenu, t]
   );
 
   const otherMenu = useMemo(() => {
@@ -144,7 +149,7 @@ const EnterpriseSpaceEmptyMenu: FC<EnterpriseSpaceEmptyMenuProps> = ({
               {!isCollapsed && (
                 <>
                   <div className="text-[#7f7f7f]">{item.desc}</div>
-                  <div className="w-full flex items-center justify-center gap-1 text-[#1f1f1f] group-hover:text-[#275eff]">
+                  <div className="w-full flex items-center justify-center gap-1 text-[#1f1f1f] group-hover:text-[#6356EA]">
                     {item.btnText}
                     <img
                       className="w-[19px] h-[19px]"
@@ -205,17 +210,24 @@ const RecentList: FC<RecentListProps> = ({
   if (isCollapsed) return null;
 
   return (
-    <div className="flex flex-col ml-3 flex-shrink-0 overflow-hidden">
+    <div className="flex flex-col pt-4 pb-1 mt-1 flex-shrink-0 overflow-hidden border-t border-[#E7E7F0]">
       {/* 最近使用标题 */}
       <div
-        className="flex items-center justify-between cursor-pointer pl-[3px] pb-[5px] pr-2.5 flex-shrink-0"
+        className="flex items-center justify-between cursor-pointer px-3 py-[10px] pr-2.5 flex-shrink-0 mb-1"
         onClick={() => setShowRecent(!showRecent)}
       >
-        <span className="text-xs font-medium text-black/50">
+        <span
+          className="text-xs font-medium text-black/50"
+          style={{
+            fontFamily: 'PingFang SC',
+            fontSize: '12px',
+            color: '#676773',
+          }}
+        >
           {t('sidebar.recentlyUsed')}
         </span>
         <img
-          src={require('@/assets/imgs/sidebar/arrow-top.svg')}
+          src={require('@/assets/svgs/arrow-top.svg')}
           alt=""
           className={`transition-transform duration-300 ${
             showRecent ? '' : 'rotate-180'
@@ -239,14 +251,14 @@ const RecentList: FC<RecentListProps> = ({
         >
           {/* 内容区域 - 固定间距 */}
           <div
-            className={`flex flex-col gap-2.5 py-2.5 w-full ${showRecent ? '' : 'opacity-0'}`}
+            className={`flex flex-col gap-0.5 w-full ${showRecent ? '' : 'opacity-0'}`}
           >
             {showRecent &&
               mixedChatList?.length > 0 &&
               mixedChatList.map((item: any) => (
                 <div
                   key={item.botId}
-                  className="group flex items-center cursor-pointer py-1 px-2 rounded hover:bg-[rgba(39,94,255,0.05)] flex-shrink-0 w-full"
+                  className="group flex items-center cursor-pointer px-3 py-1.5 rounded hover:bg-[rgba(39,94,255,0.05)] flex-shrink-0 w-full"
                   onClick={() => handleNavigateToChat(item)}
                 >
                   <img
@@ -468,22 +480,32 @@ const SpaceButton: FC<{
         }}
       >
         <div
-          className="text-center whitespace-nowrap text-xs py-2.5 px-3 flex cursor-pointer justify-between text-[#1f1f1f] rounded-lg relative before:content-[''] before:absolute before:-top-3.5 before:left-0 before:w-full before:h-px before:bg-[rgba(226,232,255,0.5)] hover:text-[#275eff] hover:bg-[#f5f8ff] group"
+          className="text-center whitespace-nowrap text-xs py-1.5 px-3 flex cursor-pointer justify-between text-[#1f1f1f] rounded-lg relative before:content-[''] before:absolute before:-top-2 before:left-0 before:w-full before:h-px before:bg-[#E7E7F0] hover:text-[#6356EA] hover:bg-[#f5f8ff] group"
           ref={spaceButtonRef}
           onClick={handleShowSpacePopover}
         >
           <div className="w-full flex items-center justify-between gap-2 text-base font-normal leading-5">
             <div className="flex">
-              <img
-                src={
-                  spaceAvatar ||
-                  require('@/assets/imgs/space/contacts-fill.svg')
-                }
-                alt="space"
-                className="w-[18px] h-[18px] rounded-[2px] mr-2"
-              />
+              {isCollapsed && (
+                <img
+                  src={
+                    spaceAvatar ||
+                    require('@/assets/imgs/space/contacts-fill.svg')
+                  }
+                  alt="space"
+                  className="w-[18px] h-[18px] rounded-[2px] mr-2"
+                />
+              )}
+
               {!isCollapsed && (
-                <div className="min-w-[110px] max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
+                <div
+                  className="min-w-[110px] max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap text-left"
+                  style={{
+                    fontFamily: 'PingFang SC',
+                    fontSize: '12px',
+                    color: '#676773',
+                  }}
+                >
                   {spaceName ||
                     (spaceType === 'personal'
                       ? t('sidebar.personalSpace')
@@ -535,46 +557,51 @@ const MenuTab: FC<{
   setMenuActiveKey,
   setHoverTab,
   navigate,
-}) => (
-  <div
-    key={`${tab?.subTitle}`}
-    className={`group relative flex items-center px-3 py-3 gap-2 cursor-pointer rounded-[10px] hover:bg-[#F8FAFF] hover:text-[#275EFF] ${
-      [menuActiveKey, hoverTab].includes(tab.activeTab)
-        ? 'bg-[#F8FAFF] text-[#275EFF]'
-        : 'text-[#7F7F7F]'
-    } ${
-      tab.subTitle === '插件广场' || tab.subTitle === '智能体广场'
-        ? ''
-        : !isCollapsed && 'ml-6'
-    }`}
-    onClick={() => {
-      setMenuActiveKey(tab.activeTab);
-      navigate(tab.path);
-    }}
-    onMouseEnter={() => setHoverTab(tab.activeTab)}
-    onMouseLeave={() => setHoverTab('')}
-  >
-    <img
-      src={
-        [menuActiveKey, hoverTab].includes(tab.activeTab)
-          ? tab.iconAct
-          : tab.icon
-      }
-      className="w-[18px] h-[18px] flex-shrink-0"
-      alt=""
-    />
-    {!isCollapsed && <span className="relative text-sm">{tab.subTitle}</span>}
-    {isCollapsed && (
-      <div
-        className={`rounded-lg bg-white shadow-[0px_0px_20px_0px_rgba(0,18,70,0.08)] text-[#333333] whitespace-nowrap py-3 px-5 absolute -top-1.5 left-[54px] z-[3] ${
-          hoverTab === tab.activeTab ? 'block' : 'hidden'
-        }`}
-      >
-        {tab.subTitle}
-      </div>
-    )}
-  </div>
-);
+}) => {
+  const isActAndHvr = useMemo(
+    () => [menuActiveKey, hoverTab].includes(tab.activeTab),
+    [menuActiveKey, hoverTab, tab.activeTab]
+  );
+  const menuTabStyle = useMemo(
+    () => ({
+      background: isActAndHvr ? 'rgba(99, 86, 234, 0.08)' : '#fff',
+      fontWeight: isActAndHvr ? '500' : 'normal',
+      color: isActAndHvr ? '#6356ea' : '#262626',
+      fontFamily: 'PingFang SC',
+    }),
+    [isActAndHvr]
+  );
+
+  return (
+    <div
+      key={`${tab?.subTitle}`}
+      className={`group relative flex items-center px-3 py-[10px] gap-2 cursor-pointer rounded-[10px]`}
+      style={menuTabStyle}
+      onClick={() => {
+        setMenuActiveKey(tab.activeTab);
+        navigate(tab.path);
+      }}
+      onMouseEnter={() => setHoverTab(tab.activeTab)}
+      onMouseLeave={() => setHoverTab('')}
+    >
+      <img
+        src={isActAndHvr ? tab.iconAct : tab.icon}
+        className="w-[18px] h-[18px] flex-shrink-0"
+        alt=""
+      />
+      {!isCollapsed && <span className="relative text-sm">{tab.subTitle}</span>}
+      {isCollapsed && (
+        <div
+          className={`rounded-lg bg-white shadow-[0px_0px_20px_0px_rgba(0,18,70,0.08)] text-[#333333] whitespace-nowrap py-3 px-5 absolute -top-1.5 left-[54px] z-[3] ${
+            hoverTab === tab.activeTab ? 'block' : 'hidden'
+          }`}
+        >
+          {tab.subTitle}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Delete Modal Component
 const DeleteModal: FC<{
@@ -686,14 +713,18 @@ const MenuList: FC<MenuListProps> = ({
 
   return (
     <div
-      className={`flex flex-col flex-1 min-h-0 mt-6 gap-4 ${
-        isShowSpacePopover ? 'overflow-hidden' : 'overflow-y-auto'
-      } scrollbar-none`}
+      className={`flex flex-col flex-1 mt-6 gap-4 ${
+        isCollapsed
+          ? 'overflow-visible'
+          : isShowSpacePopover
+            ? 'overflow-hidden'
+            : 'overflow-auto'
+      } scroll-bar-hide-UI scrollbar-none`}
     >
       {getDynamicMenuList.map((item, index) => (
         <div
           key={`${index}-${item?.title}`}
-          className="text-gray-500 font-medium"
+          className="text-gray-500 font-medium flex flex-col gap-1"
         >
           {item.title && (
             <SpaceButton

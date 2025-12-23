@@ -3,6 +3,7 @@ import { Card, Tooltip } from 'antd';
 import styles from './index.module.scss';
 
 import spaceAvatar from '@/assets/imgs/space/spaceAvatar.png';
+import { useTranslation } from 'react-i18next';
 
 interface SpaceItem {
   id: string;
@@ -12,7 +13,7 @@ interface SpaceItem {
 
 const PersonalSpaceCard: React.FC = () => {
   const infoContentRef = useRef<HTMLDivElement>(null);
-
+  const { t } = useTranslation();
   return (
     <Card className={`${styles.spaceCard}`}>
       <div className={styles.cardHeader}>
@@ -22,9 +23,7 @@ const PersonalSpaceCard: React.FC = () => {
       <div className={styles.cardBody} ref={infoContentRef}>
         <div className={styles.titleContainer}>
           <div></div>
-          <Tooltip title="个人空间" placement="top">
-            <div className={styles.spaceTitle}>个人空间</div>
-          </Tooltip>
+          <div className={styles.spaceTitle}>{t('space.personalSpace')}</div>
         </div>
 
         {/* <p className={styles.spaceDescription}></p> */}

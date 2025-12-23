@@ -23,7 +23,7 @@ const CustomEdge = ({
   targetY,
   sourcePosition,
   targetPosition,
-  style = { strokeWidth: 2, stroke: '#275EFF' },
+  style = { strokeWidth: 2, stroke: '#6356EA' },
   markerEnd,
 }: CustomEdgeProps): React.ReactElement => {
   const getCurrentStore = useFlowsManager(state => state.getCurrentStore);

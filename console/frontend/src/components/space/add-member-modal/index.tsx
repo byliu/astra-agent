@@ -8,6 +8,7 @@ import React, {
 import { Modal, Input, Checkbox, Button, Select, Avatar, message } from 'antd';
 import { useDebounceFn } from 'ahooks';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 import styles from './index.module.scss';
 import ButtonGroup from '@/components/button-group/button-group';
 import type { ButtonConfig } from '@/components/button-group/types';
@@ -55,13 +56,13 @@ interface AddMemberModalProps {
 
 const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
   ({
-    title = '添加新成员',
     inviteType = 'enterprise',
     open,
     onClose,
     onSubmit,
     initialUsers = [],
   }) => {
+    const { t } = useTranslation();
     const [searchValue, setSearchValue] = useState<string>('');
     const [lastSearchedValue, setLastSearchedValue] = useState<string>(''); // 添加这行
     const [allChecked, setAllChecked] = useState<boolean>(false);
@@ -145,13 +146,13 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
           e.preventDefault();
           const trimmedValue = searchValue.trim();
           if (!trimmedValue) {
-            message.warning('请输入用户名');
+            message.warning(t('space.enterUsername'));
             return;
           }
           searchUsers(trimmedValue);
         }
       },
-      [searchValue, searchUsers]
+      [searchValue, searchUsers, t]
     );
 
     // 用户信息转换
@@ -178,7 +179,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
       (user: User, checked: boolean) => {
         // 检查是否达到最大值
         if (checked && selectedUsers.length >= maxMembers) {
-          message.warning(`成员数量已达到最大值${maxMembers}`);
+          message.warning(t('space.memberLimitReached', { count: maxMembers }));
           return;
         }
 
@@ -193,7 +194,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
           setSelectedUsers(prev => prev.filter(u => u.uid !== user.uid));
         }
       },
-      [selectedUsers.length, maxMembers]
+      [selectedUsers.length, maxMembers, t, transformUserInfo]
     );
 
     const handleRoleChange = useCallback((userId: string, role: string) => {
@@ -210,12 +211,12 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
     const handleSubmit = useCallback(() => {
       // selectedUsers 中只包含当前操作选择的用户
       if (selectedUsers.length === 0) {
-        message.warning('请至少选择一个用户');
+        message.warning(t('space.selectAtLeastOneUser'));
         return;
       }
 
       onSubmit(selectedUsers);
-    }, [selectedUsers, onSubmit]);
+    }, [selectedUsers, onSubmit, t]);
 
     // 缓存已选择用户的 ID 集合
     const selectedUserIds = useMemo(
@@ -242,7 +243,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
       (checked: boolean) => {
         // 检查是否达到最大值
         if (checked && selectedUsers.length >= maxMembers) {
-          message.warning(`成员数量已达到最大值${maxMembers}`);
+          message.warning(t('space.memberLimitReached', { count: maxMembers }));
           return;
         }
 
@@ -269,7 +270,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
           );
         }
       },
-      [addableUsers, selectedUsers.length, maxMembers]
+      [addableUsers, selectedUsers.length, maxMembers, t, transformUserInfo]
     );
 
     const handleSelectAllChange = useCallback(
@@ -304,20 +305,20 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
     // 缓存空状态的文本
     const emptyStateText = useMemo(() => {
       return !lastSearchedValue
-        ? '搜索用户名以添加新成员'
-        : `未找到"${lastSearchedValue}"相关用户`;
-    }, [lastSearchedValue]);
+        ? t('space.searchToAddMembers')
+        : t('space.userNotFound', { keyword: lastSearchedValue });
+    }, [lastSearchedValue, t]);
 
     const buttons: ButtonConfig[] = [
       {
         key: 'cancel',
-        text: '取消',
+        text: t('space.cancel'),
         type: 'default',
         onClick: () => onClose(),
       },
       {
         key: 'submit',
-        text: '确定',
+        text: t('space.confirm'),
         type: 'primary',
         disabled: selectedUsers.length === 0,
         onClick: () => handleSubmit(),
@@ -326,7 +327,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
 
     return (
       <Modal
-        title={title}
+        title={t('space.addMember')}
         open={open}
         onCancel={onClose}
         footer={null}
@@ -341,7 +342,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
           <div className={styles.leftPanel}>
             <div className={styles.searchSection}>
               <SpaceSearch
-                placeholder="搜索用户名"
+                placeholder={t('space.searchUsername')}
                 value={searchValue}
                 onChange={handleSearch}
                 onKeyPress={handleKeyPress}
@@ -358,7 +359,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
                     className={styles.selectAllCheckbox}
                     disabled={addableUsers.length === 0}
                   >
-                    全部
+                    {t('space.selectAll')}
                   </CusCheckBox>
                 </div>
               )}
@@ -366,7 +367,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
               <div className={styles.userList}>
                 {loading ? (
                   <div className={styles.emptyState}>
-                    <span className={styles.emptyText}>搜索中...</span>
+                    <span className={styles.emptyText}>
+                      {t('space.searching')}
+                    </span>
                   </div>
                 ) : userList.length > 0 ? (
                   userList.map(user => (
@@ -391,8 +394,11 @@ const AddMemberModal: React.FC<AddMemberModalProps> = React.memo(
           {/* 右侧：已选用户和角色分配 */}
           <div className={styles.rightPanel}>
             <div className={styles.selectedInfo}>
-              选定: {selectedUsers.length}
-              <span className={styles.maxValue}>（最大值{maxMembers}）</span>
+              {t('space.selected')}
+              {selectedUsers.length}
+              <span className={styles.maxValue}>
+                {t('space.maxValue', { count: maxMembers })}
+              </span>
             </div>
 
             <div className={styles.selectedUsers}>

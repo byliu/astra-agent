@@ -26,6 +26,7 @@ import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.commons.entity.bot.UserLangChainInfo;
 import com.iflytek.astron.console.commons.entity.user.UserInfo;
 import com.iflytek.astron.console.commons.entity.workflow.Workflow;
+import com.iflytek.astron.console.commons.enums.bot.BotTypeEnum;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import com.iflytek.astron.console.commons.mapper.UserLangChainInfoMapper;
 import com.iflytek.astron.console.commons.mapper.bot.ChatBotBaseMapper;
@@ -55,6 +56,7 @@ import com.iflytek.astron.console.toolkit.entity.core.workflow.sse.ChatSysReq;
 import com.iflytek.astron.console.toolkit.entity.dto.*;
 import com.iflytek.astron.console.toolkit.entity.dto.eval.NodeSimpleDto;
 import com.iflytek.astron.console.toolkit.entity.dto.eval.WorkflowComparisonSaveReq;
+import com.iflytek.astron.console.toolkit.entity.dto.talkagent.TalkAgentConfigDto;
 import com.iflytek.astron.console.toolkit.entity.table.ConfigInfo;
 import com.iflytek.astron.console.toolkit.entity.table.database.DbTable;
 import com.iflytek.astron.console.toolkit.entity.table.eval.EvalSet;
@@ -65,14 +67,12 @@ import com.iflytek.astron.console.toolkit.entity.table.relation.FlowDbRel;
 import com.iflytek.astron.console.toolkit.entity.table.relation.FlowRepoRel;
 import com.iflytek.astron.console.toolkit.entity.table.relation.FlowToolRel;
 import com.iflytek.astron.console.toolkit.entity.table.repo.FileInfoV2;
-import com.iflytek.astron.console.toolkit.entity.table.tool.ToolBox;
-import com.iflytek.astron.console.toolkit.entity.table.tool.ToolBoxOperateHistory;
+import com.iflytek.astron.console.toolkit.entity.table.tool.*;
 import com.iflytek.astron.console.toolkit.entity.table.workflow.*;
 import com.iflytek.astron.console.toolkit.entity.tool.McpServerTool;
 import com.iflytek.astron.console.toolkit.entity.vo.*;
 import com.iflytek.astron.console.toolkit.entity.vo.eval.EvalSetVerDataVo;
-import com.iflytek.astron.console.toolkit.handler.McpServerHandler;
-import com.iflytek.astron.console.toolkit.handler.UserInfoManagerHandler;
+import com.iflytek.astron.console.toolkit.handler.*;
 import com.iflytek.astron.console.toolkit.mapper.ConfigInfoMapper;
 import com.iflytek.astron.console.toolkit.mapper.database.DbTableMapper;
 import com.iflytek.astron.console.toolkit.mapper.eval.EvalSetMapper;
@@ -82,8 +82,7 @@ import com.iflytek.astron.console.toolkit.mapper.relation.FlowDbRelMapper;
 import com.iflytek.astron.console.toolkit.mapper.relation.FlowRepoRelMapper;
 import com.iflytek.astron.console.toolkit.mapper.relation.FlowToolRelMapper;
 import com.iflytek.astron.console.toolkit.mapper.repo.FileInfoV2Mapper;
-import com.iflytek.astron.console.toolkit.mapper.tool.ToolBoxMapper;
-import com.iflytek.astron.console.toolkit.mapper.tool.ToolBoxOperateHistoryMapper;
+import com.iflytek.astron.console.toolkit.mapper.tool.*;
 import com.iflytek.astron.console.toolkit.mapper.trace.ChatInfoMapper;
 import com.iflytek.astron.console.toolkit.mapper.trace.NodeInfoMapper;
 import com.iflytek.astron.console.toolkit.mapper.workflow.*;
@@ -156,6 +155,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@SuppressWarnings({"PMD.NcssCount", "PMD.CyclomaticComplexity"})
 public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
 
     public static final String PROTOCOL_ADD_PATH = "/workflow/v1/protocol/add";
@@ -169,6 +169,12 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
     private static final String JSON_KEY_BOT_ID = "botId";
     private static final String PUBLISH_SUCCESS = "成功";
     private static final int DEFAULT_ORDER = 0;
+    private static final String NP_PROJECT_ID = "projectId";
+    private static final String NP_ASSISTANT_ID = "assistantId";
+    private static final String NP_VERSION = "version";
+    private static final String FIELD_IS_LATEST = "isLatest";
+    private static final String FIELD_LATEST_VER = "latestVersion";
+    private static final String FIELD_CURR_VER = "currentVersion";
 
     @Value("${spring.profiles.active}")
     String env;
@@ -262,6 +268,12 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
     private CommonConfig commonConfig;
     @Autowired
     private UserInfoDataService userInfoDataService;
+    @Autowired
+    private RpaUserAssistantFieldMapper rpaUserAssistantFieldMapper;
+    @Autowired
+    private RpaHandler rpaHandler;
+    @Autowired
+    private WorkflowConfigMapper workflowConfigMapper;
 
     /**
      * Query workflow list with pagination (in-memory pagination, can be replaced with database
@@ -477,13 +489,20 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         // Tool/node version tips
         workflow.setData(buildFlowToolLastVersion(workflow.getData()));
         workflow.setData(buildFlowLastVersion(workflow.getData()));
-
+        workflow.setData(buildFlowRpaLastVersion(workflow.getData()));
         WorkflowVo vo = new WorkflowVo();
         org.springframework.beans.BeanUtils.copyProperties(workflow, vo);
         vo.setAddress(s3Util.getS3Prefix());
         vo.setColor(workflow.getAvatarColor());
         vo.setSourceCode(String.valueOf(CommonConst.PlatformCode.COMMON));
-
+        // Is it a voice intelligent agent
+        if (Objects.equals(workflow.getType(), BotTypeEnum.TALK.getType())) {
+            WorkflowConfig workflowConfig = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                    .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                    .eq(WorkflowConfig::getVersionNum, "-1")
+                    .eq(WorkflowConfig::getDeleted, false));
+            vo.setFlowConfig(workflowConfig.getConfig());
+        }
         if (StringUtils.isBlank(workflow.getExt())) {
             UserLangChainInfo userLangChainInfo = userLangChainInfoDao.selectOne(new LambdaQueryWrapper<UserLangChainInfo>().eq(UserLangChainInfo::getFlowId, workflow.getFlowId()));
             if (userLangChainInfo != null) {
@@ -513,6 +532,257 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             }
         }
         return vo;
+    }
+
+    /**
+     * Check if RPA is the latest version
+     *
+     * @param data
+     * @return
+     */
+
+    /**
+     * Holder for temporary data when scanning RPA nodes in a workflow. Aggregates current versions in
+     * the flow, involved RPA nodes, and assistant IDs.
+     */
+    private static final class RpaScan {
+        /** Mapping of projectId -> current version found in the workflow protocol. */
+        final Map<String, Integer> flowProjectVersionMap = new HashMap<>();
+        /** All RPA nodes in the workflow protocol. */
+        final List<BizWorkflowNode> rpaNodes = new ArrayList<>();
+        /** Assistant IDs collected from RPA nodes (used to look up API keys). */
+        final Set<Long> assistantIds = new HashSet<>();
+
+        /**
+         * Whether the scan result is insufficient to proceed (no nodes or missing key fields).
+         *
+         * @return true if any of the required collections is empty; false otherwise
+         */
+        boolean isEmpty() {
+            return flowProjectVersionMap.isEmpty() || assistantIds.isEmpty() || rpaNodes.isEmpty();
+        }
+    }
+
+    /**
+     * Determine whether each RPA node is on the latest version and backfill flags into node params.
+     * <p>
+     * Behavior:
+     * </p>
+     * <ul>
+     * <li>On parse failure, no RPA nodes, or insufficient info, return the original JSON.</li>
+     * <li>On remote/query failures, mark nodes conservatively as {@code isLatest=false} but do not
+     * abort.</li>
+     * <li>Write back {@code isLatest}, {@code latestVersion}, and {@code currentVersion} for RPA
+     * nodes.</li>
+     * </ul>
+     *
+     * @param data workflow data JSON string (BizWorkflowData)
+     * @return original JSON if no effective change, otherwise the updated JSON string
+     */
+    private String buildFlowRpaLastVersion(String data) {
+        if (StringUtils.isBlank(data)) {
+            return data;
+        }
+        final BizWorkflowData biz = parseWorkflowDataSafe(data);
+        if (biz == null || CollUtil.isEmpty(biz.getNodes())) {
+            return data;
+        }
+
+        // (1) Scan RPA nodes and collect projectId/version/assistantId
+        final RpaScan scan = scanRpaNodes(biz.getNodes());
+        if (scan.isEmpty()) {
+            return data;
+        }
+
+        // (2) Fetch API keys by assistantId (deduplicated)
+        final Set<String> apiKeys = fetchApiKeysByAssistants(scan.assistantIds);
+        if (apiKeys.isEmpty()) {
+            // No keys available: conservatively mark as not latest and write back
+            markWithoutOnlineData(scan.rpaNodes);
+            return JSONObject.toJSONString(biz);
+        }
+
+        // (3) Fetch online "latest version" map (if multiple keys return versions, use the maximum)
+        final Map<String, Integer> latestMap = fetchLatestVersionMap(apiKeys);
+
+        // (4) Mark nodes and serialize only when changes are made
+        final boolean changed = markNodesWithLatest(biz, scan.rpaNodes, latestMap);
+        return changed ? JSONObject.toJSONString(biz) : data;
+    }
+
+    /**
+     * Parse workflow JSON (BizWorkflowData) safely.
+     *
+     * @param json workflow data JSON string
+     * @return parsed BizWorkflowData instance, or null if parsing fails
+     */
+    private @Nullable BizWorkflowData parseWorkflowDataSafe(String json) {
+        try {
+            return JSON.parseObject(json, BizWorkflowData.class);
+        } catch (Exception ex) {
+            log.warn("buildFlowRpaLastVersion: failed to parse workflow data", ex);
+            return null;
+        }
+    }
+
+    /**
+     * Scan workflow nodes to extract RPA nodes and collect key fields.
+     *
+     * @param nodes workflow node list
+     * @return RpaScan aggregated result including RPA nodes, project/version map, and assistant IDs
+     */
+    private RpaScan scanRpaNodes(List<BizWorkflowNode> nodes) {
+        final RpaScan scan = new RpaScan();
+        for (BizWorkflowNode n : nodes) {
+            if (n == null || n.getId() == null)
+                continue;
+            if (!n.getId().startsWith(WorkflowConst.NodeType.RPA))
+                continue;
+
+            scan.rpaNodes.add(n);
+            final JSONObject np = Optional.ofNullable(n.getData()).map(BizNodeData::getNodeParam).orElse(null);
+            if (np == null)
+                continue;
+
+            final String projectId = np.getString(NP_PROJECT_ID);
+            final Integer version = np.getInteger(NP_VERSION);
+            final Long assistantId = np.getLong(NP_ASSISTANT_ID);
+
+            if (StringUtils.isNotBlank(projectId) && version != null) {
+                // If the same projectId appears multiple times in the flow, keep the maximum version as the current
+                // baseline.
+                scan.flowProjectVersionMap.merge(projectId, version, Math::max);
+            }
+            if (assistantId != null) {
+                scan.assistantIds.add(assistantId);
+            }
+        }
+        return scan;
+    }
+
+    /**
+     * Fetch API keys for the given assistant IDs.
+     * <p>
+     * On any exception, returns an empty set and logs a warning.
+     * </p>
+     *
+     * @param assistantIds assistant IDs collected from RPA nodes
+     * @return deduplicated API key set; never null
+     */
+    private Set<String> fetchApiKeysByAssistants(Set<Long> assistantIds) {
+        try {
+            List<RpaUserAssistantField> fields = rpaUserAssistantFieldMapper.selectList(
+                    new LambdaQueryWrapper<RpaUserAssistantField>()
+                            .select(RpaUserAssistantField::getFieldValue)
+                            .in(RpaUserAssistantField::getAssistantId, assistantIds));
+            if (CollectionUtil.isEmpty(fields))
+                return Collections.emptySet();
+            return fields.stream()
+                    .map(RpaUserAssistantField::getFieldValue)
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
+        } catch (Exception ex) {
+            log.warn("buildFlowRpaLastVersion: failed to query assistant fields, assistantIds={}", assistantIds, ex);
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * Build an online latest-version map for RPA projects: projectId -&gt; latestVersion. If multiple
+     * API keys return different versions for the same project, the maximum is taken.
+     * <p>
+     * Note: If the remote endpoint is paginated, extend this method to iterate pages.
+     * </p>
+     *
+     * @param apiKeys API keys used to query the remote RPA list
+     * @return mapping from projectId to its latest version; never null
+     */
+    private Map<String, Integer> fetchLatestVersionMap(Set<String> apiKeys) {
+        final Map<String, Integer> latest = new HashMap<>();
+        for (String key : apiKeys) {
+            try {
+                // If the remote API is paginated, extend here with a loop to fetch all pages.
+                JSONObject rpaList = rpaHandler.getRpaList(1, 99, key);
+                if (rpaList == null)
+                    continue;
+                JSONArray records = rpaList.getJSONArray("records");
+                if (records == null || records.isEmpty())
+                    continue;
+
+                for (int i = 0; i < records.size(); i++) {
+                    JSONObject rec = records.getJSONObject(i);
+                    if (rec == null)
+                        continue;
+                    String projectId = rec.getString("project_id");
+                    Integer version = rec.getInteger("version");
+                    if (StringUtils.isBlank(projectId) || version == null)
+                        continue;
+                    latest.merge(projectId, version, Math::max);
+                }
+            } catch (Exception ex) {
+                log.warn("buildFlowRpaLastVersion: failed to fetch RPA list for one apiKey", ex);
+            }
+        }
+        return latest;
+    }
+
+    /**
+     * When no online data is available, conservatively mark nodes as not latest and backfill
+     * {@code currentVersion} for display convenience.
+     *
+     * @param rpaNodes RPA nodes to mark
+     */
+    private void markWithoutOnlineData(List<BizWorkflowNode> rpaNodes) {
+        for (BizWorkflowNode n : rpaNodes) {
+            final JSONObject np = Optional.ofNullable(n.getData()).map(BizNodeData::getNodeParam).orElse(null);
+            if (np == null)
+                continue;
+            final Integer curr = np.getInteger(NP_VERSION);
+            if (curr != null)
+                np.put(FIELD_CURR_VER, curr);
+            if (n.getData() != null)
+                n.getData().setIsLatest(false); // Conservative: unknown treated as not latest
+        }
+    }
+
+    /**
+     * Mark each RPA node with latest flags and optional latest/current version values.
+     *
+     * @param biz whole BizWorkflowData (used to decide whether serialization is needed)
+     * @param rpaNodes RPA nodes to annotate
+     * @param latestMap mapping of projectId to its latest online version
+     * @return true if any node state changed; false otherwise
+     */
+    private boolean markNodesWithLatest(BizWorkflowData biz,
+            List<BizWorkflowNode> rpaNodes,
+            Map<String, Integer> latestMap) {
+        boolean changed = false;
+        for (BizWorkflowNode n : rpaNodes) {
+            final BizNodeData d = n.getData();
+            final JSONObject np = Optional.ofNullable(d).map(BizNodeData::getNodeParam).orElse(null);
+            if (np == null)
+                continue;
+
+            final String projectId = np.getString(NP_PROJECT_ID);
+            final Integer currVer = np.getInteger(NP_VERSION);
+            if (currVer != null)
+                np.put(FIELD_CURR_VER, currVer);
+
+            boolean isLatest = false;
+            Integer latestVer = latestMap.get(projectId);
+            if (latestVer != null) {
+                np.put(FIELD_LATEST_VER, latestVer);
+                isLatest = Objects.equals(currVer, latestVer);
+            } else {
+                // No online version found: conservative false
+                isLatest = true;
+            }
+            if (d != null && !Objects.equals(d.getIsLatest(), isLatest)) {
+                d.setIsLatest(isLatest);
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     /**
@@ -788,6 +1058,25 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             workflow.setData(init.getValue());
         }
         workflow.setOrder(DEFAULT_ORDER);
+        // Add voice intelligent agent configuration
+        if (createReq.getFlowConfig() != null) {
+            WorkflowConfig config = new WorkflowConfig();
+            config.setFlowId(workflow.getFlowId());
+            config.setBotId(createReq.getExt().getInteger("botId"));
+            config.setVersionNum("-1");
+            config.setConfig(JSON.toJSONString(createReq.getFlowConfig()));
+            workflowConfigMapper.insert(config);
+        }
+        ConfigInfo initDataConfig = configInfoMapper.getByCategoryAndCode("WORKFLOW_INIT_DATA", "workflow");
+        if (StringUtils.isBlank(workflow.getData()) && initDataConfig != null) {
+            workflow.setData(initDataConfig.getValue());
+        }
+        // Default Advanced Configuration
+        ConfigInfo initAdvanceConfig = configInfoMapper.getByCategoryAndCode("WORKFLOW_INIT_DATA", "config");
+        if (initAdvanceConfig != null) {
+            workflow.setAdvancedConfig(initAdvanceConfig.getValue());
+        }
+        workflow.setType(createReq.getFlowType());
         save(workflow);
 
         // Sync to Spark database
@@ -862,6 +1151,18 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
             replica.setName(result.getString("botName"));
             replica.setExt(ext.toJSONString());
             updateById(replica);
+            if (Objects.equals(src.getType(), BotTypeEnum.TALK.getType())) {
+                WorkflowConfig workflowConfig = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, src.getFlowId())
+                        .eq(WorkflowConfig::getVersionNum, "-1")
+                        .eq(WorkflowConfig::getDeleted, false));
+                workflowConfig.setId(null);
+                workflowConfig.setFlowId(replica.getFlowId());
+                workflowConfig.setBotId(botId);
+                workflowConfig.setCreatedTime(new Date());
+                workflowConfig.setUpdatedTime(new Date());
+                workflowConfigMapper.insert(workflowConfig);
+            }
         }
         return replica;
     }
@@ -875,7 +1176,10 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
      * @return Cloned workflow
      */
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-    public Workflow cloneForXfYun(Long id, Long spaceId, HttpServletRequest request) {
+    public Workflow cloneForXfYun(Long id, Long spaceId, Integer flowType, Integer botId, TalkAgentConfigDto flowConfig, HttpServletRequest request) {
+        if (flowType == null) {
+            flowType = BotTypeEnum.WORKFLOW_BOT.getType();
+        }
         String uid = RequestContextUtil.getUID();
         log.info("cloneForXfYun uid = {}", uid);
         Workflow src = getById(id);
@@ -896,14 +1200,10 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         String nFlowId = addResult.data();
 
         BizWorkflowData data = handleDataClone(nFlowId, src.getData());
-        if (data != null) {
-            BizWorkflowData copy = JSON.parseObject(JSON.toJSONString(data), BizWorkflowData.class);
-            flowReq.setData(copy);
-            saveRemote(flowReq, nFlowId);
-        }
 
         Workflow replica = new Workflow();
-        org.springframework.beans.BeanUtils.copyProperties(src, replica);
+        BeanUtils.copyProperties(src, replica);
+        replica.setType(flowType);
         String cloneName = nextCloneName(src.getName());
 
         replica.setId(null);
@@ -922,8 +1222,30 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         }
         replica.setAppUpdatable(false);
         replica.setOrder(DEFAULT_ORDER);
+        JSONObject jsonData = new JSONObject();
+        jsonData.put("botId", botId);
+        // Update botId
+        replica.setExt(jsonData.toJSONString());
         save(replica);
+        // New configuration information for voice intelligent agents
+        if (Objects.equals(BotTypeEnum.TALK.getType(), flowType)) {
+            WorkflowConfig config = new WorkflowConfig();
+            // Obtain the configuration of the source intelligent agent
+            if (flowConfig == null) {
+                config = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                        .eq(WorkflowConfig::getFlowId, src.getFlowId())
+                        .eq(WorkflowConfig::getVersionNum, "-1")
+                        .eq(WorkflowConfig::getDeleted, false));
+                config.setId(null);
+            } else {
+                config.setConfig(JSON.toJSONString(flowConfig));
+            }
+            config.setFlowId(replica.getFlowId());
+            config.setBotId(botId);
+            config.setVersionNum("-1");
+            workflowConfigMapper.insert(config);
 
+        }
         // Fix appId
         if (!commonConfig.getAppId().equals(replica.getAppId())) {
             replaceAppId(commonConfig.getAppId(), replica.getFlowId());
@@ -1401,11 +1723,29 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         Workflow workflow = loadAndCheckWorkflow(saveReq);
 
         // 2) Sync bot basic info & basic field updates
-        syncBaseBotAndPatchBasics(saveReq, workflow);
+        Integer botId = syncBaseBotAndPatchBasics(saveReq, workflow);
 
         // 3) Merge/validate advanced configuration
         mergeAdvancedConfigSafe(saveReq, workflow);
+        if (saveReq.getFlowConfig() != null) {
+            WorkflowConfig workflowConfig = workflowConfigMapper.selectOne(new LambdaQueryWrapper<WorkflowConfig>()
+                    .eq(WorkflowConfig::getFlowId, workflow.getFlowId())
+                    .eq(WorkflowConfig::getVersionNum, "-1")
+                    .eq(WorkflowConfig::getDeleted, false));
+            if (workflowConfig != null) {
+                workflowConfig.setConfig(JSON.toJSONString(saveReq.getFlowConfig()));
+                workflowConfig.setUpdatedTime(new Date());
+                workflowConfigMapper.updateById(workflowConfig);
+            } else {
+                WorkflowConfig config = new WorkflowConfig();
+                config.setFlowId(workflow.getFlowId());
+                config.setBotId(botId);
+                config.setVersionNum("-1");
+                config.setConfig(JSON.toJSONString(saveReq.getFlowConfig()));
+                workflowConfigMapper.insert(config);
+            }
 
+        }
         // 4) Validate & write protocol data (nodes/edges & length limit & merge write)
         BizWorkflowData bizWorkflowData = saveReq.getData();
         writeProtocolDataIfPresent(workflow, bizWorkflowData);
@@ -1438,9 +1778,9 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
     }
 
     // ========== 2. Sync bot basic info & basic field updates ==========
-    private void syncBaseBotAndPatchBasics(WorkflowReq saveReq, Workflow workflow) {
+    private Integer syncBaseBotAndPatchBasics(WorkflowReq saveReq, Workflow workflow) {
         // Sync bot basic info (name/description/avatar/category)
-        updateBaseBot(saveReq, workflow.getExt());
+        Integer botId = updateBaseBot(saveReq, workflow.getExt());
 
         // ---- Update basic info ----
         if (StringUtils.isNotBlank(saveReq.getName())) {
@@ -1455,6 +1795,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         if (StringUtils.isNotBlank(saveReq.getAvatarIcon())) {
             workflow.setAvatarIcon(saveReq.getAvatarIcon());
         }
+        return botId;
     }
 
     // ========== 3. Merge/validate advanced configuration ==========
@@ -1725,7 +2066,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
     }
 
 
-    private void updateBaseBot(WorkflowReq saveReq, String ext) {
+    private Integer updateBaseBot(WorkflowReq saveReq, String ext) {
         Integer botId = null;
         if (!StringUtils.isBlank(ext)) {
             JSONObject jsonObject = JSON.parseObject(ext);
@@ -1751,7 +2092,19 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
                 chatBotBase.setBotType(saveReq.getCategory());
             }
             chatBotBase.setUpdateTime(LocalDateTime.now());
+            setVnc(chatBotBase, saveReq.getAdvancedConfig());
             chatBotBaseMapper.updateById(chatBotBase);
+        }
+        return botId;
+    }
+
+    private void setVnc(ChatBotBase chatBotBase, Map<String, Object> advancedConfig) {
+        if (advancedConfig != null) {
+            JSONObject jsonObject = new JSONObject(advancedConfig);
+            if (jsonObject.getJSONObject("textToSpeech") != null) {
+                chatBotBase.setVcnCn(jsonObject.getJSONObject("textToSpeech").getString("vcn_cn"));
+                chatBotBase.setVcnEn(jsonObject.getJSONObject("textToSpeech").getString("vcn_en"));
+            }
         }
     }
 
@@ -1968,77 +2321,127 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void checkAndEditData(BizNodeData bizNodeData, String prefix) {
-        if (bizNodeData == null || bizNodeData.getNodeMeta() == null) {
-            return;
-        }
-        if (!WorkflowConst.NodeType.AGENT.equals(prefix)) {
+        if (!isAgentNode(bizNodeData, prefix)) {
             return;
         }
 
         JSONObject nodeParam = bizNodeData.getNodeParam();
-        JSONObject modelConfig = nodeParam.getJSONObject("modelConfig");
-        if (modelConfig != null) {
-            String serviceId = nodeParam.getString("serviceId");
-            dealWithUrl(modelConfig, serviceId);
-        }
-        // Configure model corresponding URL
-        // checkAndChangeConfig(bizNodeData, modelConfig);
 
+        // 1 Handle model address - adjust modelConfig.api according to serviceId
+        handleModelConfigUrl(nodeParam);
+        // 2 Handle plugin info - includes MCP address and knowledge docIds
         JSONObject plugin = nodeParam.getJSONObject("plugin");
         if (plugin == null) {
-            log.warn("plugin config is missing");
+            log.warn("Plugin configuration is missing for node: {}", prefix);
             return;
         }
-        JSONArray mcpServerIds = plugin.getJSONArray("mcpServerIds");
-        if(mcpServerIds != null || !mcpServerIds.isEmpty()){
-            JSONArray mcpServerUrls = plugin.getJSONArray("mcpServerUrls");
-            for (Object mcpServerId : mcpServerIds) {
-                String server = (String) mcpServerId;
-                mcpServerUrls.add(server);
-            }
-        }
+
+        // (2.1) MCP: copy mcpServerIds to mcpServerUrls
+        copyMcpServerIdsToUrls(plugin);
+
+        // (2.2) Knowledge: aggregate docIds based on repoIds
         JSONArray knowledgeArray = plugin.getJSONArray("knowledge");
         if (knowledgeArray == null || knowledgeArray.isEmpty()) {
             return;
         }
+        enrichKnowledgeDocIds(knowledgeArray);
+    }
+
+    /** Check whether it is an AGENT node and has valid metadata */
+    private boolean isAgentNode(BizNodeData bizNodeData, String prefix) {
+        if (bizNodeData == null || bizNodeData.getNodeMeta() == null) {
+            return false;
+        }
+        return WorkflowConst.NodeType.AGENT.equals(prefix);
+    }
+
+    /** Handle the modelConfig.api field based on the serviceId */
+    private void handleModelConfigUrl(JSONObject nodeParam) {
+        if (nodeParam == null)
+            return;
+        JSONObject modelConfig = nodeParam.getJSONObject("modelConfig");
+        if (modelConfig == null)
+            return;
+        String serviceId = nodeParam.getString("serviceId");
+        dealWithUrl(modelConfig, serviceId); // reuse existing method
+    }
+
+    /** MCP: copy mcpServerIds to mcpServerUrls safely (null & empty check included) */
+    private void copyMcpServerIdsToUrls(JSONObject plugin) {
+        JSONArray mcpServerIds = plugin.getJSONArray("mcpServerIds");
+        if (mcpServerIds == null || mcpServerIds.isEmpty()) {
+            return;
+        }
+        JSONArray mcpServerUrls = plugin.getJSONArray("mcpServerUrls");
+        if (mcpServerUrls == null) {
+            mcpServerUrls = new JSONArray();
+            plugin.put("mcpServerUrls", mcpServerUrls);
+        }
+        for (int i = 0; i < mcpServerIds.size(); i++) {
+            String server = mcpServerIds.getString(i);
+            if (StringUtils.isNotBlank(server)) {
+                mcpServerUrls.add(server);
+            }
+        }
+    }
+
+    /** Knowledge: fill docIds for each knowledge.match section */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void enrichKnowledgeDocIds(JSONArray knowledgeArray) {
         for (int i = 0; i < knowledgeArray.size(); i++) {
             Object obj = knowledgeArray.get(i);
             if (!(obj instanceof Map)) {
                 continue;
             }
-
             Map knowledgeObj = (Map) obj;
             Object matchObj = knowledgeObj.get("match");
             if (!(matchObj instanceof Map)) {
                 continue;
             }
-
             Map match = (Map) matchObj;
-            Object repoIdsObj = match.get("repoIds");
-            if (!(repoIdsObj instanceof List)) {
-                continue;
-            }
-
-            List<String> repoIds = (List<String>) repoIdsObj;
+            List<String> repoIds = extractRepoIds(match.get("repoIds"));
             if (repoIds.isEmpty()) {
                 continue;
             }
-
-            List<String> allDocIds = new ArrayList<>();
-            for (String repoId : repoIds) {
-                List<FileInfoV2> fileInfoList = fileInfoV2Mapper.getFileInfoV2ByCoreRepoId(repoId);
-                if (CollUtil.isNotEmpty(fileInfoList)) {
-                    List<String> docIds = CollUtil.getFieldValues(fileInfoList, "uuid", String.class);
-                    allDocIds.addAll(docIds);
-                    log.info("Found docIds for repoId {}: {}", repoId, docIds);
-                }
-            }
-
+            List<String> allDocIds = getDocIdsForRepos(repoIds);
             if (!allDocIds.isEmpty()) {
                 match.put("docIds", allDocIds);
             }
         }
+    }
+
+    /** Extract repoIds only if it is a List<String> */
+    @SuppressWarnings("rawtypes")
+    private List<String> extractRepoIds(Object repoIdsObj) {
+        if (!(repoIdsObj instanceof List)) {
+            return Collections.emptyList();
+        }
+        List list = (List) repoIdsObj;
+        List<String> repoIds = new ArrayList<>(list.size());
+        for (Object o : list) {
+            if (o instanceof String s && StringUtils.isNotBlank(s)) {
+                repoIds.add(s);
+            }
+        }
+        return repoIds;
+    }
+
+    /** Retrieve all docIds by repoIds -using existing fileInfoV2Mapper query */
+    private List<String> getDocIdsForRepos(List<String> repoIds) {
+        List<String> allDocIds = new ArrayList<>();
+        for (String repoId : repoIds) {
+            List<FileInfoV2> fileInfoList = fileInfoV2Mapper.getFileInfoV2ByCoreRepoId(repoId);
+            if (CollUtil.isNotEmpty(fileInfoList)) {
+                List<String> docIds = CollUtil.getFieldValues(fileInfoList, "uuid", String.class);
+                allDocIds.addAll(docIds);
+                log.info("Found docIds for repoId {} -> {}", repoId, docIds);
+            } else {
+                log.debug("No file info found for repoId {}", repoId);
+            }
+        }
+        return allDocIds;
     }
 
     private void dealWithUrl(JSONObject modelConfig, String serviceId) {
@@ -2284,7 +2687,7 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
         return vo;
     }
 
-    private JSONObject getIoTrans(List<BizWorkflowNode> nodes) {
+    public JSONObject getIoTrans(List<BizWorkflowNode> nodes) {
         if (nodes.isEmpty()) {
             return null;
         }
@@ -2582,6 +2985,16 @@ public class WorkflowService extends ServiceImpl<WorkflowMapper, Workflow> {
                 .set(Workflow::getCanPublish, false)
         // .set(Workflow::getStatus, WorkflowConst.Status.UNPUBLISHED)
         );
+    }
+
+    public Object canPublishSet(Long id) {
+        Workflow workflow = getById(id);
+        dataPermissionCheckTool.checkWorkflowVisible(workflow, SpaceInfoUtil.getSpaceId());
+        WorkflowReq req = new WorkflowReq();
+        req.setAppId(workflow.getAppId());
+        return update(Wrappers.lambdaUpdate(Workflow.class)
+                .eq(Workflow::getId, id)
+                .set(Workflow::getCanPublish, true));
     }
 
     public boolean isSimpleIo(Long id) {

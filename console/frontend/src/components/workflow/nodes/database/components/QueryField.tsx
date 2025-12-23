@@ -276,7 +276,7 @@ function index({ id, data, allFields, from, children }): React.ReactElement {
             className={cn('flow-select nodrag w-1/3')}
             dropdownAlign={{ offset: [0, 0] }}
             placeholder={
-              <div className="text-[#275EFF] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5">
+              <div className="text-[#6356EA] text-xs font-medium mt-1 inline-flex items-center cursor-pointer gap-1.5">
                 <img src={inputAddIcon} className="w-3 h-3" alt="" />
                 <span>{t('workflow.nodes.databaseNode.queryAdd')}</span>
               </div>

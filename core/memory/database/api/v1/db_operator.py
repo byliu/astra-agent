@@ -7,6 +7,7 @@ import sqlalchemy
 import sqlalchemy.exc
 from common.otlp.trace.span import Span
 from common.service import get_otlp_metric_service, get_otlp_span_service
+from common.utils.snowfake import get_id
 from fastapi import APIRouter, Depends
 from memory.database.api.schemas.clone_db_types import CloneDBInput
 from memory.database.api.schemas.create_db_types import CreateDBInput
@@ -29,9 +30,9 @@ from memory.database.domain.models.database_meta import DatabaseMeta
 from memory.database.domain.models.schema_meta import SchemaMeta
 from memory.database.exceptions.error_code import CodeEnum
 from memory.database.repository.middleware.getters import get_session
-from memory.database.utils.snowfake import get_id
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.sql import quoted_name
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import JSONResponse
 
@@ -39,6 +40,30 @@ clone_db_router = APIRouter(tags=["CLONE_DB"])
 create_db_router = APIRouter(tags=["CREATE_DB"])
 drop_db_router = APIRouter(tags=["DROP_DB"])
 modify_db_description_router = APIRouter(tags=["MODIFY_DB_DESC"])
+
+
+def safe_create_schema_sql(schema_name: str) -> sqlalchemy.sql.elements.TextClause:
+    """
+    Safely create CREATE SCHEMA SQL using SQLAlchemy's quoted_name.
+
+    :param schema_name: Schema name to create
+    :return: SQLAlchemy text construct with properly quoted identifier
+    """
+    # Use SQLAlchemy's quoted_name to properly escape identifiers
+    safe_name = quoted_name(schema_name, quote=True)
+    return text(f'CREATE SCHEMA IF NOT EXISTS "{safe_name}"')
+
+
+def safe_drop_schema_sql(schema_name: str) -> sqlalchemy.sql.elements.TextClause:
+    """
+    Safely create DROP SCHEMA SQL using SQLAlchemy's quoted_name.
+
+    :param schema_name: Schema name to drop
+    :return: SQLAlchemy text construct with properly quoted identifier
+    """
+    # Use SQLAlchemy's quoted_name to properly escape identifiers
+    safe_name = quoted_name(schema_name, quote=True)
+    return text(f'DROP SCHEMA IF EXISTS "{safe_name}" CASCADE')
 
 
 def generate_copy_table_structures_sql(source_schema: str, target_schema: str) -> str:
@@ -141,12 +166,11 @@ async def clone_db(
                 uid=uid, database_name=new_database_name, description=old_description
             )
             new_database_info = await exec_generate_schema(create_db_input, span, db)
-            await db.exec(  # type: ignore[call-overload]
-                text(f"CREATE SCHEMA IF NOT EXISTS {new_database_info.prod_schema}")
-            )
-            await db.exec(  # type: ignore[call-overload]
-                text(f"CREATE SCHEMA IF NOT EXISTS {new_database_info.test_schema}")
-            )
+            # Use SQLAlchemy quoted_name to safely escape schema identifiers
+            prod_sql = safe_create_schema_sql(new_database_info.prod_schema)
+            test_sql = safe_create_schema_sql(new_database_info.test_schema)
+            await db.exec(prod_sql)  # type: ignore[call-overload]
+            await db.exec(test_sql)  # type: ignore[call-overload]
             for schema in old_prod_test_schema_meta:
                 if "prod" in schema[0]:
                     target_schema = new_database_info.prod_schema
@@ -218,8 +242,11 @@ async def exec_generate_schema(
         span_context.add_info_event(f"prod_schema: {prod_schema}")
         span_context.add_info_event(f"dev_schema: {dev_schema}")
 
-        await db.exec(text(f'CREATE SCHEMA IF NOT EXISTS "{prod_schema}"'))  # type: ignore[call-overload]
-        await db.exec(text(f'CREATE SCHEMA IF NOT EXISTS "{dev_schema}"'))  # type: ignore[call-overload]
+        # Use SQLAlchemy quoted_name to safely escape schema identifiers
+        prod_sql = safe_create_schema_sql(prod_schema)
+        dev_sql = safe_create_schema_sql(dev_schema)
+        await db.exec(prod_sql)  # type: ignore[call-overload]
+        await db.exec(dev_sql)  # type: ignore[call-overload]
 
         database_info = DatabaseMeta(
             id=database_id,
@@ -372,8 +399,10 @@ async def drop_db(
             )
 
         try:
+            # Use SQLAlchemy quoted_name to safely escape schema identifiers
             for schema in schema_list:
-                await db.exec(text(f'DROP SCHEMA IF EXISTS "{schema[0]}" CASCADE;'))  # type: ignore[call-overload]
+                drop_sql = safe_drop_schema_sql(schema[0])
+                await db.exec(drop_sql)  # type: ignore[call-overload]
             await db.commit()
             m.in_success_count(lables={"uid": uid})
             return format_response(  # type: ignore[no-any-return]

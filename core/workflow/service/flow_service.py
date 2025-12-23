@@ -7,12 +7,12 @@ creation, updates, retrieval, debugging, and execution of workflow instances.
 
 import json
 import time
-from typing import Any, cast
+from typing import Any, Optional, cast
 
-from sqlmodel import Session
+from common.utils.snowfake import get_id
+from sqlmodel import Session  # type: ignore
 
 from workflow.cache import flow as flow_cache
-from workflow.cache.engine import ENGINE_CACHE_PREFIX
 from workflow.domain.entities.flow import FlowUpdate
 from workflow.domain.entities.node_debug_vo import NodeDebugRespVo
 from workflow.domain.models.ai_app import App
@@ -33,12 +33,11 @@ from workflow.exception.e import CustomException
 from workflow.exception.errors.err_code import CodeEnum
 from workflow.extensions.middleware.cache.base import BaseCacheService
 from workflow.extensions.middleware.database.utils import session_getter
-from workflow.extensions.middleware.getters import get_cache_service, get_db_service
+from workflow.extensions.middleware.getters import get_db_service
 from workflow.extensions.otlp.log_trace.workflow_log import WorkflowLog
 from workflow.extensions.otlp.trace.span import Span
 from workflow.repository import flow_dao, license_dao
 from workflow.service import audit_service, ops_service
-from workflow.utils.snowfake import get_id
 
 
 def save(flow: Flow, app_info: App, session: Session, span: Span) -> Flow:
@@ -52,17 +51,17 @@ def save(flow: Flow, app_info: App, session: Session, span: Span) -> Flow:
     :return: The saved flow object with generated ID
     """
     # Create new flow instance with generated IDs and app source
+    flow_id = get_id()
     db_flow = Flow(
-        group_id=get_id(),
+        id=flow_id,
+        group_id=flow_id,
         name=flow.name,
         data=flow.data,
         description=flow.description,
-        status=flow.status,
         app_id=flow.app_id,
         source=app_info.actual_source,
         version="-1",  # Initial version for new flows
     )
-    db_flow.id = get_id()
 
     # Persist to database
     session.add(db_flow)
@@ -95,22 +94,10 @@ def update(
             db_flow.app_id = flow.app_id
         if flow.data:
             db_flow.data = flow.data
-        if flow.status:
-            db_flow.status = flow.status
-            # Set release data when status is published (status > 0)
-            if flow.status > 0:
-                db_flow.release_data = db_flow.data
 
         session.add(db_flow)
         session.commit()
 
-        # Clear engine cache for the updated flow
-        cache_service = get_cache_service()
-        cache_service.delete(key=f"{ENGINE_CACHE_PREFIX}:{flow_id}:{flow.app_id}")
-        current_span.add_info_event(
-            f"Cleared engine instance from redis: "
-            f"{ENGINE_CACHE_PREFIX}:{flow_id}:{flow.app_id}"
-        )
     except Exception as e:
         current_span.record_exception(e)
         session.rollback()
@@ -135,6 +122,33 @@ def get(flow_id: str, session: Session, span: Span) -> Flow:
         raise CustomException(CodeEnum.FLOW_NOT_FOUND_ERROR)
     flow_cache.set_flow_by_id(flow_id, db_flow)
     return db_flow
+
+
+def get_flow_by_version(
+    flow_id: str, session: Session, span: Span, version: str = ""
+) -> Flow:
+    """
+    Retrieve a workflow by its flow ID from the database.
+
+    :param flow_id: The unique identifier of the workflow
+    :param session: Database session for querying
+    :param span: Tracing span for logging operations
+    :param version: Optional version number of the workflow (empty string for latest)
+    :return: The flow object if found
+    :raises CustomException: If flow with the given ID is not found
+    """
+    # Query database if not found in cache
+    db_flow: Optional[Flow] = get(flow_id, session, span)
+    if version and db_flow:
+        db_flow = (
+            session.query(Flow)
+            .filter_by(group_id=db_flow.group_id, version=version)
+            .first()
+        )
+
+    if db_flow:
+        return db_flow
+    raise CustomException(CodeEnum.FLOW_NOT_FOUND_ERROR)
 
 
 def get_latest_published_flow_by(
@@ -163,9 +177,7 @@ def get_latest_published_flow_by(
         return flow
 
     # Query database if not found in cache
-    db_flow = session.query(Flow).filter_by(id=int(flow_id)).first()
-    if not db_flow:
-        raise CustomException(CodeEnum.FLOW_NOT_FOUND_ERROR)
+    db_flow = get(flow_id, session, span)
 
     # Validate license permissions
     lic = license_dao.get_by(db_flow.group_id, app_alias_id, session)
@@ -252,7 +264,9 @@ def gen_mcp_input_schema(flow: Flow) -> dict:
     }
 
 
-async def node_debug(workflow_dsl: WorkflowDSL, span: Span) -> NodeDebugRespVo:
+async def node_debug(
+    workflow_dsl: WorkflowDSL, flow_id: str, span: Span
+) -> NodeDebugRespVo:
     """
     Execute node debugging for a single workflow node.
 
@@ -277,6 +291,8 @@ async def node_debug(workflow_dsl: WorkflowDSL, span: Span) -> NodeDebugRespVo:
 
     # Disable retry mechanism for node debugging to get immediate feedback
     node_instance.retry_config.should_retry = False
+
+    variable_pool.system_params.set(ParamKey.FlowId, flow_id)
 
     if node_instance.node_id.startswith(NodeType.FLOW.value):
         set_flow_node_output_mode(

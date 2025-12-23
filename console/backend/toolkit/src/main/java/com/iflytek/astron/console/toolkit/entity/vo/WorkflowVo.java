@@ -19,4 +19,8 @@ public class WorkflowVo extends Workflow {
     List<String> inputExampleList;
     Boolean haQaNode = false;
     String version;
+    /**
+     * Voice intelligent agent configuration
+     */
+    String flowConfig;
 }

@@ -12,6 +12,7 @@ import PersonalSpaceCard from './components/personal-space-card';
 
 import styles from './index.module.scss';
 import { getAllSpace } from '@/services/space';
+import { useTranslation } from 'react-i18next';
 
 interface SpaceItem {
   id: string;
@@ -28,17 +29,16 @@ const SpaceManage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchValue, setSearchValue] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
-  const [spaceList, setSpaceList] = useState<SpaceItem[]>([]); //展示的空间
-  const [mySpaceList, setMySpaceList] = useState<SpaceItem[]>([]); //我创建的
-  const [allSpaceList, setAllSpaceList] = useState<SpaceItem[]>([]); //全部空间
+  const [spaceList, setSpaceList] = useState<SpaceItem[]>([]); //show space list
+  const [mySpaceList, setMySpaceList] = useState<SpaceItem[]>([]); //my created space list
+  const [allSpaceList, setAllSpaceList] = useState<SpaceItem[]>([]); //all space list
   const [loading, setLoading] = useState<boolean>(false);
-
-  //获取全部空间
+  const { t } = useTranslation();
+  //get all space list
   const getSpaceList = (name?: string) => {
     getAllSpace(name)
       .then((res: any) => {
         setAllSpaceList(res);
-        // 拿到自己的空间
         const mySpaces = res.filter((space: any) => space.userRole === 1);
         setMySpaceList(mySpaces);
         if (activeTab === 'all') {
@@ -53,7 +53,6 @@ const SpaceManage: React.FC = () => {
   };
 
   useEffect(() => {
-    // 初始化数据
     getSpaceList();
     eventBus.on('spaceList', getSpaceList);
     return () => {
@@ -70,7 +69,7 @@ const SpaceManage: React.FC = () => {
     }
   };
 
-  // 使用 useDebounceFn 优化搜索
+  // use debounce to optimize search
   const { run: debouncedSearch } = useDebounceFn(
     (value: string) => {
       setSearchValue(value);
@@ -107,7 +106,7 @@ const SpaceManage: React.FC = () => {
   return (
     <div className={styles.enterpriseManage}>
       <div className={styles.header}>
-        <h1 className={styles.title}>空间管理</h1>
+        <h1 className={styles.title}>{t('space.spaceManagement')}</h1>
       </div>
 
       <div className={styles.content}>
@@ -115,8 +114,8 @@ const SpaceManage: React.FC = () => {
           <div className={styles.tabs}>
             <SpaceTab
               options={[
-                { key: 'all', label: '全部空间' },
-                { key: 'my', label: '我创建的' },
+                { key: 'all', label: t('space.allSpace') },
+                { key: 'my', label: t('space.myCreatedSpace') },
               ]}
               activeKey={activeTab}
               onChange={handleTabChange}
@@ -132,10 +131,10 @@ const SpaceManage: React.FC = () => {
               onClick={handleCreateSpace}
               className={styles.createBtn}
             >
-              创建空间
+              {t('space.createSpace')}
             </Button>
             <SpaceSearch
-              placeholder="搜索你感兴趣的空间"
+              placeholder={t('space.pleaseEnterSpaceName')}
               onChange={handleSearch}
               onSearch={handleSearchSubmit}
             />

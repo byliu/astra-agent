@@ -8,11 +8,11 @@ including workflow data, metadata, and versioning information.
 from datetime import datetime
 from typing import Dict
 
+from common.utils.snowfake import get_id
 from sqlalchemy import JSON, Column
 from sqlmodel import Field  # type: ignore
 
 from workflow.domain.models.base import SQLModelSerializable
-from workflow.utils.snowfake import get_id
 
 
 class Flow(SQLModelSerializable, table=True):  # type: ignore
@@ -29,7 +29,6 @@ class Flow(SQLModelSerializable, table=True):  # type: ignore
     :param release_data: Released workflow data (stored as JSON)
     :param description: Workflow description
     :param version: Workflow version string
-    :param status: Workflow status (0=inactive, 1=active)
     :param release_status: Release status (0=not released, 1=released)
     :param app_id: Associated application identifier
     :param source: Source identifier for the workflow
@@ -45,7 +44,6 @@ class Flow(SQLModelSerializable, table=True):  # type: ignore
     release_data: Dict = Field(default_factory=dict, sa_column=Column(JSON))
     description: str = Field(default="", index=True)
     version: str = Field(default="", index=True)
-    status: int = Field(default=0)
     release_status: int = Field(default=0)
     app_id: str = Field(default="")
     source: int = Field(default=0)

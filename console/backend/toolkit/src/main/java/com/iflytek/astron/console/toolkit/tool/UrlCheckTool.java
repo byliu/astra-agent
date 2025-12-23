@@ -151,10 +151,12 @@ public class UrlCheckTool {
     /**
      * Blacklist/whitelist validation (considering one redirect).
      * <ol>
+     * <li>First validate the original URL before any connection;</li>
      * <li>Domain in whitelist → allow;</li>
      * <li>Resolve A record to get IPv4/IPv6 (this policy focuses on IPv4 validation);</li>
      * <li>Hit IP blacklist → reject;</li>
-     * <li>Hit network segment blacklist (CIDR) → reject.</li>
+     * <li>Hit network segment blacklist (CIDR) → reject;</li>
+     * <li>Then follow redirect and validate the redirected URL.</li>
      * </ol>
      * Silently returns on parsing exception (doesn't affect main flow), let upper layer handle
      * uniformly.
@@ -164,46 +166,69 @@ public class UrlCheckTool {
      */
     public void checkBlackList(String url) {
         try {
-            String redirectUrl = getRedirectUrl(url);
-
             List<String> ipBlackList = readCsvConfig(IP_CATEGORY);
             List<String> segmentBlackList = readCsvConfig(NETWORK_SEGMENT_CATEGORY);
             List<String> domainWhiteList = readCsvConfig(DOMAIN_WHITE_CATEGORY);
 
-            URI uri = new URI(redirectUrl);
-            String host = uri.getHost();
-            if (StringUtils.isBlank(host))
-                return;
+            // Step 1: Validate original URL BEFORE making any connection
+            validateUrlAgainstBlacklist(url, ipBlackList, segmentBlackList, domainWhiteList);
 
-            // Whitelist (case insensitive)
-            String asciiHost = IDN.toASCII(host).toLowerCase(Locale.ROOT);
-            for (String white : domainWhiteList) {
-                if (asciiHost.equalsIgnoreCase(StringUtils.trimToEmpty(white))) {
-                    return;
-                }
+            // Step 2: Get redirect URL (now safe to make connection)
+            String redirectUrl = getRedirectUrl(url);
+
+            // Step 3: If redirected to different URL, validate the target too
+            if (!url.equals(redirectUrl)) {
+                validateUrlAgainstBlacklist(redirectUrl, ipBlackList, segmentBlackList, domainWhiteList);
             }
 
-            InetAddress inet = InetAddress.getByName(asciiHost);
-            String ip = inet.getHostAddress();
-
-            // IPv4 blacklist
-            if (ipBlackList.stream().map(String::trim).anyMatch(ip::equals)) {
-                throw new BusinessException(ResponseEnum.TOOLBOX_IP_IN_BLACKLIST);
-            }
-
-            // Network segment blacklist (only effective for IPv4; IPv6 can be extended)
-            if (inet instanceof Inet4Address) {
-                for (String segment : segmentBlackList) {
-                    if (isIpInRange(ip, segment)) {
-                        throw new BusinessException(ResponseEnum.TOOLBOX_IP_IN_BLACKLIST);
-                    }
-                }
-            }
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             // Silent: let main checkUrl handle uniform exception exit
             log.debug("checkBlackList ignore error: {}", e.toString());
+        }
+    }
+
+    /**
+     * Internal helper to validate a URL against blacklist/whitelist without making connections.
+     *
+     * @param url the URL to validate
+     * @param ipBlackList list of blacklisted IPs
+     * @param segmentBlackList list of blacklisted network segments
+     * @param domainWhiteList list of whitelisted domains
+     * @throws BusinessException if validation fails
+     */
+    private void validateUrlAgainstBlacklist(String url, List<String> ipBlackList,
+            List<String> segmentBlackList,
+            List<String> domainWhiteList) throws Exception {
+        URI uri = new URI(url);
+        String host = uri.getHost();
+        if (StringUtils.isBlank(host))
+            return;
+
+        // Whitelist (case insensitive)
+        String asciiHost = IDN.toASCII(host).toLowerCase(Locale.ROOT);
+        for (String white : domainWhiteList) {
+            if (asciiHost.equalsIgnoreCase(StringUtils.trimToEmpty(white))) {
+                return;
+            }
+        }
+
+        InetAddress inet = InetAddress.getByName(asciiHost);
+        String ip = inet.getHostAddress();
+
+        // IPv4 blacklist
+        if (ipBlackList.stream().map(String::trim).anyMatch(ip::equals)) {
+            throw new BusinessException(ResponseEnum.TOOLBOX_IP_IN_BLACKLIST);
+        }
+
+        // Network segment blacklist (only effective for IPv4; IPv6 can be extended)
+        if (inet instanceof Inet4Address) {
+            for (String segment : segmentBlackList) {
+                if (isIpInRange(ip, segment)) {
+                    throw new BusinessException(ResponseEnum.TOOLBOX_IP_IN_BLACKLIST);
+                }
+            }
         }
     }
 

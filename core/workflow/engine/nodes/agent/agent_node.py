@@ -12,6 +12,7 @@ from workflow.consts.engine.model_provider import ModelProviderEnum
 from workflow.engine.callbacks.openai_types_sse import GenerateUsage
 from workflow.engine.entities.history import EnableChatHistoryV2
 from workflow.engine.entities.msg_or_end_dep_info import MsgOrEndDepInfo
+from workflow.engine.entities.private_config import PrivateConfig
 from workflow.engine.entities.variable_pool import VariablePool
 from workflow.engine.nodes.base_node import BaseNode
 from workflow.engine.nodes.entities.node_run_result import (
@@ -79,7 +80,7 @@ class Knowledge(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     description: str = Field(min_length=0, max_length=1024)
     topK: int = Field(ge=1, le=5)
-    repoType: int = Field(..., ge=1, le=2)
+    repoType: int = Field(..., ge=1, le=3)
     match: Match
 
     @model_validator(mode="after")
@@ -168,6 +169,8 @@ class AgentNode(BaseNode):
     :param source: Model provider source (default: XINGHUO)
     """
 
+    _private_config = PrivateConfig(timeout=5 * 60.0)
+
     appId: str = Field(...)
     apiKey: str = Field(...)
     apiSecret: str = Field(...)
@@ -242,7 +245,9 @@ class AgentNode(BaseNode):
                 total=30 * 60, sock_connect=30, sock_read=interval_timeout
             )
 
-            async with aiohttp.ClientSession(timeout=timeout_config) as session:
+            async with aiohttp.ClientSession(
+                timeout=timeout_config, read_bufsize=1024 * 1024  # 1MB high_water
+            ) as session:
                 async with session.post(
                     url=f"{os.getenv('AGENT_BASE_URL')}/agent/v1/custom/chat/completions",
                     headers=headers,

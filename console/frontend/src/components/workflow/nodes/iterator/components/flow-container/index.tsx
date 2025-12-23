@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { Background, Panel } from 'reactflow';
 import useFlowsManager from '@/components/workflow/store/use-flows-manager';
+import { useMemoizedFn } from 'ahooks';
 
 import fullScreenIcon from '@/assets/imgs/workflow/full-screen-icon.png';
 
@@ -20,6 +21,7 @@ function index(props): React.ReactElement {
     state => state.setNodeInfoEditDrawerlInfo
   );
   const nodes = currentStore(state => state.nodes);
+  const setNode = currentStore(state => state.setNode);
   const [style, setStyle] = useState({
     width: 0,
     height: 0,
@@ -69,6 +71,25 @@ function index(props): React.ReactElement {
     }
   }, [showIterativeModal, iteratorId, nodes]);
 
+  const handleFullScreen = useMemoizedFn(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      setIteratorId(id);
+      setShowIterativeModal(true);
+      setCurrentStore('iterator');
+      setNodeInfoEditDrawerlInfo({
+        open: false,
+        nodeId: '',
+      });
+      setNode(id, old => {
+        return {
+          ...old,
+          selected: false,
+        };
+      });
+    }
+  );
+
   return (
     <div
       className="relative min-h-[158px] rounded-2xl px-[18px] pointer-events-none min-w-[312px]"
@@ -80,16 +101,7 @@ function index(props): React.ReactElement {
       <Panel position="top-right">
         <div
           className="w-[28px] h-[28px] rounded-md flex items-center justify-center bg-[#fff] shadow-md cursor-pointer"
-          onClick={e => {
-            e.stopPropagation();
-            setIteratorId(id);
-            setShowIterativeModal(true);
-            setCurrentStore('iterator');
-            setNodeInfoEditDrawerlInfo({
-              open: false,
-              nodeId: '',
-            });
-          }}
+          onClick={handleFullScreen}
         >
           <img src={fullScreenIcon} className="w-4 h-4" alt="" />
         </div>

@@ -32,10 +32,10 @@ env:
 
 jobs:
   # ============================================================================
-  # Stage 1: 验证和准备
+  # Stage 1: Validation and Preparation
   # ============================================================================
   prepare-release:
-    name: 🚀 准备发布
+    name: 🚀 Prepare Release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
@@ -48,9 +48,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整历史记录用于生成changelog
+          fetch-depth: 0  # Fetch complete history for changelog generation
 
-      - name: 验证标签格式
+      - name: Validate tag format
         id: meta
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
@@ -58,59 +58,59 @@ jobs:
             IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
           else
             VERSION=${GITHUB_REF#refs/tags/}
-            # 检查是否为预发布版本 (包含 -, alpha, beta, rc 等)
+            # Check if it's a pre-release version (contains -, alpha, beta, rc, etc.)
             if [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               IS_PRERELEASE="false"
             else
               IS_PRERELEASE="true"
             fi
           fi
-          
-          # 验证版本号格式
+
+          # Validate version format
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            echo "❌ 错误的版本号格式: $VERSION"
-            echo "✅ 正确格式: v1.0.0, v1.0.0-beta.1, v1.0.0-rc.1"
+            echo "❌ Invalid version format: $VERSION"
+            echo "✅ Correct format: v1.0.0, v1.0.0-beta.1, v1.0.0-rc.1"
             exit 1
           fi
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "is-prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-          
-          echo "🏷️ 发布版本: $VERSION"
-          echo "🔖 预发布版本: $IS_PRERELEASE"
 
-      - name: 智能项目检测
+          echo "🏷️ Release version: $VERSION"
+          echo "🔖 Pre-release: $IS_PRERELEASE"
+
+      - name: Smart project detection
         id: detect
         run: |
-          echo "🔍 检测 Astron Agent 组件..."
+          echo "🔍 Detecting Astron Agent components..."
 
           HAS_CORE_SERVICES="false"
           HAS_CONSOLE_HUB="false"
           HAS_CONSOLE_FRONTEND="false"
 
-          # 检测Core服务组件 (基于build-push.yml的结构)
+          # Detect Core service components (based on build-push.yml structure)
           CORE_COMPONENTS=("tenant" "memory/database" "plugin/rpa" "plugin/link" "plugin/aitools" "agent" "knowledge" "workflow")
           CORE_COUNT=0
 
           for component in "${CORE_COMPONENTS[@]}"; do
             if [[ -f "core/${component}/Dockerfile" ]]; then
               CORE_COUNT=$((CORE_COUNT + 1))
-              echo "✅ Core组件: core/${component}/"
+              echo "✅ Core component: core/${component}/"
             fi
           done
 
           if [[ $CORE_COUNT -gt 0 ]]; then
             HAS_CORE_SERVICES="true"
-            echo "✅ 检测到 $CORE_COUNT 个Core服务组件"
+            echo "✅ Detected $CORE_COUNT Core service components"
           fi
 
-          # 检测Console Hub (Java)
+          # Detect Console Hub (Java)
           if [[ -f "console/backend/hub/pom.xml" && -f "console/backend/hub/Dockerfile" ]]; then
             HAS_CONSOLE_HUB="true"
             echo "✅ Console Hub: console/backend/hub/ (Java Spring Boot)"
           fi
 
-          # 检测Console Frontend (React)
+          # Detect Console Frontend (React)
           if [[ -f "console/frontend/package.json" && -f "console/frontend/Dockerfile" ]]; then
             HAS_CONSOLE_FRONTEND="true"
             echo "✅ Console Frontend: console/frontend/ (React)"
@@ -120,120 +120,71 @@ jobs:
           echo "has-console-hub=$HAS_CONSOLE_HUB" >> $GITHUB_OUTPUT
           echo "has-console-frontend=$HAS_CONSOLE_FRONTEND" >> $GITHUB_OUTPUT
 
-      - name: 生成变更日志
+      - name: Generate Changelog
         id: changelog
         run: |
-          echo "📝 生成变更日志..."
-          
-          # 获取上一个标签
+          echo "📝 Generating changelog..."
+
+          # Get previous tag
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           CURRENT_TAG="${{ steps.meta.outputs.version }}"
-          
+
           if [[ -z "$PREVIOUS_TAG" ]]; then
-            echo "🆕 这是第一个发布版本"
+            echo "🆕 This is the first release"
             COMMIT_RANGE="HEAD"
           else
-            echo "📊 对比版本: $PREVIOUS_TAG...$CURRENT_TAG"
+            echo "📊 Comparing: $PREVIOUS_TAG...$CURRENT_TAG"
             COMMIT_RANGE="$PREVIOUS_TAG..HEAD"
           fi
-          
-          # 创建简单的changelog
+
+          # Create changelog
           CHANGELOG_FILE="/tmp/changelog.md"
-          
-          # 写入标题
-          echo "## 🚀 主要变更" > "$CHANGELOG_FILE"
+
+          # Write header
+          echo "## What's Changed" > "$CHANGELOG_FILE"
           echo "" >> "$CHANGELOG_FILE"
-          
-          # 获取并分类提交
-          echo "### ✨ 新功能" >> "$CHANGELOG_FILE"
-          if git log --pretty=format:"%s" $COMMIT_RANGE | grep "^feat" | sed 's/^feat[^:]*: /- /' >> "$CHANGELOG_FILE"; then
-            true
+
+          # Collect and categorize commits
+          echo "### ✨ New Features" >> "$CHANGELOG_FILE"
+          FEATURES=$(git log --pretty=format:"%s" $COMMIT_RANGE | grep "^feat" | sed 's/^feat[^:]*: /- /')
+          if [[ -n "$FEATURES" ]]; then
+            echo "$FEATURES" >> "$CHANGELOG_FILE"
           else
-            echo "- 暂无新功能" >> "$CHANGELOG_FILE"
+            echo "- No new features in this release" >> "$CHANGELOG_FILE"
           fi
-          
+
           echo "" >> "$CHANGELOG_FILE"
-          echo "### 🐛 问题修复" >> "$CHANGELOG_FILE"
-          if git log --pretty=format:"%s" $COMMIT_RANGE | grep "^fix" | sed 's/^fix[^:]*: /- /' >> "$CHANGELOG_FILE"; then
-            true
+          echo "### 🐛 Fixes" >> "$CHANGELOG_FILE"
+          FIXES=$(git log --pretty=format:"%s" $COMMIT_RANGE | grep "^fix" | sed 's/^fix[^:]*: /- /')
+          if [[ -n "$FIXES" ]]; then
+            echo "$FIXES" >> "$CHANGELOG_FILE"
           else
-            echo "- 暂无问题修复" >> "$CHANGELOG_FILE"
+            echo "- No bug fixes in this release" >> "$CHANGELOG_FILE"
           fi
-          
+
           echo "" >> "$CHANGELOG_FILE"
-          echo "### 🔧 其他改进" >> "$CHANGELOG_FILE"
-          if git log --pretty=format:"%s" $COMMIT_RANGE | grep -E "^(chore|docs|refactor|test|ci)" | sed 's/^[^:]*: /- /' >> "$CHANGELOG_FILE"; then
-            true
+          echo "### 🔧 Improvements" >> "$CHANGELOG_FILE"
+          IMPROVEMENTS=$(git log --pretty=format:"%s" $COMMIT_RANGE | grep -E "^(chore|docs|refactor|test|ci|perf|style)" | sed 's/^[^:]*: /- /')
+          if [[ -n "$IMPROVEMENTS" ]]; then
+            echo "$IMPROVEMENTS" >> "$CHANGELOG_FILE"
           else
-            echo "- 暂无其他改进" >> "$CHANGELOG_FILE"
-          fi
-          
-          # 添加Docker镜像信息
-          echo "" >> "$CHANGELOG_FILE"
-          echo "## 📦 Docker镜像" >> "$CHANGELOG_FILE"
-          echo "" >> "$CHANGELOG_FILE"
-
-          if [[ "${{ steps.detect.outputs.has-core-services }}" == "true" ]]; then
-            echo "### 🏗️ Core服务组件" >> "$CHANGELOG_FILE"
-            echo "- 🏢 Core Tenant: ghcr.io/${{ github.repository }}/core-tenant:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🧠 Core Database: ghcr.io/${{ github.repository }}/core-database:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🤖 Core RPA: ghcr.io/${{ github.repository }}/core-rpa:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🔗 Core Link: ghcr.io/${{ github.repository }}/core-link:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🛠️ Core AI Tools: ghcr.io/${{ github.repository }}/core-aitools:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 🤖 Core Agent: ghcr.io/${{ github.repository }}/core-agent:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- 📚 Core Knowledge: ghcr.io/${{ github.repository }}/core-knowledge:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "- ⚡ Core Workflow: ghcr.io/${{ github.repository }}/core-workflow:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
+            echo "- No improvements in this release" >> "$CHANGELOG_FILE"
           fi
 
-          if [[ "${{ steps.detect.outputs.has-console-hub }}" == "true" ]]; then
-            echo "### 🎯 Console服务" >> "$CHANGELOG_FILE"
-            echo "- ☕ Console Hub: ghcr.io/${{ github.repository }}/console-hub:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-          fi
-
-          if [[ "${{ steps.detect.outputs.has-console-frontend }}" == "true" ]]; then
-            echo "### 🌐 前端应用" >> "$CHANGELOG_FILE"
-            echo "- 🟦 Console Frontend: ghcr.io/${{ github.repository }}/console-frontend:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-            echo "" >> "$CHANGELOG_FILE"
-          fi
-
-          # 添加使用说明
-          echo "## 📋 使用说明" >> "$CHANGELOG_FILE"
-          echo "" >> "$CHANGELOG_FILE"
-          echo "### 快速开始" >> "$CHANGELOG_FILE"
-          echo '```bash' >> "$CHANGELOG_FILE"
-          echo "# 克隆项目" >> "$CHANGELOG_FILE"
-          echo "git clone https://github.com/${{ github.repository }}.git" >> "$CHANGELOG_FILE"
-          echo "cd astron-agent" >> "$CHANGELOG_FILE"
-          echo "git checkout $CURRENT_TAG" >> "$CHANGELOG_FILE"
-          echo "" >> "$CHANGELOG_FILE"
-          echo "# 使用Docker Compose运行" >> "$CHANGELOG_FILE"
-          echo "docker-compose up -d" >> "$CHANGELOG_FILE"
-          echo "" >> "$CHANGELOG_FILE"
-          echo "# 或者单独拉取镜像" >> "$CHANGELOG_FILE"
-          if [[ "${{ steps.detect.outputs.has-console-frontend }}" == "true" ]]; then
-            echo "docker pull ghcr.io/${{ github.repository }}/console-frontend:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-          fi
-          if [[ "${{ steps.detect.outputs.has-console-hub }}" == "true" ]]; then
-            echo "docker pull ghcr.io/${{ github.repository }}/console-hub:$CURRENT_TAG" >> "$CHANGELOG_FILE"
-          fi
-          echo '```' >> "$CHANGELOG_FILE"
-          
-          # 输出到GitHub Output
+          # Output to GitHub Output
           {
             echo "changelog<<EOF"
             cat "$CHANGELOG_FILE"
             echo "EOF"
           } >> $GITHUB_OUTPUT
-          
-          echo "📄 变更日志已生成"
+
+          echo "📄 Changelog generated successfully"
 
   # ============================================================================
-  # Stage 2: 构建Docker镜像 (复用build-push的逻辑)
+  # Stage 2: Build Docker Images (reuse build-push logic)
   # ============================================================================
   build-core-services:
-    name: 🏗️ 构建Core服务
+    name: 🏗️ Build Core Services
     runs-on: ubuntu-latest
     needs: prepare-release
     if: needs.prepare-release.outputs.has-core-services == 'true'
@@ -290,11 +241,10 @@ jobs:
             VERSION=${{ needs.prepare-release.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
   build-console-hub:
-    name: ☕ 构建Console Hub
+    name: ☕ Build Console Hub
     runs-on: ubuntu-latest
     needs: prepare-release
     if: needs.prepare-release.outputs.has-console-hub == 'true'
@@ -340,13 +290,12 @@ jobs:
             VERSION=${{ needs.prepare-release.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha,scope=console-hub
-          cache-to: type=gha,scope=console-hub,mode=max
+          no-cache: true
           provenance: false
           sbom: false
 
   build-console-frontend:
-    name: 🌐 构建Console Frontend
+    name: 🌐 Build Console Frontend
     runs-on: ubuntu-latest
     needs: prepare-release
     if: needs.prepare-release.outputs.has-console-frontend == 'true'
@@ -394,14 +343,13 @@ jobs:
             VERSION=${{ needs.prepare-release.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_TIME=${{ github.run_id }}
-          cache-from: type=gha,scope=console-frontend
-          cache-to: type=gha,mode=max,scope=console-frontend
+          no-cache: true
 
   # ============================================================================
-  # Stage 3: 创建GitHub Release
+  # Stage 3: Create GitHub Release
   # ============================================================================
   create-release:
-    name: 🎉 创建GitHub Release
+    name: 🎉 Create GitHub Release
     runs-on: ubuntu-latest
     needs:
       - prepare-release
@@ -417,28 +365,30 @@ jobs:
           name: "Astron Agent ${{ needs.prepare-release.outputs.version }}"
           body: ${{ needs.prepare-release.outputs.changelog }}
           prerelease: ${{ needs.prepare-release.outputs.is-prerelease }}
+          generate_release_notes: true
+          append_body: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 发布总结
+      - name: Release Summary
         run: |
-          echo "=== 🎉 Astron Agent 发布总结 ==="
+          echo "=== 🎉 Astron Agent Release Summary ==="
           echo ""
-          echo "🏷️ 版本: ${{ needs.prepare-release.outputs.version }}"
-          echo "🔖 预发布: ${{ needs.prepare-release.outputs.is-prerelease }}"
-          echo "📦 发布页面: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.version }}"
+          echo "🏷️ Version: ${{ needs.prepare-release.outputs.version }}"
+          echo "🔖 Pre-release: ${{ needs.prepare-release.outputs.is-prerelease }}"
+          echo "📦 Release page: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare-release.outputs.version }}"
           echo ""
 
-          echo "🐳 Docker镜像构建状态:"
-          echo "  🏗️ Core服务: ${{ needs.build-core-services.result }}"
+          echo "🐳 Docker Image Build Status:"
+          echo "  🏗️ Core Services: ${{ needs.build-core-services.result }}"
           echo "  ☕ Console Hub: ${{ needs.build-console-hub.result }}"
           echo "  🌐 Console Frontend: ${{ needs.build-console-frontend.result }}"
           echo ""
 
-          echo "🎯 快速开始:"
+          echo "🎯 Quick Start:"
           echo "git clone https://github.com/${{ github.repository }}.git"
           echo "cd astron-agent"
           echo "git checkout ${{ needs.prepare-release.outputs.version }}"
           echo "docker-compose up -d"
           echo ""
 
-          echo "✅ 🚀 Astron Agent 发布完成!"
+          echo "✅ 🚀 Astron Agent Release Complete!"

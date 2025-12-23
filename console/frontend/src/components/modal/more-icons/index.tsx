@@ -37,7 +37,7 @@ const Image: FC<{ imageUrl: string; uploadProps: UploadProps }> = props => {
                   transformOrigin: 'center center',
                 }}
               >
-                <div className="border-4 border-[#275EFF] rounded-xl w-full h-full overflow-hidden">
+                <div className="border-4 border-[#6356EA] rounded-xl w-full h-full overflow-hidden">
                   <div
                     className="icon-image-origin"
                     style={{
@@ -152,7 +152,7 @@ const MoreIcons: FC<{
           {avatarGenerationMethods.map((item, index) => (
             <div
               key={index}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg cursor-pointer ${[activeTab, hoverTab].includes(item.activeTab) ? 'text-[#275EFF] bg-[#F6F9FF]' : ''}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg cursor-pointer ${[activeTab, hoverTab].includes(item.activeTab) ? 'text-[#6356EA] bg-[#F6F9FF]' : ''}`}
               onMouseEnter={() => setHoverTab(item.activeTab)}
               onMouseLeave={() => setHoverTab('')}
               onClick={e => {
@@ -372,7 +372,7 @@ export const UploadContent: FC<{
           <img src={uploadAct} className="w-8 h-8" alt="" />
           <div className="font-medium mt-6">
             拖拽文件至此，或者
-            <span className="text-[#275EFF]">选择文件</span>
+            <span className="text-[#6356EA]">选择文件</span>
           </div>
           <p className="text-desc mt-2">
             支持上传JPG和PNG等格式的文件。单个文件不超过2MB。

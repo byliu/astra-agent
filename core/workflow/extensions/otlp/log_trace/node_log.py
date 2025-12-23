@@ -181,11 +181,18 @@ class NodeLog(BaseModel):
 
         :param data: Dictionary containing configuration parameters
         """
-        for key, value in data.items():
-            if not isinstance(value, str):
-                self.data.config.update({key: f"{value}"})
+
+        def value_to_str(obj: Any) -> Any:
+            if isinstance(obj, dict):
+                return {k: value_to_str(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [value_to_str(v) for v in obj]
+            elif hasattr(obj, "__dict__"):
+                return value_to_str(obj.__dict__)
             else:
-                self.data.config.update({key: value})
+                return str(obj)
+
+        self.data.config.update(value_to_str(data))
 
     def _add_log(self, log_level: str, content: str) -> None:
         """

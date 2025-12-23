@@ -4,7 +4,6 @@ import errorIcon from '@/assets/imgs/sparkImg/errorIcon.svg';
 import userImg from '@/assets/svgs/user-logo.svg';
 import LoadingAnimate from '@/constants/lottie-react/chat-loading.json';
 import useUserStore from '@/store/user-store';
-import { getLanguageCode } from '@/utils/http';
 import Lottie from 'lottie-react';
 import DeepThinkProgress from '@/pages/chat-page/components/deep-think-progress';
 import MarkdownRender from '@/components/markdown-render';
@@ -69,9 +68,10 @@ const MessageList = (props: {
         {inputExample?.some((ex: string) => ex) && (
           <div className="m-3 p-5 rounded-18px bg-[#ffffff] flex justify-between items-center">
             <div className="flex flex-wrap gap-2">
-              {inputExample?.map((ex: string) => {
+              {inputExample?.map((ex: string, index: number) => {
                 return ex ? (
                   <div
+                    key={index}
                     className="bg-[#eef1fd] rounded-md px-3 py-1 cursor-pointer text-[#9295bf] hover:text-[#257eff] text-xs h-8 leading-6"
                     onClick={() => {
                       handleSendMessage(ex);
@@ -120,7 +120,7 @@ const MessageList = (props: {
       >
         <div className="flex w-full mb-3">
           <img
-            src={botInfo.avatar || coverUrl}
+            src={coverUrl || errorIcon}
             alt="avatar"
             className="w-6 h-6 rounded-full mr-4 object-cover"
           />

@@ -218,7 +218,7 @@ export default function BotApi({
             </div>
             <div className={styles.appid_box}>
               <div className={styles.appid_select}>
-                {apiInfo && (
+                {apiInfo?.appId && (
                   <>
                     <span className={styles.appid_select_title}>
                       {t('botApi.bindAppID')}
@@ -262,7 +262,7 @@ export default function BotApi({
                     )}
                   </>
                 )}
-                {!apiInfo && (
+                {!apiInfo?.appId && (
                   <>
                     <Select
                       showSearch
@@ -342,13 +342,13 @@ export default function BotApi({
             <div className={`${styles.cer_info}`}>
               <span className={styles.info_label}>API Secret:</span>
               <span className={styles.info_res}>
-                {apiInfo?.apiSecret || t('botApi.bindAppTips2')}
+                {apiInfo?.appSecret || t('botApi.bindAppTips2')}
               </span>
             </div>
             <div className={`${styles.cer_info}`}>
               <span className={styles.info_label}>API Key：</span>
               <span className={styles.info_res}>
-                {apiInfo?.apiKey || t('botApi.bindAppTips2')}
+                {apiInfo?.appKey || t('botApi.bindAppTips2')}
               </span>
             </div>
             {searchParams.get('version') !== '1' && (

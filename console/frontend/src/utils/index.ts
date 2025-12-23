@@ -15,6 +15,7 @@ import {
 import Compressor from 'compressorjs';
 import { getShareAgentKey } from '@/services/chat';
 import { fileIconConfig } from '@/config/file-icon-config';
+import { t } from 'i18next';
 // 将对象转换为URL参数字符串
 const objectToQueryString = (params: Record<string, any>): string => {
   if (!params || Object.keys(params).length === 0) {
@@ -109,7 +110,7 @@ const copyText = async (options: {
     await navigator.clipboard.writeText(decodedText);
 
     if (!props.successText) {
-      message.info(localeConfig?.[languageCode]?.copyDone);
+      message.info(t('copyDone'));
     } else {
       message.info(props.successText);
     }
@@ -124,7 +125,7 @@ const copyText = async (options: {
     try {
       document.execCommand('copy');
       if (!props.successText) {
-        message.info(localeConfig?.[languageCode]?.copyDone);
+        message.info(t('copyDone'));
       } else {
         message.info(props.successText);
       }
@@ -546,7 +547,7 @@ const formatHistoryToMessages = (chatHistoryList: ChatHistoryResponse[]) => {
         formattedMessages.push({
           id: new Date().getTime(),
           reqType: 'START',
-          message: '全新的开始',
+          message: t('chatPage.chatWindow.newChatSimple'),
         });
       }
     }
@@ -699,6 +700,149 @@ const getStatusText = (file: UploadFileInfo): string => {
   }
 };
 
+/**
+ * 检测文本是否为纯文本（只包含中文、英文、数字、常见标点符号）
+ * 排除：代码块、emoji、链接、图片、markdown特殊语法等
+ */
+const isPureText = (text: string): boolean => {
+  if (text.trim() === '') {
+    return false;
+  }
+  if (!text || typeof text !== 'string') {
+    return false;
+  }
+
+  // 1. 检测代码块（``` 或 `）
+  if (/```[\s\S]*?```|`[^`]+`/.test(text)) {
+    return false;
+  }
+
+  // 2. 检测 Markdown 图片语法 ![alt](url)
+  if (/!\[.*?\]\(.*?\)/.test(text)) {
+    return false;
+  }
+
+  // 3. 检测链接（http/https/www）
+  if (/(https?:\/\/|www\.)[^\s]+/.test(text)) {
+    return false;
+  }
+
+  // 4. 检测 Markdown 链接语法 [text](url)
+  if (/\[.*?\]\(.*?\)/.test(text)) {
+    return false;
+  }
+
+  // // 5. 检测 Emoji 表情（使用 ES5 兼容的正则）
+  // const emojiRegex =
+  //   /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\u2B50-\u2B55]/;
+  // if (emojiRegex.test(text)) {
+  //   return false;
+  // }
+
+  // 6. 检测 HTML 标签
+  if (/<[^>]+>/.test(text)) {
+    return false;
+  }
+
+  // 如果通过所有检测，则认为是纯文本
+  return true;
+};
+
+const splitSentencesBasic = text => {
+  // 1. 正则匹配“，。？！”，用分组捕获“句子+标点”（避免拆分标点）
+  // \s* 匹配标点前可能的空格（如“你好 。”）
+  const regex = /([^，。？！；,!?;]*[，。？！；,!?;])/g;
+  // 2. 执行匹配，获取所有符合规则的句子（含标点）
+  const sentences = text.match(regex) || [];
+  // 3. 去除句子前后的空格（如“ 你好。 ”→“你好。”）
+  return sentences;
+};
+
+function getProcessedStr(strArr) {
+  // 边界处理1：输入不是数组，返回空字符串
+  if (!Array.isArray(strArr)) {
+    console.warn('输入不是数组，请传入字符串数组');
+    return '';
+  }
+
+  // 边界处理2：数组为空，返回空字符串
+  if (strArr.length === 0) {
+    console.warn('输入数组为空');
+    return '';
+  }
+
+  // 步骤1：统一处理数组元素（转为字符串），并计算总长度、完整拼接结果
+  const processedArr = strArr; //.map(item => String(item)); // 非字符串转为字符串（如null→"null"）
+  const fullCombined = processedArr.join(''); // 所有元素完整拼接
+  const totalLength = fullCombined.length; // 所有元素长度之和
+
+  // 步骤2：判断总长度是否≥2000
+  if (totalLength >= 2000) {
+    // 目标：找到“累加长度首次≥2000”的元素，返回其前面所有元素的拼接
+    let accumulatedLength = 0; // 累计长度
+    let prefixCombined = ''; // 前面元素的拼接结果
+
+    for (let i = 0; i < processedArr.length; i++) {
+      const currentStr = processedArr[i];
+      const currentLen = currentStr.length;
+
+      // 关键判断：加上当前元素长度后是否≥2000
+      if (accumulatedLength + currentLen >= 2000) {
+        return prefixCombined; // 返回当前元素前面的所有元素拼接
+      }
+
+      // 未满足则继续累加长度和拼接
+      accumulatedLength += currentLen;
+      prefixCombined += currentStr;
+    }
+
+    // 理论上不会走到这（因totalLength≥2000时循环内已返回）
+    return prefixCombined;
+  } else {
+    // 步骤3：总长度<2000，判断最后一个元素的结尾字符
+    const lastStr = processedArr[processedArr.length - 1]; // 最后一个元素（已转为字符串）
+    // 定义合法结尾字符：，。？！,!?（注意中英文标点区分）
+    const validEndChars = ['，', '。', '？', '！', ',', '!', '?', ';', '；'];
+    // 获取最后一个字符（处理空字符串情况：lastStr为空时charAt(0)也为空）
+    const lastChar = lastStr.charAt(lastStr.length - 1);
+
+    // 判断最后一个字符是否在合法结尾列表中
+    if (validEndChars.includes(lastChar)) {
+      return fullCombined; // 合法结尾：返回所有元素完整拼接
+    } else {
+      // 非法结尾：返回“最后一个元素前面所有元素”的拼接
+      const prefixArr = processedArr.slice(0, -1); // 截取除最后一个元素外的所有元素
+      return prefixArr.join('');
+    }
+  }
+}
+function processStringByChunk(str, chunkSize = 200, handleChunk) {
+  // 1. 边界判断：若字符串为空或未传入处理函数，直接返回
+  if (!str || typeof handleChunk !== 'function') return;
+
+  // 2. 获取字符串总长度
+  const totalLength = str.length;
+
+  // 3. 判断是否超出长度：未超出则直接处理整个字符串
+  if (totalLength <= chunkSize) {
+    handleChunk(str);
+    return;
+  }
+
+  // 4. 超出长度：循环拆分并处理（核心逻辑）
+  // 计算需要拆分的总次数 = 总长度 / 拆分长度，向上取整（如 450 字符需拆 3 次：200+200+50）
+  const totalChunks = Math.ceil(totalLength / chunkSize);
+
+  for (let i = 0; i < totalChunks; i++) {
+    // 计算当前子串的起始索引：i * 拆分长度
+    const start = i * chunkSize;
+    // 截取子串：slice(start, end)，end 超出总长度时自动取到末尾
+    const chunk = str.slice(start, start + chunkSize);
+
+    // 执行自定义处理逻辑（如打印、上传、存储等）
+    handleChunk(chunk, i + 1, totalChunks); // 额外传 子串序号、总次数，方便追踪
+  }
+}
 export {
   objectToQueryString,
   imageToBase64,
@@ -720,4 +864,8 @@ export {
   getFileIcon,
   formatFileSize,
   getStatusText,
+  isPureText,
+  splitSentencesBasic,
+  getProcessedStr,
+  processStringByChunk,
 };

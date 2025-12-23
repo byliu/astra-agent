@@ -9,8 +9,6 @@ import asyncio
 import json
 from typing import Any, AsyncIterator, Dict, Tuple
 
-from openai import AsyncOpenAI  # type: ignore
-
 from workflow.consts.engine.chat_status import ChatStatus
 from workflow.engine.nodes.entities.llm_response import LLMResponse
 from workflow.exception.e import CustomException
@@ -76,7 +74,7 @@ class OpenAIChatAI(ChatAI):
         """
         raise NotImplementedError
 
-    def decode_message(self, msg: dict) -> Tuple[int, str, str, str, Dict[str, Any]]:
+    def decode_message(self, msg: dict) -> Tuple[str, str, str, Dict[str, Any]]:
         """
         Decode a message from OpenAI API response.
 
@@ -88,7 +86,7 @@ class OpenAIChatAI(ChatAI):
         content = delta["content"]
         reasoning_content = delta.get("reasoning_content", "")
         token_usage = {} if not msg["usage"] else msg["usage"]
-        return 0, status, content, reasoning_content, token_usage
+        return status, content, reasoning_content, token_usage
 
     async def _recv_messages(
         self,
@@ -110,6 +108,8 @@ class OpenAIChatAI(ChatAI):
         :raises CustomException: If request times out or fails
         """
         # Initialize OpenAI async client
+        from openai import AsyncOpenAI  # type: ignore
+
         aclient = AsyncOpenAI(
             api_key=self.api_key,
             base_url=url,

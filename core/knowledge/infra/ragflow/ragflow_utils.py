@@ -25,6 +25,10 @@ from knowledge.infra.ragflow.ragflow_client import (
 
 logger = logging.getLogger(__name__)
 
+# Module-level locks for dataset creation to prevent race conditions
+_dataset_locks: Dict[str, asyncio.Lock] = {}
+_locks_lock = asyncio.Lock()
+
 
 class RagflowUtils:
     """RAGFlow utility class providing document processing helper methods"""
@@ -97,45 +101,57 @@ class RagflowUtils:
         """
         Ensure dataset exists, create if it doesn't exist
 
+        Uses per-dataset locks to prevent race conditions when multiple concurrent
+        requests try to create the same dataset.
+
         Args:
             group: Dataset name
 
         Returns:
             Dataset ID
         """
-        try:
-            # 1. Check if dataset exists
-            logger.info(f"Checking if dataset exists: {group}")
-            datasets_response = await list_datasets(name=group)
+        # Get or create a lock for this specific dataset name
+        async with _locks_lock:
+            if group not in _dataset_locks:
+                _dataset_locks[group] = asyncio.Lock()
 
-            if datasets_response.get("code") == 0:
-                datasets = datasets_response.get("data", [])
-                for dataset in datasets:
-                    if dataset.get("name") == group:
-                        dataset_id = dataset.get("id")
-                        logger.info(
-                            f"Found existing dataset: {group}, ID: {dataset_id}"
-                        )
-                        return dataset_id
+        # Acquire the lock for this dataset to ensure serial execution
+        async with _dataset_locks[group]:
+            try:
+                # 1. Check if dataset exists (Double-Check Locking pattern)
+                logger.info(f"Checking if dataset exists: {group}")
+                datasets_response = await list_datasets(name=group)
 
-            # 2. Dataset doesn't exist, create new dataset
-            logger.info(f"Dataset doesn't exist, creating new dataset: {group}")
-            create_response = await create_dataset(
-                name=group,
-                description=f"Automatically created dataset: {group}",
-                chunk_method="naive",
-            )
+                if datasets_response.get("code") == 0:
+                    datasets = datasets_response.get("data", [])
+                    for dataset in datasets:
+                        if dataset.get("name") == group:
+                            dataset_id = dataset.get("id")
+                            logger.info(
+                                f"Found existing dataset: {group}, ID: {dataset_id}"
+                            )
+                            return dataset_id
 
-            if create_response.get("code") == 0:
-                dataset_id = create_response.get("data", {}).get("id")
-                logger.info(f"Dataset created successfully: {group}, ID: {dataset_id}")
-                return dataset_id
-            else:
-                raise Exception(f"Dataset creation failed: {create_response}")
+                # 2. Dataset doesn't exist, create new dataset
+                logger.info(f"Dataset doesn't exist, creating new dataset: {group}")
+                create_response = await create_dataset(
+                    name=group,
+                    description=f"Automatically created dataset: {group}",
+                    chunk_method="naive",
+                )
 
-        except Exception as e:
-            logger.error(f"Dataset management failed: {e}")
-            raise Exception(f"Unable to ensure dataset exists: {str(e)}")
+                if create_response.get("code") == 0:
+                    dataset_id = create_response.get("data", {}).get("id")
+                    logger.info(
+                        f"Dataset created successfully: {group}, ID: {dataset_id}"
+                    )
+                    return dataset_id
+                else:
+                    raise Exception(f"Dataset creation failed: {create_response}")
+
+            except Exception as e:
+                logger.error(f"Dataset management failed: {e}")
+                raise Exception(f"Unable to ensure dataset exists: {str(e)}")
 
     @staticmethod
     async def _download_url_file(file: str) -> tuple[bytes, str]:
@@ -260,13 +276,17 @@ class RagflowUtils:
             return file_content, filename
 
     @staticmethod
-    async def get_document_chunks(dataset_id: str, doc_id: str) -> List[Dict[str, Any]]:
+    async def get_document_chunks(
+        dataset_id: str, doc_id: str, max_retries: int = 15, retry_delay: float = 3.0
+    ) -> List[Dict[str, Any]]:
         """
         Get all chunk content of a document
 
         Args:
             dataset_id: Dataset ID
             doc_id: Document ID
+            max_retries: Maximum number of retry attempts to get chunks (default: 15)
+            retry_delay: Delay between retries in seconds (default: 3.0)
 
         Returns:
             List of chunk data, returns empty list if retrieval fails
@@ -275,6 +295,7 @@ class RagflowUtils:
             all_chunks = []
             page = 1
             page_size = 100  # Get 100 chunks per page
+            retry_count = 0
 
             while True:
                 # Use functional API to get chunks, supports pagination
@@ -298,9 +319,19 @@ class RagflowUtils:
                             break
 
                         page += 1
+                        retry_count = 0
                     else:
-                        # No more chunks
-                        break
+                        # No chunks found - might be because RAGFlow is still indexing
+                        if retry_count < max_retries and page == 1:
+                            retry_count += 1
+                            logger.info(
+                                f"No chunks found yet for document {doc_id}, retrying... (attempt {retry_count}/{max_retries})"
+                            )
+                            await asyncio.sleep(retry_delay)
+                            continue
+                        else:
+                            # No more chunks or max retries reached
+                            break
                 else:
                     logger.warning(f"Failed to get chunks: {chunks_response}")
                     break
@@ -310,7 +341,8 @@ class RagflowUtils:
             )
             return all_chunks
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Exception while getting document chunks: {e}")
             return []
 
     @staticmethod
@@ -388,10 +420,16 @@ class RagflowUtils:
             Processed status, returns None if need to continue waiting
         """
         if run_status == "DONE":
-            logger.info(
-                f"Document {doc_id} parsing completed with {token_count} tokens"
-            )
-            return run_status
+            if token_count > 0:
+                logger.info(
+                    f"Document {doc_id} parsing completed with {token_count} tokens"
+                )
+                return run_status
+            else:
+                logger.warning(
+                    f"Document {doc_id} status is DONE but token_count is 0, will continue waiting..."
+                )
+                return None
         elif run_status == "FAIL":
             raise Exception(f"Document {doc_id} parsing failed")
         elif run_status == "RUNNING":

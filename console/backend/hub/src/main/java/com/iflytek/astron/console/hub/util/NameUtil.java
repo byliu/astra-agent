@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class NameUtil {
-    public static final Pattern pattern = Pattern.compile("(https?://)?([\\w.-]+\\.)+[a-zA-Z]{2,6}");
+    // Fixed ReDoS vulnerability by removing nested quantifiers and restricting character class
+    public static final Pattern pattern = Pattern.compile("(https?://)?(?:[\\w-]+\\.)+[a-zA-Z]{2,6}");
 
     public NameUtil() {}
 

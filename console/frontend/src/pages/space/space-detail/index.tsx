@@ -21,6 +21,7 @@ import SpaceSettings from './components/space-settings';
 import AddMemberModal from '@/components/space/add-member-modal';
 import SpaceModal from '@/components/space/space-modal';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
+import { useTranslation } from 'react-i18next';
 import useUserStore from '@/store/user-store';
 import useSpaceStore from '@/store/space-store';
 import { SpaceType, RoleType } from '@/types/permission';
@@ -489,14 +490,15 @@ const useTabContent = (params: TabContentParams): React.ReactNode => {
 const renderMembersTabAction = (
   memberFilter: FilterState,
   roleOptions: OptionData[],
-  searchHandlers: SearchHandlers
+  searchHandlers: SearchHandlers,
+  t: (key: string) => string
 ): React.JSX.Element => (
   <div key={TAB_KEYS.MEMBERS} className={styles.tabActions}>
     <Select
       value={memberFilter.filterValue}
       onChange={searchHandlers.handleMemberRoleFilterChange}
       className={styles.filterSelect}
-      placeholder="选择角色"
+      placeholder={t('space.selectRole')}
     >
       {roleOptions.map(option => (
         <Option key={option.value} value={option.value}>
@@ -508,7 +510,7 @@ const renderMembersTabAction = (
       style={{ borderColor: '#E4EAFF' }}
       value={memberFilter.inputValue}
       onChange={searchHandlers.handleMemberSearch}
-      placeholder="请输入用户名"
+      placeholder={t('space.pleaseEnterUsername')}
     />
   </div>
 );
@@ -517,14 +519,15 @@ const renderMembersTabAction = (
 const renderApplyTabAction = (
   applyFilter: FilterState,
   statusOptionsApply: OptionData[],
-  searchHandlers: SearchHandlers
+  searchHandlers: SearchHandlers,
+  t: (key: string) => string
 ): React.JSX.Element => (
   <div key={TAB_KEYS.APPLY} className={styles.tabActions}>
     <Select
       value={applyFilter.filterValue}
       onChange={searchHandlers.handleApplyStatusFilterChange}
       className={styles.filterSelect}
-      placeholder="选择状态"
+      placeholder={t('space.selectStatus')}
     >
       {statusOptionsApply.map(option => (
         <Option key={option.value} value={option.value}>
@@ -536,7 +539,7 @@ const renderApplyTabAction = (
       style={{ borderColor: '#E4EAFF' }}
       value={applyFilter.inputValue}
       onChange={searchHandlers.handleApplySearch}
-      placeholder="请输入用户名"
+      placeholder={t('space.pleaseEnterUsername')}
     />
   </div>
 );
@@ -545,14 +548,15 @@ const renderApplyTabAction = (
 const renderInvitationTabAction = (
   invitationFilter: FilterState,
   statusOptions: OptionData[],
-  searchHandlers: SearchHandlers
+  searchHandlers: SearchHandlers,
+  t: (key: string) => string
 ): React.JSX.Element => (
   <div key={TAB_KEYS.INVITATIONS} className={styles.tabActions}>
     <Select
       value={invitationFilter.filterValue}
       onChange={searchHandlers.handleInvitationStatusFilterChange}
       className={styles.filterSelect}
-      placeholder="选择状态"
+      placeholder={t('space.selectStatus')}
     >
       {statusOptions.map(option => (
         <Option key={option.value} value={option.value}>
@@ -564,7 +568,7 @@ const renderInvitationTabAction = (
       style={{ borderColor: '#E4EAFF' }}
       value={invitationFilter.inputValue}
       onChange={searchHandlers.handleInvitationSearch}
-      placeholder="请输入用户名"
+      placeholder={t('space.pleaseEnterUsername')}
     />
   </div>
 );
@@ -582,25 +586,30 @@ const useTabActions = (params: TabActionsParams): React.ReactNode => {
     searchHandlers,
   } = params;
 
+  const { t } = useTranslation();
+
   return useMemo(() => {
     switch (activeTab) {
       case TAB_KEYS.MEMBERS:
         return renderMembersTabAction(
           memberFilter,
           roleOptions,
-          searchHandlers
+          searchHandlers,
+          t
         );
       case TAB_KEYS.APPLY:
         return renderApplyTabAction(
           applyFilter,
           statusOptionsApply,
-          searchHandlers
+          searchHandlers,
+          t
         );
       case TAB_KEYS.INVITATIONS:
         return renderInvitationTabAction(
           invitationFilter,
           statusOptions,
-          searchHandlers
+          searchHandlers,
+          t
         );
       default:
         return null;
@@ -617,6 +626,7 @@ const useTabActions = (params: TabActionsParams): React.ReactNode => {
     statusOptions,
     statusOptionsApply,
     searchHandlers,
+    t,
   ]);
 };
 
@@ -629,6 +639,7 @@ const SpaceDetail: React.FC = () => {
     statusOptionsApply,
     messages,
   } = useSpaceI18n();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<string>(DEFAULT_VALUES.TAB);
   const invitationManagementRef = useRef<InvitationManagementRef>(null);
@@ -707,7 +718,7 @@ const SpaceDetail: React.FC = () => {
           role: item.role,
         }));
         await spaceInvite(members);
-        message.success('邀请成功');
+        message.success(t('common.inviteSuccess'));
         handleAddMemberModalClose();
         invitationManagementRef.current?.reload();
       } catch (error: unknown) {
@@ -715,7 +726,7 @@ const SpaceDetail: React.FC = () => {
         message.error(err?.msg || messages.ERROR.MEMBER_ADD);
       }
     },
-    [messages, handleAddMemberModalClose]
+    [t, handleAddMemberModalClose, messages]
   );
 
   // 加载状态渲染

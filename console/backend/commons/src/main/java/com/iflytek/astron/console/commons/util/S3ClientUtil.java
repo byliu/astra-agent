@@ -1,5 +1,7 @@
 package com.iflytek.astron.console.commons.util;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.iflytek.astron.console.commons.constant.ResponseEnum;
 import com.iflytek.astron.console.commons.exception.BusinessException;
 import io.minio.BucketExistsArgs;
@@ -7,6 +9,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.SetBucketPolicyArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -15,23 +18,29 @@ import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/** Concise S3 (MinIO) client utility providing upload and presign capabilities. */
+/**
+ * Concise S3 (MinIO) client utility providing upload and presign capabilities.
+ */
 @Slf4j
 @Component
 public class S3ClientUtil {
-
     @Value("${s3.endpoint}")
     private String endpoint;
+
+    @Value("${s3.remoteEndpoint}")
+    private String remoteEndpoint;
 
     @Value("${s3.accessKey}")
     private String accessKey;
@@ -47,25 +56,116 @@ public class S3ClientUtil {
     @Value("${s3.presignExpirySeconds:600}")
     private int presignExpirySeconds;
 
+    @Value("${s3.enablePublicRead:false}")
+    private boolean enablePublicRead;
+
     private MinioClient minioClient;
+    private MinioClient presignClient;
 
     @PostConstruct
     public void init() {
-        this.minioClient = MinioClient.builder().endpoint(endpoint).credentials(accessKey, secretKey).build();
+        log.info(
+                "Minio config - endpoint: {}, remoteEndpoint: {}, defaultBucket: {}, presignExpirySeconds: {}, enablePublicRead: {}",
+                endpoint, remoteEndpoint, defaultBucket, presignExpirySeconds, enablePublicRead);
+
+        // Validate required configuration
+        validateConfiguration();
+
+        this.minioClient = MinioClient.builder()
+                .endpoint(endpoint)
+                .credentials(accessKey, secretKey)
+                .build();
+
+        // Create a separate client for presigned URLs using remoteEndpoint
+        this.presignClient = MinioClient.builder()
+                .endpoint(remoteEndpoint)
+                .region("us-east-1") // Force region to avoid auto-discovery network call
+                .credentials(accessKey, secretKey)
+                .build();
 
         // Check if default bucket exists, create if not
         try {
             boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(defaultBucket).build());
             if (!found) {
+                log.info("Creating S3 bucket: {}", defaultBucket);
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(defaultBucket).build());
                 log.info("Created S3 bucket: {}", defaultBucket);
             } else {
                 log.info("S3 bucket already exists: {}", defaultBucket);
             }
-        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException | XmlParserException e) {
-            log.error("Failed to check/create S3 bucket '{}': {}", defaultBucket, e.getMessage(), e);
+
+            // Set bucket policy to public read only if enabled
+            if (enablePublicRead) {
+                String publicReadPolicy = buildPublicReadPolicy(defaultBucket);
+                minioClient.setBucketPolicy(
+                        SetBucketPolicyArgs.builder()
+                                .bucket(defaultBucket)
+                                .config(publicReadPolicy)
+                                .build());
+                log.info("Set public read policy for bucket: {}", defaultBucket);
+            }
+        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException
+                | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException
+                | XmlParserException e) {
+            log.error("Failed to check/create/configure S3 bucket '{}': {}", defaultBucket, e.getMessage(), e);
             throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Validate required configuration parameters.
+     */
+    private void validateConfiguration() {
+        if (endpoint == null || endpoint.trim().isEmpty()) {
+            log.error("S3 endpoint is not configured");
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+        if (remoteEndpoint == null || remoteEndpoint.trim().isEmpty()) {
+            log.error("S3 remoteEndpoint is not configured");
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+        if (accessKey == null || accessKey.trim().isEmpty()) {
+            log.error("S3 accessKey is not configured");
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+        if (secretKey == null || secretKey.trim().isEmpty()) {
+            log.error("S3 secretKey is not configured");
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+        if (defaultBucket == null || defaultBucket.trim().isEmpty()) {
+            log.error("S3 defaultBucket is not configured");
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+        if (presignExpirySeconds < 1 || presignExpirySeconds > 604800) {
+            log.error("S3 presignExpirySeconds must be between 1 and 604800, got: {}", presignExpirySeconds);
+            throw new BusinessException(ResponseEnum.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Build public read policy JSON for a bucket using fastjson2. This allows anonymous users to
+     * read/download objects from the bucket.
+     *
+     * @param bucketName bucket name
+     * @return JSON policy string
+     */
+    private String buildPublicReadPolicy(String bucketName) {
+        JSONObject policy = new JSONObject();
+        policy.put("Version", "2012-10-17");
+
+        JSONObject statement = new JSONObject();
+        statement.put("Effect", "Allow");
+
+        JSONObject principal = new JSONObject();
+        principal.put("AWS", new JSONArray().fluentAdd("*"));
+        statement.put("Principal", principal);
+
+        statement.put("Action", new JSONArray().fluentAdd("s3:GetObject"));
+        statement.put("Resource", new JSONArray().fluentAdd(String.format("arn:aws:s3:::%s/*", bucketName)));
+
+        policy.put("Statement", new JSONArray().fluentAdd(statement));
+
+        return policy.toJSONString();
     }
 
     /**
@@ -79,9 +179,27 @@ public class S3ClientUtil {
      * @param partSize part size (required when objectSize=-1, recommend >= 10MB)
      * @return uploaded object URL
      */
-    public String uploadObject(String bucketName, String objectKey, String contentType, InputStream inputStream, long objectSize, long partSize) {
+    public String uploadObject(String bucketName, String objectKey, String contentType, InputStream inputStream,
+            long objectSize, long partSize) {
+        // Validate parameters
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            log.error("Bucket name cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_UPLOAD_ERROR);
+        }
+        if (objectKey == null || objectKey.trim().isEmpty()) {
+            log.error("Object key cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_UPLOAD_ERROR);
+        }
+        if (inputStream == null) {
+            log.error("Input stream cannot be null");
+            throw new BusinessException(ResponseEnum.S3_UPLOAD_ERROR);
+        }
+
         try {
-            PutObjectArgs.Builder builder = PutObjectArgs.builder().bucket(bucketName).object(objectKey).stream(inputStream, objectSize, partSize);
+            PutObjectArgs.Builder builder = PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .stream(inputStream, objectSize, partSize);
 
             if (contentType != null && !contentType.isEmpty()) {
                 builder.contentType(contentType);
@@ -91,7 +209,9 @@ public class S3ClientUtil {
 
             // Build object URL
             return buildObjectUrl(bucketName, objectKey);
-        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException | XmlParserException e) {
+        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException
+                | InvalidResponseException | IOException | NoSuchAlgorithmException | ServerException
+                | XmlParserException e) {
             if (log.isErrorEnabled()) {
                 log.error("S3 error on upload: {}", e.getMessage(), e);
             }
@@ -107,7 +227,12 @@ public class S3ClientUtil {
      * @return full object URL
      */
     private String buildObjectUrl(String bucketName, String objectKey) {
-        return String.format("%s/%s/%s", endpoint, bucketName, objectKey);
+        // Remove trailing slash from remoteEndpoint if present
+        String baseUrl = remoteEndpoint.endsWith("/") ? remoteEndpoint.substring(0, remoteEndpoint.length() - 1)
+                : remoteEndpoint;
+        // Remove leading slash from objectKey if present
+        String normalizedObjectKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+        return String.format("%s/%s/%s", baseUrl, bucketName, normalizedObjectKey);
     }
 
     /**
@@ -120,10 +245,10 @@ public class S3ClientUtil {
      * @param partSize part size (required when objectSize=-1, recommend >= 10MB)
      * @return uploaded object URL
      */
-    public String uploadObject(String objectKey, String contentType, InputStream inputStream, long objectSize, long partSize) {
+    public String uploadObject(String objectKey, String contentType, InputStream inputStream, long objectSize,
+            long partSize) {
         return uploadObject(defaultBucket, objectKey, contentType, inputStream, objectSize, partSize);
     }
-
 
     /**
      * Upload byte array.
@@ -135,10 +260,17 @@ public class S3ClientUtil {
      * @return uploaded object URL
      */
     public String uploadObject(String bucketName, String objectKey, String contentType, byte[] data) {
+        // Validate parameters
+        if (data == null) {
+            log.error("Data byte array cannot be null");
+            throw new BusinessException(ResponseEnum.S3_UPLOAD_ERROR);
+        }
+
         try (InputStream inputStream = new ByteArrayInputStream(data)) {
             return uploadObject(bucketName, objectKey, contentType, inputStream, data.length, -1);
         } catch (IOException e) {
-            // ByteArrayInputStream.close won't throw IOException; present to satisfy try-with-resources
+            // ByteArrayInputStream.close won't throw IOException; present to satisfy
+            // try-with-resources
             throw new BusinessException(ResponseEnum.S3_UPLOAD_ERROR);
         }
     }
@@ -165,7 +297,8 @@ public class S3ClientUtil {
      * @return uploaded object URL
      */
     public String uploadObject(String bucketName, String objectKey, String contentType, InputStream inputStream) {
-        // Use -1 as objectSize; MinIO will use multipart upload (recommend 5MB part size)
+        // Use -1 as objectSize; MinIO will use multipart upload (recommend 5MB part
+        // size)
         return uploadObject(bucketName, objectKey, contentType, inputStream, -1, 5L * 1024 * 1024);
     }
 
@@ -190,10 +323,32 @@ public class S3ClientUtil {
      * @return URL usable for HTTP PUT
      */
     public String generatePresignedPutUrl(String bucketName, String objectKey, int expirySeconds) {
+        // Validate parameters
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            log.error("Bucket name cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+        if (objectKey == null || objectKey.trim().isEmpty()) {
+            log.error("Object key cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+        if (expirySeconds < 1 || expirySeconds > 604800) {
+            log.error("Expiry seconds must be between 1 and 604800, got: {}", expirySeconds);
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+
         try {
-            return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder().method(Method.PUT).bucket(bucketName).object(objectKey).expiry(expirySeconds).build());
-        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException | InvalidResponseException | IOException | NoSuchAlgorithmException | XmlParserException | ServerException e) {
-            log.debug("S3 error on presign:", e);
+            return presignClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .method(Method.PUT)
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .expiry(expirySeconds)
+                    .build());
+        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException
+                | InvalidResponseException | IOException | NoSuchAlgorithmException | XmlParserException
+                | ServerException e) {
+            log.error("S3 error on presign PUT for bucket '{}', object '{}': {}", bucketName, objectKey, e.getMessage(),
+                    e);
             throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
         }
     }
@@ -206,5 +361,55 @@ public class S3ClientUtil {
      */
     public String generatePresignedPutUrl(String objectKey) {
         return generatePresignedPutUrl(defaultBucket, objectKey, presignExpirySeconds);
+    }
+
+    /**
+     * Generate a presigned GET URL for reading/downloading an object.
+     *
+     * @param bucketName target bucket
+     * @param objectKey object key
+     * @param expirySeconds expiry in seconds (MinIO requires 1..604800)
+     * @return URL usable for HTTP GET
+     */
+    public String generatePresignedGetUrl(String bucketName, String objectKey, int expirySeconds) {
+        // Validate parameters
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            log.error("Bucket name cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+        if (objectKey == null || objectKey.trim().isEmpty()) {
+            log.error("Object key cannot be null or empty");
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+        if (expirySeconds < 1 || expirySeconds > 604800) {
+            log.error("Expiry seconds must be between 1 and 604800, got: {}", expirySeconds);
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+
+        try {
+            return presignClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .expiry(expirySeconds)
+                            .build());
+        } catch (ErrorResponseException | InsufficientDataException | InternalException | InvalidKeyException
+                | InvalidResponseException | IOException | NoSuchAlgorithmException | XmlParserException
+                | ServerException e) {
+            log.error("S3 error on presign GET for bucket '{}', object '{}': {}", bucketName, objectKey, e.getMessage(),
+                    e);
+            throw new BusinessException(ResponseEnum.S3_PRESIGN_ERROR);
+        }
+    }
+
+    /**
+     * Generate a presigned GET URL in the default bucket using default expiry.
+     *
+     * @param objectKey object key
+     * @return URL usable for HTTP GET
+     */
+    public String generatePresignedGetUrl(String objectKey) {
+        return generatePresignedGetUrl(defaultBucket, objectKey, presignExpirySeconds);
     }
 }

@@ -934,16 +934,6 @@ public class RepoService extends ServiceImpl<RepoMapper, Repo> {
         return this.updateRepoStatus(repoVO);
     }
 
-    private JSONObject getRepoRequestObject() {
-        String str = "{\"header\":{\"businessId\":\"\"},\"parameter\":{\"type\":\"\",\"repoId\":\"\"}}";
-        return JSONObject.parseObject(str);
-    }
-
-    private JSONObject getAppIdSubscribeRepoObject() {
-        String str = "{\"header\":{\"businessId\":\"\",\"appId\":\"\"},\"parameter\":{\"repoList\":\"\"}}";
-        return JSONObject.parseObject(str);
-    }
-
     // private JSONObject getKnowledgeQueryObject(String group, Integer topN, String query) {
     // JSONObject jsonObject = new JSONObject();
     // jsonObject.put("query", query);

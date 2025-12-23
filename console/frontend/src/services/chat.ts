@@ -1,3 +1,4 @@
+import { VcnItem } from '@/components/speaker-modal';
 import {
   BotInfoType,
   PostChatItem,
@@ -217,6 +218,7 @@ export const uploadFileBindChat = (
     fileName: string;
     fileUrl: string;
     fileBusinessKey: string;
+    paramName?: string;
   },
   signal?: AbortSignal
 ): Promise<string> => {
@@ -243,14 +245,18 @@ export const unBindChatFile = (params: {
 
 /**
  * 获取合成websocket签名
- * text 文本
- * tts 发音人
  * @returns
  */
-export const getTtsSign = (params: FormData): Promise<TtsSignResponse> => {
-  return http.post(`/iflygpt/api/tts_sign`, params, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+export const getTtsSign = (params: {
+  code?: string;
+}): Promise<TtsSignResponse> => {
+  return http.get(`/voice/tts-sign?code=${params.code}`);
+};
+
+/**
+ * 获取发音人
+ * @returns
+ */
+export const getVcnList = (): Promise<VcnItem[]> => {
+  return http.get(`/voice/get-pronunciation-person`);
 };

@@ -78,7 +78,7 @@ class SidGenerator2:
         self.port = localPort
         self.location = location
         self.sub = sub
-        logger.debug("sid init success")
+        logger.debug("✅ SID generator initialized successfully")
 
     def gen(self) -> str:
         """

@@ -5,6 +5,7 @@ import com.iflytek.astron.console.commons.dto.llm.SparkChatRequest;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotBase;
 import com.iflytek.astron.console.commons.entity.bot.ChatBotMarket;
 import com.iflytek.astron.console.commons.dto.bot.ChatBotReqDto;
+import com.iflytek.astron.console.commons.dto.bot.DebugChatBotReqDto;
 import com.iflytek.astron.console.commons.entity.chat.ChatList;
 import com.iflytek.astron.console.commons.dto.chat.ChatListCreateResponse;
 import com.iflytek.astron.console.commons.entity.chat.ChatReqRecords;
@@ -70,6 +71,8 @@ class BotChatServiceImplUnitTest {
     private ReqKnowledgeRecordsDataService reqKnowledgeRecordsDataService;
     @Mock
     private com.iflytek.astron.console.hub.util.BotPermissionUtil botPermissionUtil;
+    @Mock
+    private com.iflytek.astron.console.hub.service.bot.PersonalityConfigService personalityConfigService;
 
     @InjectMocks
     private BotChatServiceImpl botChatService;
@@ -298,22 +301,26 @@ class BotChatServiceImplUnitTest {
     @Test
     void testDebugChatMessageBot_WithNullModelId() {
         // Given
-        String text = "test message";
-        String prompt = "test prompt";
-        List<String> messages = Arrays.asList("message1", "message2");
-        String uid = "test-uid";
-        String openedTool = "ifly_search";
-        String model = "x1";
-        Long modelId = null;
-        List<String> maasDatasetList = Arrays.asList("dataset1");
+        DebugChatBotReqDto request = new DebugChatBotReqDto();
+        request.setText("test message");
+        request.setPrompt("test prompt");
+        request.setMessages(Arrays.asList("message1", "message2"));
+        request.setUid("test-uid");
+        request.setOpenedTool("ifly_search");
+        request.setModel("x1");
+        request.setModelId(null);
+        request.setMaasDatasetList(Arrays.asList("dataset1"));
+        request.setPersonalityConfig(null);
+
         SseEmitter sseEmitter = new SseEmitter();
         String sseId = "test-sse-id";
 
+        when(personalityConfigService.getChatPrompt(isNull(), eq("test prompt"))).thenReturn("test prompt");
         when(knowledgeService.getChuncks(any(), anyString(), anyInt(), anyBoolean())).thenReturn(Arrays.asList("knowledge"));
         doNothing().when(sparkChatService).chatStream(any(), any(), any(), any(), anyBoolean(), anyBoolean());
 
         // When
-        botChatService.debugChatMessageBot(text, prompt, messages, uid, openedTool, model, modelId, maasDatasetList, sseEmitter, sseId);
+        botChatService.debugChatMessageBot(request, sseEmitter, sseId);
 
         // Then
         verify(sparkChatService).chatStream(any(SparkChatRequest.class), eq(sseEmitter), eq(sseId), isNull(), eq(false), eq(true));
@@ -323,30 +330,39 @@ class BotChatServiceImplUnitTest {
     @Test
     void testDebugChatMessageBot_WithModelId() {
         // Given
-        String text = "test message";
-        String prompt = "test prompt";
-        List<String> messages = Arrays.asList("message1", "message2");
-        String uid = "test-uid";
-        String openedTool = "ifly_search";
-        String model = "test-model";
-        Long modelId = 1L;
-        List<String> maasDatasetList = Arrays.asList("dataset1");
+        DebugChatBotReqDto request = new DebugChatBotReqDto();
+        request.setText("test message");
+        request.setPrompt("test prompt");
+        request.setMessages(Arrays.asList("message1", "message2"));
+        request.setUid("test-uid");
+        request.setOpenedTool("ifly_search");
+        request.setModel("test-model");
+        request.setModelId(1L);
+        request.setMaasDatasetList(Arrays.asList("dataset1"));
+        request.setPersonalityConfig(null);
+
         SseEmitter sseEmitter = new SseEmitter();
         String sseId = "test-sse-id";
 
         LLMInfoVo llmInfoVo = createLLMInfoVo();
+        llmInfoVo.setLlmId(100L); // Set llmId so checkModelBase can work properly
+        llmInfoVo.setServiceId("test-service-id"); // Set serviceId
+        when(personalityConfigService.getChatPrompt(isNull(), eq("test prompt"))).thenReturn("test prompt");
         when(modelService.getDetail(anyInt(), anyLong(), any())).thenReturn(new ApiResult<>(0, "success", llmInfoVo, 1L));
-        when(modelService.checkModelBase(anyLong(), anyString(), anyString(), anyString(), anyLong())).thenReturn(true);
+        when(modelService.checkModelBase(anyLong(), anyString(), anyString(), anyString(), any())).thenReturn(true);
         when(knowledgeService.getChuncks(any(), anyString(), anyInt(), anyBoolean())).thenReturn(Arrays.asList("knowledge"));
-        doNothing().when(promptChatService).chatStream(any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        doNothing().when(promptChatService).chatStream(any(JSONObject.class), any(SseEmitter.class), anyString(), any(), anyBoolean(), anyBoolean());
 
-        // When
-        botChatService.debugChatMessageBot(text, prompt, messages, uid, openedTool, model, modelId, maasDatasetList, sseEmitter, sseId);
+        // When & Then - Mock SpaceInfoUtil static method
+        try (var mockedSpaceInfoUtil = mockStatic(com.iflytek.astron.console.commons.util.space.SpaceInfoUtil.class)) {
+            mockedSpaceInfoUtil.when(com.iflytek.astron.console.commons.util.space.SpaceInfoUtil::getSpaceId).thenReturn(1L);
 
-        // Then
-        verify(modelService).getDetail(eq(0), eq(modelId), isNull());
-        verify(promptChatService).chatStream(any(JSONObject.class), eq(sseEmitter), eq(sseId), isNull(), eq(false), eq(true));
-        verify(sparkChatService, never()).chatStream(any(), any(), any(), any(), anyBoolean(), anyBoolean());
+            botChatService.debugChatMessageBot(request, sseEmitter, sseId);
+
+            verify(modelService).getDetail(eq(0), eq(1L), isNull());
+            verify(promptChatService).chatStream(any(JSONObject.class), eq(sseEmitter), eq(sseId), isNull(), eq(false), eq(true));
+            verify(sparkChatService, never()).chatStream(any(), any(), any(), any(), anyBoolean(), anyBoolean());
+        }
     }
 
     @Test

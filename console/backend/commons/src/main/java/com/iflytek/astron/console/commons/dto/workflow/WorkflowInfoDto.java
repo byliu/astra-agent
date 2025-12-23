@@ -23,4 +23,9 @@ public class WorkflowInfoDto {
      * Tool configuration list
      */
     private List<String> config;
+
+    /**
+     * Advanced configuration
+     */
+    private String advancedConfig;
 }

@@ -91,4 +91,4 @@ def init_metric(
     histogram = meter.create_histogram(
         SERVER_REQUEST_TIME_MICROSECONDS, description=SERVER_REQUEST_TIME_DESC
     )
-    logger.debug("metric init success")
+    logger.debug("✅ Metric initialized successfully")

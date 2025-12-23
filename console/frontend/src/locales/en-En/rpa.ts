@@ -1,5 +1,7 @@
 const translation = {
   createRpa: 'Create RPA',
+  emptyDescription: 'No RPA, create one now~',
+  noSearchResults: 'No related RPA found',
   back: 'Back',
   deleteRpa: 'Delete RPA',
   deleteRpaConfirm: 'Confirm delete?',
@@ -25,6 +27,10 @@ const translation = {
   parameterName: 'Parameter name',
   parameterDescription: 'Parameter description',
   parameterType: 'Parameter type',
+  parameterValue: 'Parameter value',
+  operation: 'Operations',
+  run: 'Run',
+  runResult: 'Run result',
   defaultValue: 'Default value',
   inputParameter: 'Input parameter',
   outputParameter: 'Output parameter',

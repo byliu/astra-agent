@@ -43,7 +43,7 @@ export const DetailModal: FC<{
               percent={currentFile.score * 100}
             />
             <span
-              className="text-[#275EFF] font-medium ml-2"
+              className="text-[#6356EA] font-medium ml-2"
               style={{
                 fontFamily: 'SF Pro Text, SF Pro Text-600',
                 fontStyle: 'italic',

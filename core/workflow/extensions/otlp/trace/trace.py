@@ -134,7 +134,7 @@ def init_trace(
 
     # Set global default tracer provider
     trace.set_tracer_provider(provider)
-    logger.debug("trace init success")
+    logger.debug("✅ Trace initialized successfully")
 
 
 class Trace:

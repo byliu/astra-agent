@@ -38,14 +38,25 @@ class S3ClientUtilTest {
     private S3ClientUtil s3ClientUtil;
 
     // MinIO test environment configuration - from environment variables
-    private static final String TEST_ENDPOINT = System.getenv().getOrDefault("MINIO_TEST_ENDPOINT", "http://localhost:9000");
+    // TEST_ENDPOINT is used for actual MinIO connection (internal)
+    // TEST_REMOTE_ENDPOINT is used for URL generation (external access)
+    private static final String TEST_ENDPOINT = System.getenv()
+            .getOrDefault("MINIO_TEST_ENDPOINT",
+                    "http://localhost:9000");
+    private static final String TEST_REMOTE_ENDPOINT = System.getenv()
+            .getOrDefault("MINIO_TEST_REMOTE_ENDPOINT",
+                    TEST_ENDPOINT);
     private static final String TEST_ACCESS_KEY = System.getenv().getOrDefault("MINIO_TEST_ACCESS_KEY", "minioadmin");
     private static final String TEST_SECRET_KEY = System.getenv().getOrDefault("MINIO_TEST_SECRET_KEY", "minioadmin");
     private static final String TEST_BUCKET = System.getenv().getOrDefault("MINIO_TEST_BUCKET", "astron-project");
 
     // Configuration for testing invalid credentials
-    private static final String INVALID_ACCESS_KEY = System.getenv().getOrDefault("MINIO_INVALID_ACCESS_KEY", "invalid-user");
-    private static final String INVALID_SECRET_KEY = System.getenv().getOrDefault("MINIO_INVALID_SECRET_KEY", "invalid-secret");
+    private static final String INVALID_ACCESS_KEY = System.getenv()
+            .getOrDefault("MINIO_INVALID_ACCESS_KEY",
+                    "invalid-user");
+    private static final String INVALID_SECRET_KEY = System.getenv()
+            .getOrDefault("MINIO_INVALID_SECRET_KEY",
+                    "invalid-secret");
 
     private static boolean minioAvailable = true;
 
@@ -76,11 +87,15 @@ class S3ClientUtilTest {
         s3ClientUtil = new S3ClientUtil();
 
         // Use real MinIO test environment configuration
+        // endpoint: for internal connection (MinioClient)
+        // remoteEndpoint: for URL generation (external access)
         ReflectionTestUtils.setField(s3ClientUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(s3ClientUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
         ReflectionTestUtils.setField(s3ClientUtil, "accessKey", TEST_ACCESS_KEY);
         ReflectionTestUtils.setField(s3ClientUtil, "secretKey", TEST_SECRET_KEY);
         ReflectionTestUtils.setField(s3ClientUtil, "defaultBucket", TEST_BUCKET);
         ReflectionTestUtils.setField(s3ClientUtil, "presignExpirySeconds", 600);
+        ReflectionTestUtils.setField(s3ClientUtil, "enablePublicRead", false);
 
         // Initialize MinIO client - handle BusinessException from @PostConstruct method
         try {
@@ -88,7 +103,8 @@ class S3ClientUtilTest {
         } catch (BusinessException e) {
             // If initialization fails due to MinIO unavailability, mark it as unavailable
             minioAvailable = false;
-            System.out.println("Warning: MinIO service is unavailable during initialization, related tests will be skipped");
+            System.out.println(
+                    "Warning: MinIO service is unavailable during initialization, related tests will be skipped");
             return; // Skip the rest of setup if MinIO is unavailable
         }
 
@@ -139,10 +155,11 @@ class S3ClientUtilTest {
         InputStream inputStream = new ByteArrayInputStream(testContent);
 
         // Execute test
-        String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, inputStream, testContent.length, -1);
+        String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, inputStream, testContent.length,
+                -1);
 
-        // Verify returned URL format is correct
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        // Verify returned URL format is correct (should use remoteEndpoint)
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -157,8 +174,8 @@ class S3ClientUtilTest {
         // Execute test - contentType is null
         String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, null, inputStream, testContent.length, -1);
 
-        // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        // Verify returned URL (should use remoteEndpoint)
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -173,8 +190,8 @@ class S3ClientUtilTest {
         // Execute test - contentType is empty string
         String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, "", inputStream, testContent.length, -1);
 
-        // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        // Verify returned URL (should use remoteEndpoint)
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -184,11 +201,13 @@ class S3ClientUtilTest {
         // Create an S3ClientUtil using invalid credentials
         S3ClientUtil invalidS3ClientUtil = new S3ClientUtil();
         ReflectionTestUtils.setField(invalidS3ClientUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "accessKey", INVALID_ACCESS_KEY);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "secretKey", INVALID_SECRET_KEY);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "defaultBucket", TEST_BUCKET);
 
-        // @PostConstruct method may throw BusinessException during initialization with invalid credentials
+        // @PostConstruct method may throw BusinessException during initialization with
+        // invalid credentials
         try {
             invalidS3ClientUtil.init();
         } catch (BusinessException e) {
@@ -218,9 +237,9 @@ class S3ClientUtilTest {
         // Execute test
         String actualUrl = s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, objectKey, expirySeconds);
 
-        // Verify result contains necessary components
+        // Verify result contains necessary components (should use remoteEndpoint)
         Assertions.assertNotNull(actualUrl);
-        Assertions.assertTrue(actualUrl.startsWith(TEST_ENDPOINT));
+        Assertions.assertTrue(actualUrl.startsWith(TEST_REMOTE_ENDPOINT));
         Assertions.assertTrue(actualUrl.contains(TEST_BUCKET));
         Assertions.assertTrue(actualUrl.contains(objectKey));
         Assertions.assertTrue(actualUrl.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
@@ -232,11 +251,13 @@ class S3ClientUtilTest {
         // Create an S3ClientUtil using invalid credentials
         S3ClientUtil invalidS3ClientUtil = new S3ClientUtil();
         ReflectionTestUtils.setField(invalidS3ClientUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "accessKey", INVALID_ACCESS_KEY);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "secretKey", INVALID_SECRET_KEY);
         ReflectionTestUtils.setField(invalidS3ClientUtil, "defaultBucket", TEST_BUCKET);
 
-        // @PostConstruct method may throw BusinessException during initialization with invalid credentials
+        // @PostConstruct method may throw BusinessException during initialization with
+        // invalid credentials
         try {
             invalidS3ClientUtil.init();
         } catch (BusinessException e) {
@@ -288,7 +309,7 @@ class S3ClientUtilTest {
         String result = s3ClientUtil.uploadObject(objectKey, contentType, inputStream, testContent.length, -1);
 
         // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -303,7 +324,7 @@ class S3ClientUtilTest {
 
         // Verify result
         Assertions.assertNotNull(actualUrl);
-        Assertions.assertTrue(actualUrl.startsWith(TEST_ENDPOINT));
+        Assertions.assertTrue(actualUrl.startsWith(TEST_REMOTE_ENDPOINT));
         Assertions.assertTrue(actualUrl.contains(TEST_BUCKET));
         Assertions.assertTrue(actualUrl.contains(objectKey));
         Assertions.assertTrue(actualUrl.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
@@ -321,7 +342,7 @@ class S3ClientUtilTest {
         String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, data);
 
         // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -337,7 +358,7 @@ class S3ClientUtilTest {
         String result = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, inputStream);
 
         // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -353,7 +374,7 @@ class S3ClientUtilTest {
         String result = s3ClientUtil.uploadObject(objectKey, contentType, data);
 
         // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -369,7 +390,7 @@ class S3ClientUtilTest {
         String result = s3ClientUtil.uploadObject(objectKey, contentType, inputStream);
 
         // Verify returned URL
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, result);
     }
 
@@ -414,19 +435,24 @@ class S3ClientUtilTest {
         InputStream inputStream = new ByteArrayInputStream(testContentBytes);
 
         // Execute upload
-        String generatedUrl = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, inputStream, testContentBytes.length, -1);
+        String generatedUrl = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, inputStream,
+                testContentBytes.length, -1);
 
-        // Verify URL format
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        // Verify URL format (should be remote endpoint)
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, generatedUrl);
 
+        // For testing actual access, use internal endpoint if remote endpoint is not
+        // accessible
+        String accessUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+
         // Verify if URL is accessible
-        Assertions.assertTrue(isUrlAccessible(generatedUrl),
-                "Generated URL should be accessible: " + generatedUrl);
+        Assertions.assertTrue(isUrlAccessible(accessUrl),
+                "Generated URL should be accessible: " + accessUrl);
 
         // Verify correct content can be read through URL
         try {
-            String downloadedContent = readFromUrl(generatedUrl);
+            String downloadedContent = readFromUrl(accessUrl);
             Assertions.assertEquals(testContent, downloadedContent,
                     "Content downloaded via URL should match uploaded content");
         } catch (IOException e) {
@@ -440,23 +466,28 @@ class S3ClientUtilTest {
         // Prepare test data
         String objectKey = "test/byte_array_url_accessible_" + System.currentTimeMillis() + ".txt";
         String contentType = "application/json";
-        String testContent = "{\"message\": \"Hello from S3 byte array upload\", \"timestamp\": " + System.currentTimeMillis() + "}";
+        String testContent = "{\"message\": \"Hello from S3 byte array upload\", \"timestamp\": "
+                + System.currentTimeMillis() + "}";
         byte[] data = testContent.getBytes();
 
         // Execute test
         String generatedUrl = s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, data);
 
-        // Verify URL format
-        String expectedUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+        // Verify URL format (should be remote endpoint)
+        String expectedUrl = TEST_REMOTE_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
         Assertions.assertEquals(expectedUrl, generatedUrl);
 
+        // For testing actual access, use internal endpoint if remote endpoint is not
+        // accessible
+        String accessUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/" + objectKey;
+
         // Verify if URL is accessible
-        Assertions.assertTrue(isUrlAccessible(generatedUrl),
-                "Generated URL should be accessible: " + generatedUrl);
+        Assertions.assertTrue(isUrlAccessible(accessUrl),
+                "Generated URL should be accessible: " + accessUrl);
 
         // Verify correct content can be read through URL
         try {
-            String downloadedContent = readFromUrl(generatedUrl);
+            String downloadedContent = readFromUrl(accessUrl);
             Assertions.assertEquals(testContent, downloadedContent,
                     "Content downloaded via URL should match uploaded content");
         } catch (IOException e) {
@@ -475,9 +506,9 @@ class S3ClientUtilTest {
         // Generate presigned URL
         String presignedUrl = s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, objectKey, 600);
 
-        // Verify presigned URL format
+        // Verify presigned URL format (should use remoteEndpoint)
         Assertions.assertNotNull(presignedUrl);
-        Assertions.assertTrue(presignedUrl.startsWith(TEST_ENDPOINT));
+        Assertions.assertTrue(presignedUrl.startsWith(TEST_REMOTE_ENDPOINT));
         Assertions.assertTrue(presignedUrl.contains(TEST_BUCKET));
         Assertions.assertTrue(presignedUrl.contains(objectKey));
         Assertions.assertTrue(presignedUrl.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
@@ -518,11 +549,456 @@ class S3ClientUtilTest {
     @Test
     @DisabledIf("isMinioUnavailable")
     void uploadObject_invalidUrl_shouldNotBeAccessible() {
-        // Construct a non-existent URL
-        String invalidUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/nonexistent/file_" + System.currentTimeMillis() + ".txt";
+        // Construct a non-existent URL (using internal endpoint for actual access test)
+        String invalidUrl = TEST_ENDPOINT + "/" + TEST_BUCKET + "/nonexistent/file_" + System.currentTimeMillis()
+                + ".txt";
 
         // Verify non-existent URL is not accessible
         Assertions.assertFalse(isUrlAccessible(invalidUrl),
                 "Non-existent file URL should not be accessible");
+    }
+
+    @Test
+    @DisabledIf("isMinioUnavailable")
+    void generatePresignedGetUrl_success() {
+        // First upload a test file
+        String objectKey = "test/presigned_get_" + System.currentTimeMillis() + ".txt";
+        String contentType = "text/plain";
+        String testContent = "Test content for presigned GET URL";
+        byte[] testContentBytes = testContent.getBytes();
+
+        s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, testContentBytes);
+
+        // Generate presigned GET URL
+        int expirySeconds = 3600;
+        String presignedGetUrl = s3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, objectKey, expirySeconds);
+
+        // Verify presigned GET URL format (should use remoteEndpoint)
+        Assertions.assertNotNull(presignedGetUrl);
+        Assertions.assertTrue(presignedGetUrl.startsWith(TEST_REMOTE_ENDPOINT));
+        Assertions.assertTrue(presignedGetUrl.contains(TEST_BUCKET));
+        Assertions.assertTrue(presignedGetUrl.contains(objectKey));
+        Assertions.assertTrue(presignedGetUrl.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+
+        // Verify can read content via presigned GET URL
+        try {
+            String downloadedContent = readFromUrl(presignedGetUrl);
+            Assertions.assertEquals(testContent, downloadedContent,
+                    "Content downloaded via presigned GET URL should match uploaded content");
+        } catch (IOException e) {
+            Assertions.fail("Failed to read content via presigned GET URL: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @DisabledIf("isMinioUnavailable")
+    void generatePresignedGetUrl_withDefaultBucketAndExpiry_success() {
+        // First upload a test file to default bucket
+        String objectKey = "test/presigned_get_default_" + System.currentTimeMillis() + ".txt";
+        String contentType = "text/plain";
+        String testContent = "Test content for presigned GET URL with defaults";
+        byte[] testContentBytes = testContent.getBytes();
+
+        s3ClientUtil.uploadObject(objectKey, contentType, testContentBytes);
+
+        // Generate presigned GET URL using default bucket and expiry
+        String presignedGetUrl = s3ClientUtil.generatePresignedGetUrl(objectKey);
+
+        // Verify presigned GET URL format (should use remoteEndpoint)
+        Assertions.assertNotNull(presignedGetUrl);
+        Assertions.assertTrue(presignedGetUrl.startsWith(TEST_REMOTE_ENDPOINT));
+        Assertions.assertTrue(presignedGetUrl.contains(TEST_BUCKET));
+        Assertions.assertTrue(presignedGetUrl.contains(objectKey));
+        Assertions.assertTrue(presignedGetUrl.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+
+        // Verify can read content via presigned GET URL
+        try {
+            String downloadedContent = readFromUrl(presignedGetUrl);
+            Assertions.assertEquals(testContent, downloadedContent,
+                    "Content downloaded via presigned GET URL should match uploaded content");
+        } catch (IOException e) {
+            Assertions.fail("Failed to read content via presigned GET URL: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @DisabledIf("isMinioUnavailable")
+    void generatePresignedGetUrl_withInvalidCredentials() {
+        // Create an S3ClientUtil using invalid credentials
+        S3ClientUtil invalidS3ClientUtil = new S3ClientUtil();
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "accessKey", INVALID_ACCESS_KEY);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "secretKey", INVALID_SECRET_KEY);
+        ReflectionTestUtils.setField(invalidS3ClientUtil, "defaultBucket", TEST_BUCKET);
+
+        // @PostConstruct method may throw BusinessException during initialization with
+        // invalid credentials
+        try {
+            invalidS3ClientUtil.init();
+        } catch (BusinessException e) {
+            // If initialization fails, verify it's the expected error
+            Assertions.assertEquals(ResponseEnum.INTERNAL_SERVER_ERROR.getCode(), e.getCode());
+            return; // Test passes - initialization correctly failed with invalid credentials
+        }
+
+        String objectKey = "test/should_fail.txt";
+        int expirySeconds = 3600;
+
+        // If initialization didn't fail, then presigned GET URL generation should fail
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> invalidS3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, objectKey, expirySeconds));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    // ========== New tests for parameter validation ==========
+
+    @Test
+    void uploadObject_withNullBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+        String contentType = "text/plain";
+        InputStream inputStream = new ByteArrayInputStream("test".getBytes());
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject(null, objectKey, contentType, inputStream, 4, -1));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void uploadObject_withEmptyBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+        String contentType = "text/plain";
+        InputStream inputStream = new ByteArrayInputStream("test".getBytes());
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject("  ", objectKey, contentType, inputStream, 4, -1));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void uploadObject_withNullObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String contentType = "text/plain";
+        InputStream inputStream = new ByteArrayInputStream("test".getBytes());
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject(TEST_BUCKET, null, contentType, inputStream, 4, -1));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void uploadObject_withEmptyObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String contentType = "text/plain";
+        InputStream inputStream = new ByteArrayInputStream("test".getBytes());
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject(TEST_BUCKET, "  ", contentType, inputStream, 4, -1));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void uploadObject_withNullInputStream_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+        String contentType = "text/plain";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, null, 4, -1));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void uploadObject_withNullByteArray_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+        String contentType = "text/plain";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.uploadObject(TEST_BUCKET, objectKey, contentType, (byte[]) null));
+
+        Assertions.assertEquals(ResponseEnum.S3_UPLOAD_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_withNullBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl(null, objectKey, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_withEmptyBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl("  ", objectKey, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_withNullObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, null, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_withEmptyObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, "  ", 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_withInvalidExpirySeconds_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        // Test with expiry < 1
+        BusinessException exception1 = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, objectKey, 0));
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception1.getCode());
+
+        // Test with expiry > 604800 (7 days)
+        BusinessException exception2 = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, objectKey, 604801));
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception2.getCode());
+    }
+
+    @Test
+    void generatePresignedGetUrl_withNullBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl(null, objectKey, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedGetUrl_withEmptyBucketName_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl("  ", objectKey, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedGetUrl_withNullObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, null, 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedGetUrl_withEmptyObjectKey_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, "  ", 600));
+
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedGetUrl_withInvalidExpirySeconds_shouldThrowException() {
+        // Additional runtime check since @DisabledIf is evaluated at class loading time
+        if (isMinioUnavailable()) {
+            System.out.println("Skipping test - MinIO is unavailable");
+            return;
+        }
+
+        String objectKey = "test/file.txt";
+
+        // Test with expiry < 1
+        BusinessException exception1 = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, objectKey, 0));
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception1.getCode());
+
+        // Test with expiry > 604800 (7 days)
+        BusinessException exception2 = Assertions.assertThrows(BusinessException.class,
+                () -> s3ClientUtil.generatePresignedGetUrl(TEST_BUCKET, objectKey, 604801));
+        Assertions.assertEquals(ResponseEnum.S3_PRESIGN_ERROR.getCode(), exception2.getCode());
+    }
+
+    @Test
+    void init_withNullEndpoint_shouldThrowException() {
+        S3ClientUtil invalidUtil = new S3ClientUtil();
+        ReflectionTestUtils.setField(invalidUtil, "endpoint", null);
+        ReflectionTestUtils.setField(invalidUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
+        ReflectionTestUtils.setField(invalidUtil, "accessKey", TEST_ACCESS_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "secretKey", TEST_SECRET_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "defaultBucket", TEST_BUCKET);
+        ReflectionTestUtils.setField(invalidUtil, "presignExpirySeconds", 600);
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                invalidUtil::init);
+
+        Assertions.assertEquals(ResponseEnum.INTERNAL_SERVER_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void init_withEmptyRemoteEndpoint_shouldThrowException() {
+        S3ClientUtil invalidUtil = new S3ClientUtil();
+        ReflectionTestUtils.setField(invalidUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(invalidUtil, "remoteEndpoint", "  ");
+        ReflectionTestUtils.setField(invalidUtil, "accessKey", TEST_ACCESS_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "secretKey", TEST_SECRET_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "defaultBucket", TEST_BUCKET);
+        ReflectionTestUtils.setField(invalidUtil, "presignExpirySeconds", 600);
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                invalidUtil::init);
+
+        Assertions.assertEquals(ResponseEnum.INTERNAL_SERVER_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void init_withInvalidPresignExpirySeconds_shouldThrowException() {
+        S3ClientUtil invalidUtil = new S3ClientUtil();
+        ReflectionTestUtils.setField(invalidUtil, "endpoint", TEST_ENDPOINT);
+        ReflectionTestUtils.setField(invalidUtil, "remoteEndpoint", TEST_REMOTE_ENDPOINT);
+        ReflectionTestUtils.setField(invalidUtil, "accessKey", TEST_ACCESS_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "secretKey", TEST_SECRET_KEY);
+        ReflectionTestUtils.setField(invalidUtil, "defaultBucket", TEST_BUCKET);
+        ReflectionTestUtils.setField(invalidUtil, "presignExpirySeconds", 0); // Invalid value
+
+        BusinessException exception = Assertions.assertThrows(BusinessException.class,
+                invalidUtil::init);
+
+        Assertions.assertEquals(ResponseEnum.INTERNAL_SERVER_ERROR.getCode(), exception.getCode());
+    }
+
+    @Test
+    void generatePresignedPutUrl_offline_success() {
+        // Create a S3ClientUtil with a non-routable remote endpoint
+        S3ClientUtil offlineS3ClientUtil = new S3ClientUtil();
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "endpoint", TEST_ENDPOINT);
+        // Use a non-routable IP to ensure no network connection can be established
+        String nonRoutableEndpoint = "http://192.0.2.0:9000";
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "remoteEndpoint", nonRoutableEndpoint);
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "accessKey", TEST_ACCESS_KEY);
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "secretKey", TEST_SECRET_KEY);
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "defaultBucket", TEST_BUCKET);
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "presignExpirySeconds", 600);
+
+        // Manually initialize presignClient with the fix (region set)
+        MinioClient presignClient = MinioClient.builder()
+                .endpoint(nonRoutableEndpoint)
+                .region("us-east-1") // This is what we added in the main code
+                .credentials(TEST_ACCESS_KEY, TEST_SECRET_KEY)
+                .build();
+        ReflectionTestUtils.setField(offlineS3ClientUtil, "presignClient", presignClient);
+
+        String objectKey = "test/offline_presign.txt";
+
+        // Execute test - this should NOT throw exception or hang
+        long start = System.currentTimeMillis();
+        String url = offlineS3ClientUtil.generatePresignedPutUrl(TEST_BUCKET, objectKey, 600);
+        long duration = System.currentTimeMillis() - start;
+
+        Assertions.assertNotNull(url);
+        Assertions.assertTrue(url.startsWith(nonRoutableEndpoint));
+        Assertions.assertTrue(duration < 1000,
+                "Presign generation took too long (" + duration + "ms), possibly attempted network call");
     }
 }

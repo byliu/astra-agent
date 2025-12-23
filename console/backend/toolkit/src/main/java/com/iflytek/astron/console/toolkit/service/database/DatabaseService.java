@@ -1140,7 +1140,7 @@ public class DatabaseService extends ServiceImpl<DbInfoMapper, DbInfo> {
             // Unify and standardize the copy names, and avoid illegal characters
             String tableName = NamePolicy.copyName(dbTable.getName());
 
-            // build DDL：CREATE TABLE new AS SELECT * FROM old;
+            // build DDL CREATE TABLE new AS SELECT * FROM old
             DbTableDto dbTableDto = new DbTableDto();
             dbTableDto.setName(tableName);
             String ddl = buildDDL(dbTableDto, DBOperateEnum.COPY.getCode(), dbTable.getName());

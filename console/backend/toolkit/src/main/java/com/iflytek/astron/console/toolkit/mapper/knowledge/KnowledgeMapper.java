@@ -79,4 +79,14 @@ public interface KnowledgeMapper extends BaseMapper<MysqlKnowledge> {
      * Count knowledge entries by fileId and enabled status
      */
     Long countByFileIdAndEnabled(@Param("fileId") String fileId, @Param("enabled") Integer enabled);
+
+    /**
+     * Count knowledge entries by fileId list and content like (fuzzy query)
+     */
+    Long countByFileIdInAndContentLike(@Param("fileIds") List<String> fileIds, @Param("query") String query);
+
+    /**
+     * Count knowledge entries by fileId list and audit type
+     */
+    Long countByFileIdInAndAuditType(@Param("fileIds") List<String> fileIds, @Param("auditType") Integer auditType);
 }

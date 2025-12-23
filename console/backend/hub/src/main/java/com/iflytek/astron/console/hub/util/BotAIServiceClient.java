@@ -37,8 +37,58 @@ public class BotAIServiceClient {
     private static final List<Integer> ALLOWED_IMAGE_SIZES = Arrays.asList(512, 640, 768, 1024);
     private static final int DEFAULT_IMAGE_SIZE = 1024;
     private static final String IMAGE_GENERATION_DOMAIN = "safecfa46";
-    private static final String TEXT_HOST_URL = "https://spark-openapi.cn-huabei-1.xf-yun.com/v4.0/multimodal";
+    private static final String TEXT_HOST_URL = "https://spark-api.xf-yun.com/v4.0/chat";
     private static final String imageHost = "http://spark-openapi.cn-huabei-1.xf-yun.com/v2.1/tti";
+
+    /**
+     * Error code to ResponseEnum mapping for AI service errors
+     */
+    private static final Map<Integer, ResponseEnum> TEXT_ERROR_CODE_MAP = new HashMap<>();
+
+    private static final Map<Integer, ResponseEnum> IMAGE_ERROR_CODE_MAP = new HashMap<>();
+
+    static {
+        // HTTP error codes
+        TEXT_ERROR_CODE_MAP.put(401, ResponseEnum.SPARK_API_PARAM_ERROR);
+
+        // Spark API specific error codes
+        TEXT_ERROR_CODE_MAP.put(10000, ResponseEnum.SPARK_API_UPGRADE_WS_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10001, ResponseEnum.SPARK_API_READ_MESSAGE_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10002, ResponseEnum.SPARK_API_SEND_MESSAGE_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10003, ResponseEnum.SPARK_API_MESSAGE_FORMAT_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10004, ResponseEnum.SPARK_API_SCHEMA_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10005, ResponseEnum.SPARK_API_PARAM_VALUE_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10006, ResponseEnum.SPARK_API_CONCURRENT_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10007, ResponseEnum.SPARK_API_FLOW_LIMIT_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10008, ResponseEnum.SPARK_API_CAPACITY_INSUFFICIENT);
+        TEXT_ERROR_CODE_MAP.put(10009, ResponseEnum.SPARK_API_ENGINE_CONNECTION_FAILED);
+        TEXT_ERROR_CODE_MAP.put(10010, ResponseEnum.SPARK_API_ENGINE_RECEIVE_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10011, ResponseEnum.SPARK_API_ENGINE_SEND_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10012, ResponseEnum.SPARK_API_ENGINE_INTERNAL_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10013, ResponseEnum.SPARK_API_INPUT_CONTENT_AUDIT_FAILED);
+        TEXT_ERROR_CODE_MAP.put(10014, ResponseEnum.SPARK_API_OUTPUT_CONTENT_AUDIT_FAILED);
+        TEXT_ERROR_CODE_MAP.put(10015, ResponseEnum.SPARK_API_APPID_IN_BLACKLIST);
+        TEXT_ERROR_CODE_MAP.put(10016, ResponseEnum.SPARK_API_AUTHORIZATION_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10017, ResponseEnum.SPARK_API_CLEAR_HISTORY_FAILED);
+        TEXT_ERROR_CODE_MAP.put(10019, ResponseEnum.SPARK_API_INPUT_VIOLATION_TENDENCY);
+        TEXT_ERROR_CODE_MAP.put(10021, ResponseEnum.SPARK_API_INPUT_AUDIT_FAILED);
+        TEXT_ERROR_CODE_MAP.put(10110, ResponseEnum.SPARK_API_SERVICE_BUSY);
+        TEXT_ERROR_CODE_MAP.put(10163, ResponseEnum.SPARK_API_ENGINE_PARAM_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10222, ResponseEnum.SPARK_API_ENGINE_NETWORK_ERROR);
+        TEXT_ERROR_CODE_MAP.put(10907, ResponseEnum.SPARK_API_TOKEN_LIMIT_EXCEEDED);
+        TEXT_ERROR_CODE_MAP.put(11200, ResponseEnum.SPARK_API_NO_AUTHORIZATION);
+        TEXT_ERROR_CODE_MAP.put(11201, ResponseEnum.SPARK_API_DAILY_LIMIT_EXCEEDED);
+        TEXT_ERROR_CODE_MAP.put(11202, ResponseEnum.SPARK_API_QPS_LIMIT_EXCEEDED);
+        TEXT_ERROR_CODE_MAP.put(11203, ResponseEnum.SPARK_API_CONCURRENT_LIMIT_EXCEEDED);
+
+        IMAGE_ERROR_CODE_MAP.put(10003, ResponseEnum.SPARK_API_IMAGE_MESSAGE_FORMAT_ERROR);
+        IMAGE_ERROR_CODE_MAP.put(10004, ResponseEnum.SPARK_API_IMAGE_SCHEMA_ERROR);
+        IMAGE_ERROR_CODE_MAP.put(10005, ResponseEnum.SPARK_API_IMAGE_PARAM_VALUE_ERROR);
+        IMAGE_ERROR_CODE_MAP.put(10008, ResponseEnum.SPARK_API_IMAGE_CAPACITY_INSUFFICIENT);
+        IMAGE_ERROR_CODE_MAP.put(100021, ResponseEnum.SPARK_API_IMAGE_INPUT_AUDIT_FAILED);
+        IMAGE_ERROR_CODE_MAP.put(10022, ResponseEnum.SPARK_API_IMAGE_AUDIT_FAILED);
+    }
+
     private final OkHttpClient httpClient = new OkHttpClient().newBuilder()
             .connectionPool(new ConnectionPool(100, 5, TimeUnit.MINUTES))
             .connectTimeout(60, TimeUnit.SECONDS)
@@ -94,19 +144,42 @@ public class BotAIServiceClient {
                     .build();
 
             try (Response response = httpClient.newCall(request).execute()) {
+                int code = response.code();
                 ResponseBody responseBody = response.body();
                 if (responseBody == null) {
                     throw new IllegalStateException("Image generation service response is empty");
                 }
 
+                if (code == 401) {
+                    log.error("Image generation service authentication failed, user [{}]", uid);
+                    throw new BusinessException(ResponseEnum.SPARK_API_IMAGE_PARAM_ERROR);
+                }
+
                 String responseBodyString = responseBody.string();
                 JSONObject result = JSONObject.parseObject(responseBodyString);
 
-                log.info("Image generation request completed, user [{}], response code: {}", uid,
-                        result.getIntValue("header.code", -1));
+                // Get error code from response
+                Integer responseCode = result.getJSONObject("header").getInteger("code");
+                if (responseCode == null) {
+                    responseCode = result.getIntValue("header.code", -1);
+                }
+
+                log.info("Image generation request completed, user [{}], response code: {}", uid, responseCode);
+
+                // Check if there is an error
+                if (responseCode != 0) {
+                    log.error("Image generation service returned error, user [{}], error code: {}", uid, responseCode);
+
+                    // Convert error code to corresponding ResponseEnum and throw
+                    ResponseEnum responseEnum = convertImageErrorCodeToResponseEnum(responseCode);
+                    throw new BusinessException(responseEnum);
+                }
 
                 return result;
             }
+        } catch (BusinessException e) {
+            // Re-throw BusinessException directly
+            throw e;
         } catch (Exception e) {
             log.error("Image generation request failed, user [{}]", uid, e);
             throw new BusinessException(ResponseEnum.SYSTEM_ERROR);
@@ -125,6 +198,7 @@ public class BotAIServiceClient {
     public String generateText(String question, String domain, int seconds) throws BusinessException, InterruptedException {
         validateTextGenerationParams(question, domain, seconds);
 
+        TextGenerationWebSocketListener listener = null;
         try {
             String authUrl = buildWebSocketAuthUrl(TEXT_HOST_URL, apiKey, apiSecret);
             String wsUrl = authUrl.replace("http://", "ws://").replace("https://", "wss://");
@@ -132,12 +206,25 @@ public class BotAIServiceClient {
             CountDownLatch latch = new CountDownLatch(1);
             StringBuilder totalAnswer = new StringBuilder();
 
-            httpClient.newWebSocket(request, new TextGenerationWebSocketListener(
-                    appId, question, domain, latch, totalAnswer));
+            listener = new TextGenerationWebSocketListener(
+                    appId, question, domain, latch, totalAnswer);
+            httpClient.newWebSocket(request, listener);
 
             if (!latch.await(seconds, TimeUnit.SECONDS)) {
                 log.error("AI text generation request timeout, timeout: {} seconds", seconds);
                 throw new BusinessException(ResponseEnum.SYSTEM_ERROR);
+            }
+
+            // Check if AI service returned an error
+            if (listener.getErrorCode() != null) {
+                String errorMsg = listener.getErrorMessage() != null
+                        ? listener.getErrorMessage()
+                        : "AI service error, code: " + listener.getErrorCode();
+                log.error("AI service error: {}", errorMsg);
+
+                // Convert error code to corresponding ResponseEnum and throw
+                ResponseEnum responseEnum = convertTextErrorCodeToResponseEnum(listener.getErrorCode());
+                throw new BusinessException(responseEnum);
             }
 
             String result = totalAnswer.toString().trim();
@@ -171,6 +258,46 @@ public class BotAIServiceClient {
     }
 
     /**
+     * Convert AI service error code to corresponding ResponseEnum
+     *
+     * @param errorCode Error code returned by AI service
+     * @return Corresponding ResponseEnum
+     */
+    private ResponseEnum convertTextErrorCodeToResponseEnum(Integer errorCode) {
+        if (errorCode == null) {
+            return ResponseEnum.SYSTEM_ERROR;
+        }
+
+        ResponseEnum responseEnum = TEXT_ERROR_CODE_MAP.get(errorCode);
+        if (responseEnum == null) {
+            log.warn("Unknown AI text service error code: {}", errorCode);
+            return ResponseEnum.SYSTEM_ERROR;
+        }
+
+        return responseEnum;
+    }
+
+    /**
+     * Convert AI service error code to corresponding ResponseEnum
+     *
+     * @param errorCode Error code returned by AI service
+     * @return Corresponding ResponseEnum
+     */
+    private ResponseEnum convertImageErrorCodeToResponseEnum(Integer errorCode) {
+        if (errorCode == null) {
+            return ResponseEnum.SYSTEM_ERROR;
+        }
+
+        ResponseEnum responseEnum = IMAGE_ERROR_CODE_MAP.get(errorCode);
+        if (responseEnum == null) {
+            log.warn("Unknown AI image service error code: {}", errorCode);
+            return ResponseEnum.SYSTEM_ERROR;
+        }
+
+        return responseEnum;
+    }
+
+    /**
      * Text generation WebSocket listener
      */
     private class TextGenerationWebSocketListener extends WebSocketListener {
@@ -179,6 +306,8 @@ public class BotAIServiceClient {
         private final String domain;
         private final CountDownLatch latch;
         private final StringBuilder totalAnswer;
+        private volatile Integer errorCode;
+        private volatile String errorMessage;
 
         public TextGenerationWebSocketListener(String appId, String question, String domain,
                 CountDownLatch latch, StringBuilder totalAnswer) {
@@ -187,6 +316,16 @@ public class BotAIServiceClient {
             this.domain = domain;
             this.latch = latch;
             this.totalAnswer = totalAnswer;
+            this.errorCode = null;
+            this.errorMessage = null;
+        }
+
+        public Integer getErrorCode() {
+            return errorCode;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
         }
 
         @Override
@@ -213,6 +352,9 @@ public class BotAIServiceClient {
                 WebSocketResponse response = objectMapper.readValue(text, WebSocketResponse.class);
 
                 if (response.getHeader().getCode() != 0) {
+                    this.errorCode = response.getHeader().getCode();
+                    this.errorMessage = "AI service returned error code: " + errorCode +
+                            ", session ID: " + response.getHeader().getSid();
                     log.error("AI service returned error, error code: {}, session ID: {}",
                             response.getHeader().getCode(), response.getHeader().getSid());
                     webSocket.close(1001, "AI service error");
@@ -246,7 +388,13 @@ public class BotAIServiceClient {
         public void onFailure(@NotNull WebSocket webSocket, Throwable t, Response response) {
             log.error("WebSocket connection failed, reason: {}", t.getMessage());
             if (response != null) {
-                log.error("Failure response code: {}", response.code());
+                int responseCode = response.code();
+                log.error("Failure response code: {}", responseCode);
+                // Capture 401 error code
+                if (responseCode == 401) {
+                    this.errorCode = 401;
+                    this.errorMessage = "Authentication failed: HTTP 401 Unauthorized";
+                }
             }
             latch.countDown();
         }

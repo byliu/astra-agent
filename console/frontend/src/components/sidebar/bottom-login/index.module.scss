@@ -42,7 +42,7 @@
         box-shadow: none;
 
         &:hover {
-          color: #275eff;
+          color: #6356EA;
           background: transparent;
         }
 
@@ -269,7 +269,7 @@
   width: 100%;
   height: 36px;
   border-radius: 10px;
-  background: #275eff;
+  background: #6356EA;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -368,7 +368,7 @@
   z-index: 997;
 
   &:hover {
-    background-color: #275eff;
+    background-color: #6356EA;
 
     img {
       filter: brightness(0) saturate(100%) invert(100%);
@@ -450,7 +450,7 @@
   }
 
   &:hover {
-    color: #275eff;
+    color: #6356EA;
     background-color: #f5f8ff;
   }
 

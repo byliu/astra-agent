@@ -38,6 +38,8 @@ const translation = {
   // Model management page
   modelManagement: 'Model Management',
   createModel: 'Create Model',
+  emptyDescription: 'No models yet, create one now~',
+  searchNoResults: 'No search results',
   edit: 'Edit',
   view: 'View',
   deleteWarning: 'Confirm to delete this model?',

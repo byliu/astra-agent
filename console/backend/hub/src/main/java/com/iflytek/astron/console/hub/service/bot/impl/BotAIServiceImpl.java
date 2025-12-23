@@ -269,6 +269,8 @@ public class BotAIServiceImpl implements BotAIService {
             log.info("User [{}] avatar generated and uploaded successfully: {}", uid, avatarUrl);
             return avatarUrl;
 
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Exception occurred during AI avatar generation for user [{}]", uid, e);
             return "Should return fallback content";
@@ -327,7 +329,7 @@ public class BotAIServiceImpl implements BotAIService {
         log.info("Starting one-sentence assistant generation, input: {}", sentence);
 
         // Call AI service to generate response
-        String aiResponse = aiServiceClient.generateText(prompt, "gpt4", 120);
+        String aiResponse = aiServiceClient.generateText(prompt, "4.0Ultra", 120);
 
         if (StringUtils.isBlank(aiResponse)) {
             log.error("AI service returned empty response");
@@ -587,12 +589,12 @@ public class BotAIServiceImpl implements BotAIService {
      */
     private int mapBotType(String botTypeName) {
         if (StringUtils.isBlank(botTypeName)) {
-            return 1; // Default type
+            return 17; // Default type Life
         }
 
         // Get bot type mappings from database
         Map<String, Integer> typeMap = getBotTypeMappings();
-        return typeMap.getOrDefault(botTypeName, 1);
+        return typeMap.getOrDefault(botTypeName, 17);
     }
 
     @Override
@@ -607,7 +609,7 @@ public class BotAIServiceImpl implements BotAIService {
 
         try {
             String question = formatPrompt("prologue_generation", botName);
-            String prologue = String.valueOf(aiServiceClient.generateText(question, "gpt4", 60));
+            String prologue = String.valueOf(aiServiceClient.generateText(question, "4.0Ultra", 60));
 
             if (StringUtils.isBlank(prologue)) {
                 log.error("Failed to generate prologue: AI returned empty content");
@@ -794,7 +796,7 @@ public class BotAIServiceImpl implements BotAIService {
 
         try {
             String question = formatPrompt("input_example_generation", botName, botDesc, prompt);
-            String answer = aiServiceClient.generateText(question, "gpt4", 60);
+            String answer = aiServiceClient.generateText(question, "4.0Ultra", 60);
             List<String> examples = parseNumberedExamples(answer);
             return examples.size() > 3 ? examples.subList(0, 3) : examples;
         } catch (BusinessException e) {

@@ -277,7 +277,7 @@ main() {
         if [ -d "$go_dir" ]; then
             while IFS= read -r -d '' file; do
                 source_files+=("$file")
-            done < <(find "$go_dir" -name "*.go" -print0 2>/dev/null || true)
+            done < <(find "$go_dir" -name "*.go" ! -path "*/vendor/*" -print0 2>/dev/null || true)
         fi
     done
 
@@ -286,7 +286,7 @@ main() {
         if [ -d "$java_dir" ]; then
             while IFS= read -r -d '' file; do
                 source_files+=("$file")
-            done < <(find "$java_dir" -name "*.java" -print0 2>/dev/null || true)
+            done < <(find "$java_dir" -name "*.java" ! -path "*/target/*" -print0 2>/dev/null || true)
         fi
     done
 
@@ -295,7 +295,7 @@ main() {
         if [ -d "$python_dir" ]; then
             while IFS= read -r -d '' file; do
                 source_files+=("$file")
-            done < <(find "$python_dir" -name "*.py" -print0 2>/dev/null || true)
+            done < <(find "$python_dir" -name "*.py" ! -path "*/.venv/*" ! -path "*/venv/*" ! -path "*/__pycache__/*" ! -path "*.egg-info/*" -print0 2>/dev/null || true)
         fi
     done
 
@@ -304,7 +304,7 @@ main() {
         if [ -d "$ts_dir" ]; then
             while IFS= read -r -d '' file; do
                 source_files+=("$file")
-            done < <(find "$ts_dir" -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | grep -v node_modules | head -20 | tr '\n' '\0' 2>/dev/null || true)
+            done < <(find "$ts_dir" \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \) ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/build/*" -print0 2>/dev/null | head -z -20 || true)
         fi
     done
 

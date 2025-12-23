@@ -1,7 +1,6 @@
 package com.iflytek.astron.console.toolkit.entity.table.workflow;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.util.Date;
@@ -28,4 +27,10 @@ public class WorkflowVersion {
     Long publishChannel;
     // Publish data
     String publishResult;
+    /**
+     * Advanced configuration
+     */
+    String advancedConfig;
+    @TableField(exist = false)
+    String flowConfig;
 }

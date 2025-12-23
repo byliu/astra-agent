@@ -28,26 +28,14 @@ astronAgent 项目包含以下三个主要组件：
 
 Casdoor 是一个开源的身份和访问管理平台，提供OAuth 2.0、OIDC、SAML等多种认证协议支持。
 
-启动 Casdoor 服务请运行我们的 [docker-compose.yaml](/docker/casdoor/docker-compose.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
+启动 Casdoor 服务请运行我们的 [docker-compose-with-auth.yaml](/docker/astronAgent/docker-compose-with-auth.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
 
 ```bash
-# 进入 Casdoor 目录
-cd docker/casdoor
-
-# 创建日志挂载目录
-mkdir -p logs
-
-# 设置日志目录权限
-chmod -R 777 logs
+# 进入 astronAgent 目录
+cd docker/astronAgent
 
 # 启动 Casdoor 服务
-docker-compose up -d
-
-# 查看服务状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs -f
+docker compose -f docker-compose-auth.yml up -d
 ```
 
 **服务信息：**
@@ -55,11 +43,7 @@ docker-compose logs -f
 - 容器名称：casdoor
 - 默认配置：生产模式 (GIN_MODE=release)
 
-**配置目录：**
-- 配置文件：`./conf` 目录
-- 日志文件：`./logs` 目录
-
-### 第二步：启动 RagFlow 知识库服务（根据需要部署）
+### 第二步：启动 RagFlow 知识库服务（可选）
 
 RagFlow 是一个开源的RAG（检索增强生成）引擎，使用深度文档理解技术提供准确的问答服务。
 
@@ -74,16 +58,10 @@ chmod +x *.sh
 
 # 启动 RagFlow 服务（包含所有依赖）
 docker compose up -d
-
-# 查看服务状态
-docker compose ps
-
-# 查看服务日志
-docker compose logs -f ragflow
 ```
 
 **访问地址：**
-- RagFlow Web界面：http://localhost:10080
+- RagFlow Web界面：http://localhost:18080
 
 **模型配置步骤：**  
 1. 点击头像进入 **Model Providers（模型提供商）** 页面，选择 **Add Model（添加模型）**，填写对应的 **API 地址** 和 **API Key**，分别添加 **Chat 模型** 和 **Embedding 模型**。  
@@ -106,7 +84,7 @@ cd docker/astronAgent
 cp .env.example .env
 ```
 
-#### 3.1 配置知识库服务连接
+#### 3.1 配置知识库服务连接（可选）
 
 编辑 docker/astronAgent/.env 文件，配置 RagFlow 连接信息：
 
@@ -122,19 +100,19 @@ vim .env
 
 ```env
 # RAGFlow配置
-RAGFLOW_BASE_URL=http://localhost:10080
+RAGFLOW_BASE_URL=http://localhost:18080
 RAGFLOW_API_TOKEN=ragflow-your-api-token-here
 RAGFLOW_TIMEOUT=60
 RAGFLOW_DEFAULT_GROUP=星辰知识库
 ```
 
 **获取 RagFlow API Token：**
-1. 访问 RagFlow Web界面：http://localhost:10080
+1. 访问 RagFlow Web界面：http://localhost:18080
 2. 登录并点击头像进入用户设置
 3. 点击API生成 API KEY
 4. 将生成的 API KEY 更新到.env文件中的RAGFLOW_API_TOKEN
 
-#### 3.2 配置 Casdoor 认证集成
+#### 3.2 配置 Casdoor 认证集成（必须配置）
 
 编辑 docker/astronAgent/.env 文件，配置 Casdoor 连接信息：
 
@@ -149,19 +127,18 @@ CONSOLE_CASDOOR_ORG=your-casdoor-org-name
 ```
 
 **获取 Casdoor 配置信息：**
-1. 访问 Casdoor 管理控制台： [http://localhost:8000](http://localhost:8000)  
-2. 使用默认管理员账号登录：`admin / 123`  
-3. **创建组织**  
-   进入 [http://localhost:8000/organizations](http://localhost:8000/organizations) 页面，点击“添加”，填写组织名称后保存并退出。
-4. **创建应用并绑定组织**  
-   进入 [http://localhost:8000/applications](http://localhost:8000/applications) 页面，点击“添加”。
+1. 访问 Casdoor 管理控制台： [http://localhost:8000](http://localhost:8000)
+2. 使用默认管理员账号登录：`admin / 123`
+3. **创建组织**
+   进入 [http://localhost:8000/organizations](http://localhost:8000/organizations) 页面，点击"添加"，填写组织名称后保存并退出。
+4. **创建应用并绑定组织**
+   进入 [http://localhost:8000/applications](http://localhost:8000/applications) 页面，点击"添加"。
 
    创建应用时填写以下信息：
    - **Name**：自定义应用名称，例如 `agent`
-   - **Redirect URL**：设置为项目的回调地址，例如 `http://your-local-ip:80/callback`  
-     （该地址为项目中 Nginx 容器的回调端口，默认 `80`）
+   - **Redirect URL**：设置为项目的回调地址。如果 Nginx 暴露的端口号是 `80`，使用 `http://your-local-ip/callback`；如果是其他端口（例如 `888`），使用 `http://your-local-ip:888/callback`
    - **Organization**：选择刚创建的组织名称
-5. 保存应用后，记录以下信息并与项目配置项一一对应：  
+5. 保存应用后，记录以下信息并与项目配置项一一对应：
 
 | Casdoor 信息项 | 示例值 | `.env` 中对应配置项 |
 |----------------|--------|----------------------|
@@ -170,7 +147,7 @@ CONSOLE_CASDOOR_ORG=your-casdoor-org-name
 | 应用名称（Name） | `your-casdoor-app-name` | `CONSOLE_CASDOOR_APP=your-casdoor-app-name` |
 | 组织名称（Organization） | `your-casdoor-org-name` | `CONSOLE_CASDOOR_ORG=your-casdoor-org-name` |
 
-6. 将以上配置信息填写到项目的环境变量文件中： docker/astronAgent/.env
+6. 将以上配置信息填写到项目的环境变量文件中：
 ```bash
 # 进入 astronAgent 目录
 cd docker/astronAgent
@@ -178,7 +155,6 @@ cd docker/astronAgent
 # 编辑环境变量配置
 vim .env
 ```
-
 
 ### 第四步：启动 astronAgent 核心服务（必要部署步骤）
 
@@ -189,19 +165,30 @@ vim .env
 创建应用完成后可能需要购买或领取相应能力的API授权服务量
 - 星火大模型API: https://xinghuo.xfyun.cn/sparkapi
   (对于大模型API会有额外的SPARK_API_PASSWORD需要在页面上获取)
-- 语音转写API: https://www.xfyun.cn/services/lfasr
+  (1、指令型助手对应的文本AI生成/优化功能需要开通Spark Ultra能力，页面地址为https://console.xfyun.cn/services/bm4
+   2、工作流智能体对应的AI生成和AI代码生成需要开通Spark3.5 Max和DeepSeekV3能力。
+   Spark3.5 Max地址为：https://console.xfyun.cn/services/bm35, 
+   DeepSeekV3能力地址为：https://maas.xfyun.cn/modelSquare)
+- 实时语音转写API: https://console.xfyun.cn/services/rta
 - 图片生成API: https://www.xfyun.cn/services/wtop
+- 虚拟人智能体：https://www.xfyun.cn/services/VirtualHumans
+- 使用虚拟人智能体时，非localhost（本地主机名）或127.0.0.1，确保是https环境；若为http环境，需配置绕过检查，例如谷歌浏览器上开启下chrome://flags/#unsafely-treat-insecure-origin-as-secure
 
-最后编辑 docker/astronAgent/.env 文件，更新相关环境变量：
+
+编辑 docker/astronAgent/.env 文件，更新相关环境变量：
 ```env
 PLATFORM_APP_ID=your-app-id
 PLATFORM_API_KEY=your-api-key
 PLATFORM_API_SECRET=your-api-secret
 
 SPARK_API_PASSWORD=your-api-password
+SPARK_RTASR_API_KEY=your-rtasr-api-key
+SPARK_VIRTUAL_MAN_APP_ID=your-virtual-man-app-id
+SPARK_VIRTUAL_MAN_API_KEY=your-virtual-man-api-key
+SPARK_VIRTUAL_MAN_API_SECRET=your-virtual-man-api-secret
 ```
 
-#### 4.2 如果您想使用星火RAG云服务，请按照如下配置
+#### 4.2 如果您想使用星火RAG云服务，请按照如下配置（可选）
 
 星火RAG云服务提供两种使用方式：
 
@@ -235,7 +222,7 @@ XINGHUO_DATASET_ID=
 
 #### 4.3 启动 astronAgent 服务
 
-启动之请配置一些必须的环境变量
+启动之前请配置一些必须的环境变量，并确保nginx和minio的端口开放
 
 ```bash
 # 进入 astronAgent 目录
@@ -246,7 +233,7 @@ vim .env
 ```
 
 ```env
-HOST_BASE_ADDRESS=http://localhost (主机地址)
+HOST_BASE_ADDRESS=http://localhost (astronAgent服务主机地址)
 ```
 
 启动 astronAgent 服务请运行我们的 [docker-compose.yaml](/docker/astronAgent/docker-compose.yaml) 文件。在运行安装命令之前，请确保您的机器上安装了 Docker 和 Docker Compose。
@@ -257,12 +244,6 @@ cd docker/astronAgent
 
 # 启动所有服务
 docker compose up -d
-
-# 查看服务状态
-docker compose ps
-
-# 查看服务日志
-docker compose logs -f
 ```
 
 ## 📊 服务访问地址
@@ -273,14 +254,14 @@ docker compose logs -f
 - **Casdoor 管理界面**：http://localhost:8000
 
 ### 知识库服务
-- **RagFlow Web界面**：http://localhost:10080
+- **RagFlow Web界面**：http://localhost:18080
 
 ### AstronAgent 核心服务
 - **控制台前端(nginx代理)**：http://localhost/
 
 ## 📚 更多资源
 
-- [AstronAgent 官方文档](https://docs.astronAgent.cn)
+- [AstronAgent 官方文档](https://www.xfyun.cn/doc/spark/Agent01-%E5%B9%B3%E5%8F%B0%E4%BB%8B%E7%BB%8D.html)
 - [Casdoor 官方文档](https://casdoor.org/docs/overview)
 - [RagFlow 官方文档](https://ragflow.io/docs)
 - [Docker Compose 官方文档](https://docs.docker.com/compose/)

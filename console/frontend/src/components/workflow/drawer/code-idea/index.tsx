@@ -62,7 +62,7 @@ const CodeIDEAHeader = ({
           <div className="flex items-center gap-2 text-[#fff] text-sm mt-1">
             <span>{t('workflow.nodes.codeIDEA.pythonPackages')}</span>
             <div
-              className="flex items-center gap-2 cursor-pointer text-[#275EFF]"
+              className="flex items-center gap-2 cursor-pointer text-[#6356EA]"
               onClick={() => setShowPythonPackageModal(true)}
             >
               <span>{t('workflow.nodes.codeIDEA.viewDetails')}</span>

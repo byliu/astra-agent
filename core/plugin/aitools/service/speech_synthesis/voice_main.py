@@ -10,6 +10,7 @@ import uuid
 from typing import Any, Union
 
 from plugin.aitools.api.schema.types import ErrorResponse, SuccessDataResponse
+from plugin.aitools.const import const
 from plugin.aitools.const.err_code.code import CodeEnum
 from plugin.aitools.service.speech_synthesis.smart_tts.smart_tts_client import (
     SmartTTSClient,
@@ -62,10 +63,13 @@ def smarttts_main(
                 response = ErrorResponse(
                     CodeEnum.TEXT_RESULT_NULL_ERROR, sid=uuid.uuid4()
                 )
-                m.in_error_count(response.code)
-                node_trace.answer = response.message
-                node_trace.status = Status(code=response.code, message=response.message)
-                kafka_service.send("spark-agent-builder", node_trace.to_json())
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_error_count(response.code)
+                    node_trace.answer = response.message
+                    node_trace.status = Status(
+                        code=response.code, message=response.message
+                    )
+                    kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
                 return response
             data = {"text": text, "vcn": vcn, "speed": speed}
             span_context.add_info_events(
@@ -91,12 +95,13 @@ def smarttts_main(
                     "sid": sid,
                     "data": "",
                 }
-                m.in_error_count(response["code"])
-                node_trace.answer = response["message"]
-                node_trace.status = Status(
-                    code=response["code"], message=response["message"]
-                )
-                kafka_service.send("spark-agent-builder", node_trace.to_json())
+                if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                    m.in_error_count(response["code"])
+                    node_trace.answer = response["message"]
+                    node_trace.status = Status(
+                        code=response["code"], message=response["message"]
+                    )
+                    kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
                 return response
 
@@ -108,18 +113,20 @@ def smarttts_main(
             )
 
             response = SuccessDataResponse(data={"voice_url": voice_url}, sid=sid)
-            m.in_success_count()
-            node_trace.answer = json.dumps(response.data, ensure_ascii=False)
-            node_trace.status = Status(code=response.code, message=response.message)
-            kafka_service.send("spark-agent-builder", node_trace.to_json())
+            if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+                m.in_success_count()
+                node_trace.answer = json.dumps(response.data, ensure_ascii=False)
+                node_trace.status = Status(code=response.code, message=response.message)
+                kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
             return response
     except Exception as e:
         logging.error("smarttts请求error: %s", str(e))
         response = ErrorResponse(CodeEnum.VOICE_GENERATE_ERROR)
-        m.in_error_count(response.code)
-        node_trace.answer = response.message
-        node_trace.status = Status(code=response.code, message=response.message)
-        kafka_service.send("spark-agent-builder", node_trace.to_json())
+        if os.getenv(const.OTLP_ENABLE_KEY, "0").lower() == "1":
+            m.in_error_count(response.code)
+            node_trace.answer = response.message
+            node_trace.status = Status(code=response.code, message=response.message)
+            kafka_service.send(const.KAFKA_TOPIC_KEY, node_trace.to_json())
 
         return response

@@ -16,7 +16,14 @@ class KafkaProducerServiceFactory(ServiceFactory):
         :return: KafkaProducerService 实例
         """
         servers = servers or os.getenv("KAFKA_SERVERS")
-        if not servers:
+        enable = os.getenv("KAFKA_ENABLE", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        )
+
+        if enable and not servers:
             raise ValueError("KAFKA_SERVERS 环境变量未配置")
 
         config = {"bootstrap.servers": servers, **kwargs}

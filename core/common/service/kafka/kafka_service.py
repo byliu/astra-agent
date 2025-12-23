@@ -23,7 +23,7 @@ class KafkaProducerService(Service):
         topic: str,
         value: str,
         callback: Optional[Any] = None,
-        timeout: int = int(os.getenv("KAFKA_TIMEOUT", 10)),
+        timeout: Optional[int] = None,
     ) -> None:
         """
         发送 Kafka 消息
@@ -32,6 +32,17 @@ class KafkaProducerService(Service):
         :param callback: 回调函数
         :param timeout: poll timeout (秒)
         """
+        if os.getenv("KAFKA_ENABLE", "false").lower() not in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        ):
+            return
+
+        if not timeout:
+            timeout = int(os.getenv("KAFKA_TIMEOUT", 10))
+
         if not callback:
             callback = self._delivery_report
         try:

@@ -68,6 +68,7 @@ class TestExecFun:
             sid="test-sid-123",
             access_token="test-access-token-123",  # Token without "Bearer " prefix
             project_id="test-project-456",
+            version=None,
             exec_position="EXECUTOR",
             params={"key1": "value1", "key2": "value2"},
         )
@@ -101,6 +102,7 @@ class TestExecFun:
             sid="test-sid-123",
             access_token=plain_token,  # Token used as-is
             project_id="test-project-456",
+            version=None,
             exec_position="EXECUTOR",
             params={"key1": "value1", "key2": "value2"},
         )
@@ -240,6 +242,7 @@ class TestExecFun:
             sid=None,
             access_token="token",
             project_id="test-project",
+            version=None,
             exec_position=None,
             params=None,
         )

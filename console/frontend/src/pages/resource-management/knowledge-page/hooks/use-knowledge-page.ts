@@ -2,6 +2,8 @@ import { listRepos } from '@/services/knowledge';
 import { RepoItem } from '@/types/resource';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import useUserStore from '@/store/user-store';
+import { jumpToLogin } from '@/utils/http';
 
 export const useKnowledgePage = (): {
   loading: React.RefObject<boolean>;
@@ -25,6 +27,7 @@ export const useKnowledgePage = (): {
   getKnowledges: (value?: string) => void;
   getRobotsDebounce: (e: React.ChangeEvent<HTMLInputElement>) => void;
 } => {
+  const user = useUserStore(state => state.user);
   const loading = useRef<boolean>(false);
   const knowledgeRef = useRef<HTMLDivElement | null>(null);
 
@@ -129,6 +132,61 @@ export const useKnowledgePage = (): {
       loading.current = false;
     });
   }
+
+  // 处理创建知识库
+  const handleCreateKnowledge = useCallback(() => {
+    if (!user?.login && !user?.uid) {
+      return jumpToLogin();
+    }
+    setCreateModal(true);
+  }, [user, setCreateModal]);
+
+  // 处理Header组件的搜索事件
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      getKnowledges(value);
+    },
+    [setSearchValue, getKnowledges]
+  );
+
+  // 监听Header组件的搜索和新建事件
+  useEffect(() => {
+    const handleHeaderSearch = (event: CustomEvent) => {
+      const { value, type } = event.detail;
+      if (type === 'knowledge') {
+        handleSearch(value);
+      }
+    };
+
+    const handleHeaderCreateKnowledge = (event: CustomEvent) => {
+      const { type } = event.detail;
+      if (type === 'knowledge') {
+        handleCreateKnowledge();
+      }
+    };
+
+    window.addEventListener(
+      'headerSearch',
+      handleHeaderSearch as EventListener
+    );
+    window.addEventListener(
+      'headerCreateKnowledge',
+      handleHeaderCreateKnowledge as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        'headerSearch',
+        handleHeaderSearch as EventListener
+      );
+      window.removeEventListener(
+        'headerCreateKnowledge',
+        handleHeaderCreateKnowledge as EventListener
+      );
+    };
+  }, [handleSearch, handleCreateKnowledge]);
+
   return {
     loading,
     knowledgeRef,

@@ -160,10 +160,13 @@ class HttpRun:
         except Exception:
             pass
 
-        encoded_url = quote(url, safe="/:?=&")
-        span_context.add_info_event(f"raw_url: {url}, encoded_url: {encoded_url}")
+        if not self._is_authorization_md5 and not self._is_auth_hmac:
+            encoded_url = quote(url, safe="/:?=&")
+            span_context.add_info_event(f"raw_url: {url}, encoded_url: {encoded_url}")
+            url = encoded_url
+
         span_context.add_info_event(
-            f"encoded_url: {encoded_url}, header: {self.header}, " f"body: {self.body}"
+            f"url: {url}, header: {self.header}, " f"body: {self.body}"
         )
 
         kwargs: Dict[str, Any] = {
@@ -172,7 +175,7 @@ class HttpRun:
         }
 
         async with aiohttp.ClientSession() as session:
-            async with session.request(self.method, encoded_url, **kwargs) as response:
+            async with session.request(self.method, url, **kwargs) as response:
                 response_text = await response.text()
                 status_code = response.status
 

@@ -108,7 +108,7 @@ export const useHitPage = ({
           const answers = data.map(item => {
             item.knowledge = (item.content || item.knowledge)?.replace(
               regexPattern,
-              '<span style="color:#275EFF;font-weight:600;display:inline-block;padding:4px 0px;background:#dee2f9">$&</span>'
+              '<span style="color:#6356EA;font-weight:600;display:inline-block;padding:4px 0px;background:#dee2f9">$&</span>'
             );
             return {
               ...item,

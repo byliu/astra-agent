@@ -1,31 +1,19 @@
 import { create } from 'zustand';
 
 const useVoicePlayStore = create<{
+  currentPlayingId: number | null; // 当前正在播放的消息ID
   activeVcn: {
     //当前激活的语音
-    cn: string;
-    cnImg: string;
-    en: string;
-    enImg: string;
-    speed: number;
+    vcn_cn: string;
   };
-  setActiveVcn: (activeVcn: {
-    cn: string;
-    cnImg: string;
-    en: string;
-    enImg: string;
-    speed: number;
-  }) => void;
+  setCurrentPlayingId: (id: number | null) => void;
+  setActiveVcn: (activeVcn: { vcn_cn: string }) => void;
 }>(set => ({
+  currentPlayingId: null,
   activeVcn: {
-    cn: 'x4_lingxiaoqi',
-    cnImg:
-      'https://1024-cdn.xfyun.cn/2022_1024%2Fcms%2F16824985943709826%2Flxq.png',
-    en: 'x4_EnUs_Luna',
-    enImg:
-      'https://1024-cdn.xfyun.cn/2022_1024%2Fcms%2F16824985943695009%2Fluna.png',
-    speed: 50,
+    vcn_cn: '',
   },
+  setCurrentPlayingId: id => set({ currentPlayingId: id }),
   setActiveVcn: activeVcn => set({ activeVcn }),
 }));
 

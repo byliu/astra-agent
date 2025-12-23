@@ -33,7 +33,7 @@ const PromptList = ({
               style={{
                 border:
                   currentTemplateId === item?.id
-                    ? '1px solid #275EFF'
+                    ? '1px solid #6356EA'
                     : '1px solid #E4EAFF',
                 backgroundColor:
                   currentTemplateId === item?.id ? '#f8faff' : 'transparent',
@@ -42,7 +42,7 @@ const PromptList = ({
               <h4
                 className="text-sm font-medium"
                 style={{
-                  color: currentTemplateId === item?.id ? '#275EFF' : '#333',
+                  color: currentTemplateId === item?.id ? '#6356EA' : '#333',
                 }}
               >
                 {item?.name}
@@ -77,19 +77,19 @@ const PromptDetail = ({
           </div>
           <div className="flex-1 overflow-auto text-xs flex flex-col gap-6">
             <div className="flex flex-col gap-2">
-              <div className="text-[#275EFF]">
+              <div className="text-[#6356EA]">
                 {t('workflow.promptDebugger.roleSettingLabel')}
               </div>
               <div>{currentTemplate?.characterSettings}</div>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="text-[#275EFF]">
+              <div className="text-[#6356EA]">
                 {t('workflow.promptDebugger.thinkingStepsLabel')}
               </div>
               <div>{currentTemplate?.thinkStep}</div>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="text-[#275EFF]">
+              <div className="text-[#6356EA]">
                 {t('workflow.promptDebugger.userQueryLabel')}
               </div>
               <div>{currentTemplate?.userQuery}</div>

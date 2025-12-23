@@ -10,6 +10,8 @@ const translation = {
   selected: 'Selected',
   officialAssistant: 'Official Assistant',
   quickStart: 'Quick Start',
+  quickStartDesc: 'Master agent creation quickly and easily',
+  learnMore: 'Learn More',
   agentSummer: 'Agent Summer',
   casePractice: 'Case Practice',
   officialTutorial: 'Official Tutorial',

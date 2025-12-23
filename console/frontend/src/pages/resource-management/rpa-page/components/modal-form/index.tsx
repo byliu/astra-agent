@@ -136,7 +136,7 @@ export const ModalForm = forwardRef<
                     <div className="w-full relative">
                       {index === 0 && platformInfo?.path && (
                         <a
-                          className="absolute right-0 top-[-22px] text-[#275EFF]"
+                          className="absolute right-0 top-[-22px] text-[#6356EA]"
                           href={platformInfo?.path}
                           target="_blank"
                         >

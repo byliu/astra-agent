@@ -199,7 +199,7 @@ const useDocumentSearch = ({
             const regexPattern = new RegExp(searchValue, 'gi');
             item.name = item.name.replaceAll(
               regexPattern,
-              '<span style="color:#275EFF;font-weight:600;display:inline-block;padding:4px 0px;background:#dee2f9">$&</span>'
+              '<span style="color:#6356EA;font-weight:600;display:inline-block;padding:4px 0px;background:#dee2f9">$&</span>'
             );
 
             setSearchData(resultList => [...resultList, item]);

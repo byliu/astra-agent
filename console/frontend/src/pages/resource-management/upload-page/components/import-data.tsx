@@ -136,7 +136,7 @@ const ImportData: FC<{
                 {t('knowledge.importTextFileSupport')}
               </p>
             </div>
-            <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+            <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
               {importType === 'text' ? (
                 <img src={check} className="w-4 h-4" alt="" />
               ) : (
@@ -164,7 +164,7 @@ const ImportData: FC<{
                 {t('knowledge.importWebsiteLinkSupport')}
               </p>
             </div>
-            <div className="w-5 h-5 bg-[#275EFF] rounded-full flex justify-center items-center">
+            <div className="w-5 h-5 bg-[#6356EA] rounded-full flex justify-center items-center">
               {importType === 'web' ? (
                 <img src={check} className="w-4 h-4" alt="" />
               ) : (

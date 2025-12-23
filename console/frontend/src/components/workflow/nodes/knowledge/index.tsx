@@ -43,7 +43,7 @@ const KnowledgeCollapseHeader = ({ id }): React.ReactElement => {
               src={parameterSettingsIcon}
               alt=""
             />
-            <span className="text-[#275EFF] cursor-pointer">
+            <span className="text-[#6356EA] cursor-pointer">
               {t('workflow.nodes.knowledgeNode.parameterSetting')}
             </span>
           </div>
@@ -58,7 +58,7 @@ const KnowledgeCollapseHeader = ({ id }): React.ReactElement => {
             }}
           >
             <img src={inputAddIcon} className="w-2.5 h-2.5 mt-0.5" alt="" />
-            <span className="text-[#275EFF] cursor-pointer">
+            <span className="text-[#6356EA] cursor-pointer">
               {t('workflow.nodes.knowledgeNode.addKnowledgeBase')}
             </span>
           </div>

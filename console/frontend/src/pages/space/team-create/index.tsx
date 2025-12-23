@@ -10,8 +10,10 @@ import { useSpaceType } from '@/hooks/use-space-type';
 import { useEnterprise } from '@/hooks/use-enterprise';
 import { defaultEnterpriseAvatar } from '@/constants/config';
 import agentLogoText from '@/assets/imgs/sidebar/agentLogoText.svg';
+import agentLogoTextEn from '@/assets/imgs/sidebar/agentLogoTextEn.svg';
 import creatorImg from '@/assets/imgs/space/creator.svg';
 import defaultUploadIcon from '@/assets/imgs/space/upload.png';
+import { useTranslation } from 'react-i18next';
 
 const TeamCreate: React.FC = () => {
   const user = useUserStore((state: any) => state.user);
@@ -20,28 +22,28 @@ const TeamCreate: React.FC = () => {
   const { handleTeamSwitch } = useSpaceType(navigate);
   const { getJoinedEnterpriseList } = useEnterprise();
   const [teamName, setTeamName] = useState('');
-  const [teamDescription, setTeamDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(defaultEnterpriseAvatar);
   const [reUploadImg, setReUploadImg] = useState(false);
   const [triggerChild, setTriggerChild] = useState(false);
   const { type } = useParams();
-
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language === 'en';
   const roleText = useMemo(() => {
     const key = user?.roleType as keyof typeof roleTextMap | undefined;
     return key && key in roleTextMap ? roleTextMap[key] : '-';
   }, [user?.roleType, roleTextMap]);
 
   const enterpriseType = useMemo(() => {
-    return type === '2' ? '企业' : '团队';
+    return type === '2' ? t('space.enterprise') : t('space.team');
   }, [type]);
 
   const textConfig = useMemo(
     () => ({
-      emptyTip: `请输入${enterpriseType}名称`,
-      existTip: `${enterpriseType}名称已存在`,
-      createSuccessTip: `${enterpriseType}创建成功`,
-      createFailedTip: `${enterpriseType}创建失败`,
+      emptyTip: t('space.pleaseEnterName', { enterpriseType }),
+      existTip: t('space.teamNameExists', { enterpriseType }),
+      createSuccessTip: t('space.teamCreateSuccess', { enterpriseType }),
+      createFailedTip: t('space.teamCreateFailed', { enterpriseType }),
     }),
     [enterpriseType]
   );
@@ -67,16 +69,10 @@ const TeamCreate: React.FC = () => {
         throw new Error(textConfig.existTip);
       }
 
-      console.log('创建团队:', { name, teamDescription, logoUrl });
       const res: any = await createEnterprise({
         name,
         avatarUrl: logoUrl,
       });
-
-      console.log(
-        res,
-        '============= TeamCreate => handleCreateTeam ==========='
-      );
 
       message.success(textConfig.createSuccessTip);
       await getJoinedEnterpriseList();
@@ -92,19 +88,25 @@ const TeamCreate: React.FC = () => {
     <div className={styles.teamCreateContainer}>
       {/* Logo */}
       <div className={styles.logo}>
-        <img src={agentLogoText} alt="Logo" className={styles.logoImage} />
+        <img
+          src={isEnglish ? agentLogoText : agentLogoTextEn}
+          alt="Logo"
+          className={styles.logoImage}
+        />
       </div>
 
       {/* 主要内容 */}
       <div className={styles.content}>
         {/* 标题 */}
-        <div className={styles.title}>{enterpriseType}版已生效</div>
+        <div className={styles.title}>
+          {t('space.teamEditionAlreadyEffective', { enterpriseType })}
+        </div>
 
         {/* 用户信息 */}
         <div className={styles.userInfo}>
           <img
             src={user?.avatarUrl || creatorImg}
-            alt="管理员头像"
+            alt={t('space.adminAvatar')}
             className={styles.avatar}
           />
           <div className={styles.userDetails}>
@@ -115,7 +117,9 @@ const TeamCreate: React.FC = () => {
 
         {/* 团队信息设置卡片 */}
         <div className={styles.formCard}>
-          <div className={styles.formTitle}>请完成{enterpriseType}信息设置</div>
+          <div className={styles.formTitle}>
+            {t('space.pleaseCompleteInfo', { enterpriseType })}
+          </div>
 
           {/* 团队图标 */}
           <div className={styles.teamIcon}>
@@ -129,13 +133,13 @@ const TeamCreate: React.FC = () => {
                   <img
                     className={styles.upHoverIcon}
                     src={defaultUploadIcon}
-                    alt="上传"
+                    alt={t('space.upload')}
                   />
                 </div>
               )}
               <img
                 src={logoUrl}
-                alt="头像"
+                alt={t('space.avatar')}
                 className={styles.avatarImg}
                 onMouseEnter={() => setReUploadImg(true)}
               />
@@ -145,7 +149,9 @@ const TeamCreate: React.FC = () => {
           {/* 表单字段 */}
           <div className={styles.formFields}>
             <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>{enterpriseType}名称</label>
+              <label className={styles.fieldLabel}>
+                {t('space.name', { enterpriseType })}
+              </label>
               <Input
                 value={teamName}
                 onChange={e => setTeamName(e.target.value)}
@@ -167,7 +173,7 @@ const TeamCreate: React.FC = () => {
             className={styles.createButton}
             block
           >
-            创建{enterpriseType}
+            {t('space.create', { enterpriseType })}
           </Button>
         </div>
       </div>
@@ -175,7 +181,7 @@ const TeamCreate: React.FC = () => {
         onSuccess={res => {
           setTriggerChild(false);
           setLogoUrl(res);
-          message.success('头像已上传!');
+          message.success(t('space.avatarUploadSuccess'));
         }}
         onClose={() => {
           setTriggerChild(false);

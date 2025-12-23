@@ -48,11 +48,12 @@ class LogServiceFactory(ServiceFactory):
         # Initialize loguru
         logger.remove()  # Remove default logger configuration
 
-        log_format = "{level} | {time:YYYY-MM-DD HH:mm:ss} | {file} - {function}: {line} {message}"
+        log_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} | {message}"
 
         # Add file handler with log level and relative path
         logger.add(
             log_path,
+            enqueue=True,
             rotation="100 MB",  # Automatically split log files when size exceeds 100MB
             retention="10 days",  # Retain logs for 10 days
             compression="zip",  # Optional: compress old log files
@@ -69,7 +70,7 @@ class LogServiceFactory(ServiceFactory):
                 colorize=True,
             )
 
-        logger.debug(
-            f"Loguru initialized successfully. Log file: {log_path}, Log level: {log_level}"
+        logger.info(
+            f"✅ Loguru initialized successfully. Log file: {log_path}, Log level: {log_level}",
         )
         return LogService()

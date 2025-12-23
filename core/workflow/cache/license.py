@@ -9,7 +9,7 @@ from workflow.domain.models.license import License
 from workflow.extensions.middleware.getters import get_cache_service
 
 # Redis key prefix for license information
-REDIS_LICENSE_INFO_HEAD = "license:license_info:new"
+REDIS_LICENSE_INFO_HEAD = "workflow:license_info"
 
 
 def get_license_by_app_id_group_id(app_id: str, group_id: str) -> License | None:

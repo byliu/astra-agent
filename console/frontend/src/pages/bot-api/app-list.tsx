@@ -20,7 +20,7 @@ const AppListPage: React.FC<AppListProps> = () => {
 
   const appListColumns = [
     {
-      title: '应用ID',
+      title: t('appManage.appId'),
       dataIndex: 'appId',
       key: 'appId',
       render: (text: string) => {
@@ -28,7 +28,7 @@ const AppListPage: React.FC<AppListProps> = () => {
       },
     },
     {
-      title: '应用名称',
+      title: t('appManage.appName'),
       dataIndex: 'appName',
       key: 'appName',
       render: (text: string) => {
@@ -36,7 +36,7 @@ const AppListPage: React.FC<AppListProps> = () => {
       },
     },
     {
-      title: '应用描述',
+      title: t('appManage.appDescribe'),
       dataIndex: 'appDescribe',
       key: 'appDescribe',
       render: (text: string) => {
@@ -44,7 +44,7 @@ const AppListPage: React.FC<AppListProps> = () => {
       },
     },
     {
-      title: 'API Key',
+      title: t('appManage.apiKey'),
       dataIndex: 'appKey',
       key: 'appKey',
       render: (text: string) => {
@@ -78,7 +78,7 @@ const AppListPage: React.FC<AppListProps> = () => {
       },
     },
     {
-      title: 'API Secret',
+      title: t('appManage.apiSecret'),
       dataIndex: 'appSecret',
       key: 'appSecret',
       render: (text: string) => {
@@ -112,7 +112,7 @@ const AppListPage: React.FC<AppListProps> = () => {
       },
     },
     {
-      title: '创建时间',
+      title: t('appManage.createTime'),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => {
@@ -142,13 +142,13 @@ const AppListPage: React.FC<AppListProps> = () => {
     createAppForm.validateFields().then(values => {
       createApp(values)
         .then(() => {
-          message.success('创建应用成功');
+          message.success(t('appManage.createAppSuccess'));
           setIsShowCreateAppModal(false);
           createAppForm.resetFields();
           loadAppList();
         })
         .catch(err => {
-          message.error(err?.message || '创建应用失败');
+          console.log(err);
         });
     });
   };
@@ -158,7 +158,7 @@ const AppListPage: React.FC<AppListProps> = () => {
   }, []);
 
   return (
-    <div className={styles.appListPage}>
+    <div className={`${styles.appListPage} page-container-inner-UI`}>
       <div className={styles.title}>
         <div className={styles.aff}>{t('sidebar.appManagement')}</div>
       </div>
@@ -167,7 +167,7 @@ const AppListPage: React.FC<AppListProps> = () => {
           <Button
             type="primary"
             onClick={() => setIsShowCreateAppModal(true)}
-            style={{ height: '36px' }}
+            style={{ height: '32px' }}
           >
             <PlusOutlined style={{ fontSize: '16px', color: '#fff' }} />{' '}
             {t('botApi.createApp')}

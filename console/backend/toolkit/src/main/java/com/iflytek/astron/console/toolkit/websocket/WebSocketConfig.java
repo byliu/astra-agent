@@ -41,22 +41,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
      */
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(promptEnhanceWebSocketHandler(), "/prompt-enhance")
-                .addHandler(flowCanvasHoldWebSocketHandler(), "/flow-canvas-hold")
+        registry.addHandler(flowCanvasHoldWebSocketHandler(), "/flow-canvas-hold")
                 .setAllowedOrigins("*");
     }
 
-    /**
-     * Creates and registers a WebSocket handler for the "/prompt-enhance" endpoint.
-     *
-     * @return a {@link WebSocketHandler} instance responsible for handling prompt enhancement WebSocket
-     *         messages
-     * @throws Exception if handler instantiation fails
-     */
-    @Bean
-    public WebSocketHandler promptEnhanceWebSocketHandler() {
-        return new PromptEnhanceWebSocketHandler();
-    }
 
     /**
      * Creates and registers a WebSocket handler for the "/flow-canvas-hold" endpoint.

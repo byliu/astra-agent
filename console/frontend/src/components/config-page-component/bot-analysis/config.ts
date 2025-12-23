@@ -110,7 +110,7 @@ export const mutiUserOption = {
       stack: '总量',
       showSymbol: false,
       lineStyle: {
-        color: '#275EFF', // 设置线的颜色
+        color: '#6356EA', // 设置线的颜色
         width: 2, // 可选：设置线宽
       },
       areaStyle: null,
@@ -266,7 +266,7 @@ export const mutiSessionOption = {
       stack: '总量',
       showSymbol: false,
       lineStyle: {
-        color: '#275EFF', // 设置线的颜色
+        color: '#6356EA', // 设置线的颜色
         width: 2, // 可选：设置线宽
       },
       areaStyle: null,

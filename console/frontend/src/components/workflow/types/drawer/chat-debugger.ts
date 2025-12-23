@@ -124,6 +124,17 @@ export interface XfYunBotConfig {
   botId?: string;
 }
 
+// 对话机器人配置类型定义
+export interface TalkAgentConfig {
+  interactType: string;
+  vcn: string;
+  scene: string;
+  sceneMode: string;
+  sceneEnable: number;
+  vcnEnable: number;
+  callSceneId: string;
+}
+
 // 对话API参数类型定义
 export interface DialogueParams {
   chatId: string;
@@ -205,6 +216,7 @@ export interface ChatContentProps {
   needReply: boolean;
   handleResumeChat: (content: string) => void;
   handleStopConversation: () => void;
+  chatType: string;
 }
 
 // 语音配置类型定义
@@ -226,7 +238,7 @@ export interface ChatContentAdvancedConfig {
   };
   textToSpeech: {
     enabled: boolean;
-    vcn?: string;
+    vcn_cn?: string;
   };
   speechToText: {
     enabled: boolean;
@@ -681,4 +693,5 @@ export interface UseChatDebuggerContentProps {
   trialRun: boolean;
   multiParams: boolean;
   xfYunBot: XfYunBotConfig;
+  talkAgentConfig: TalkAgentConfig;
 }

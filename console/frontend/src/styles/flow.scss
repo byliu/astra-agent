@@ -20,7 +20,7 @@
     }
 
     &.selected {
-      border: 1px solid #275eff;
+      border: 1px solid #6356EA;
       z-index: 995 !important;
     }
 
@@ -32,14 +32,14 @@
       }
 
       &.selected {
-        border: 1px solid #275eff;
+        border: 1px solid #6356EA;
       }
 
       .react-flow__handle-right {
         width: 16px !important;
         height: 16px !important;
         right: -9px !important;
-        background: #275eff;
+        background: #6356EA;
       }
 
       .exception-handle-edge .react-flow__handle-right {
@@ -110,7 +110,7 @@
   color: #fff !important;
 
   p {
-    margin-bottom: 0px;
+    margin-bottom: 10px;
   }
 
   a {
@@ -212,7 +212,7 @@
   }
 
   &:focus {
-    border-color: #275eff !important;
+    border-color: #6356EA !important;
     outline: none !important;
   }
 
@@ -633,7 +633,7 @@
   }
 
   .ant-radio-button-wrapper-checked {
-    background: #275eff;
+    background: #6356EA;
     color: rgba(255, 255, 255, 0.9);
 
     &:hover {

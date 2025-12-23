@@ -1,91 +1,108 @@
-# Astron Agent - Agent Platform
+[![Astron_Readme](./docs/imgs/Astron_Readme.png)](https://agent.xfyun.cn)
 
 <div align="center">
 
-![Logo](docs/logo.svg)
-
-**Astron Agent is an enterprise-grade Agent development platform designed for AI developers and small to medium-sized enterprises.**
-
 [![License](https://img.shields.io/badge/license-apache2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/github/v/release/iflytek/astron-agent)](https://github.com/iflytek/astron-agent/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/iflytek/astron-agent/ci.yml)](https://github.com/iflytek/astron-agent/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/iflytek/astron-agent)](https://codecov.io/gh/iflytek/astron-agent)
 [![GitHub Stars](https://img.shields.io/github/stars/iflytek/astron-agent?style=social)](https://github.com/iflytek/astron-agent/stargazers)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/iflytek/astron-agent)
 
-English | [简体中文](README-zh.md)
+English | [简体中文](docs/README-zh.md)
 
 </div>
 
-## 📑 Table of Contents
-
-- [🔭 What is Astron Agent?](#-What-is-Astron-Agent)
-- [🛠️ Tech Stack](#%EF%B8%8F-tech-stack)
-- [🚀 Quick Start](#-quick-start)
-  - [Using Docker](#using-docker)
-- [📖 Usage Guide](#-usage-guide)
-- [📚 Documentation](#-documentation)
-- [🤝 Contributing](#-contributing)
-- [🌟 Star History](#-star-history)
-- [📞 Support](#-support)
-- [📄 License](#-license)
-
 ## 🔭 What is Astron Agent
-Astron Agent is an enterprise-grade Agent development platform designed for AI developers and small to medium-sized enterprises.  
-It not only provides end-to-end capabilities covering model hosting, application development, performance optimization, and access control, but also innovatively integrates intelligent RPA. This allows Agents not only to “think,” but also to truly “act,” completing complex task chains across digital systems and desktop environments.
+Astron Agent is an **enterprise-grade, commercial-friendly** Agentic Workflow development platform that integrates AI workflow orchestration, model management, AI and MCP tool integration, RPA automation, and team collaboration features.
+The platform supports **high-availability** deployment, enabling organizations to rapidly build **scalable, production-ready** intelligent agent applications and establish their AI foundation for the future.
 
 ### Why Choose Astron Agent?
-- **Consistent and Reliable:** Shares the same core technology with [iFLYTEK Astron Agent Platform](https://agent.xfyun.cn), inheriting its proven enterprise-grade stability.  
-- **Closed Loop of Thinking + Acting:** Deep integration of intelligent RPA enables Agents to move from “generating answers” to “automatically completing tasks.”  
-- **Dual Value for Developers and Enterprises:** Developers can quickly get started and expand, while SMEs can efficiently implement digital workflows.  
+- **Stable and Reliable**: Built on the same core technology as the iFLYTEK Astron Agent Platform, providing enterprise-grade reliability with a fully available high-availability version open source.
+- **Cross-System Integration**: Natively integrates intelligent RPA, efficiently connecting internal and external enterprise systems, enabling seamless interaction between Agents and enterprise systems.
+- **Enterprise-Grade Open Ecosystem**: Deeply compatible with various industry models and tools, supporting custom extensions and flexibly adapting to diverse enterprise scenarios.
+- **Business-Friendly**: Released under the Apache 2.0 License, with no commercial restrictions, allowing free commercial use.
 
 ### Key Features
 - **Enterprise-Grade High Availability:** Full-stack capabilities for development, building, optimization, and management. Supports one-click deployment with strong reliability.  
 - **Intelligent RPA Integration:** Enables cross-system process automation, empowering Agents with controllable execution to achieve a complete loop “from decision to action.”  
-- **Ready-to-Use Tool Ecosystem:** Integrates massive AI capabilities and tools from the [iFLYTEK Open Platform](https://www.xfyun.cn), validated by millions of developers, supporting plug-and-play access without extra development.  
-- **Flexible Model Support:** Offers diverse access methods, from rapid API-based model validation to one-click deployment of enterprise-level MaaS (Model as a Service) local clusters, meeting needs of all scales.  
+- **Ready-to-Use Tool Ecosystem:** Integrates massive AI capabilities and tools from the [iFLYTEK Open Platform](https://www.xfyun.cn), validated by millions of developers, supporting plug-and-play integration without extra development.  
+- **Flexible Large Model Support:** Offers diverse access methods, from rapid API-based model access and validation to one-click deployment of enterprise-level MaaS (Model as a Service) on-premises clusters, meeting needs of all scales.  
 
-### Developer Support
-- **Multi-language Backend:** Supports mainstream languages such as Java, Go, and Python; frontend adapted to TypeScript + React stack.  
-- **Comprehensive Toolchain:** Provides API documentation, deployment guides, and troubleshooting manuals to reduce learning and maintenance costs.  
-- **One-Click Deployment:** Built-in Dockerized environment for out-of-the-box setup and rapid project launch.  
+## 📰 News
 
-## 🛠️ Tech Stack
-
-- **Backend**: Java 21, Spring Boot 3, Go, Python 3.11
-- **Frontend**: TypeScript 5, React 18
-- **Database**: MySQL 8
-- **Cache**: Redis
-- **Queue**: Apache Kafka
-- **Infrastructure**: Docker, MinIO
-- **Quality Tools**: Checkstyle, PMD, SpotBugs, ESLint, gocyclo, staticcheck, golangci-lint, black, isort, flake8, mypy, pylint
+- **[Astron Hackathon @ 2025 iFLYTEK Global 1024 Developer Festival](https://luma.com/9zmbc6xb)**
+- **[Astron Agent Zhengzhou Meetup](https://github.com/iflytek/astron-agent/discussions/672)**
+- **[Astron on Campus @ Zhejiang University of Finance and Economics](https://mp.weixin.qq.com/s/oim_Z0ckgpFwf5jOskoJuA)**
+- **[Astron Agent & RPA · Qingdao Meetup Brings Agentic AI!](https://github.com/iflytek/astron-agent/discussions/740)**
+- **[Astron Training Camp · Cohort #1](https://www.aidaxue.com/astronCamp)**
 
 ## 🚀 Quick Start
 
-### Using Docker
+We offer two deployment methods to meet different scenarios:
+
+### Option 1: Docker Compose (Recommended for Quick Start)
 
 ```bash
 # Clone the repository
 git clone https://github.com/iflytek/astron-agent.git
-cd astron-agent
 
-# Start the stack
-docker-compose up -d
+# Navigate to astronAgent directory
+cd docker/astronAgent
+
+# Copy environment configuration
+cp .env.example .env
+
+# Configure environment variables
+vim .env
 ```
 
-- Visit `http://localhost:8080` in your browser.
+For environment variable configuration, please refer to the documentation:[DEPLOYMENT_GUIDE_WITH_AUTH.md](https://github.com/iflytek/astron-agent/blob/main/docs/DEPLOYMENT_GUIDE_WITH_AUTH.md#step-2-configure-astronagent-environment-variables)
 
-## 📖 Usage Guide
+```bash
+# Start all services (including Casdoor)
+docker compose -f docker-compose-with-auth.yaml up -d
+```
 
-For detailed usage instructions, please refer to [Usage Documentation](docs/USAGE.md)
+#### 📊 Service Access Addresses
+
+After startup, you can access the services at the following addresses:
+
+**Authentication Service**
+- **Casdoor Admin Interface**: http://localhost:8000
+
+**AstronAgent**
+- **Application Frontend (nginx proxy)**: http://localhost/
+
+**Note**
+- Default Casdoor login credentials: username: `admin`, password: `123`
+
+### Option 2: Helm (For Kubernetes Environments)
+
+> 🚧 **Note**: Helm charts are currently under development. Stay tuned for updates!
+
+```bash
+# Coming soon
+# helm repo add astron-agent https://iflytek.github.io/astron-agent
+# helm install astron-agent astron-agent/astron-agent
+```
+
+---
+
+> 📖 For complete deployment instructions and configuration details, see [Deployment Guide](docs/DEPLOYMENT_GUIDE_WITH_AUTH.md)
+
+## 📖 Using Astron Cloud
+
+**Try Astron**：Astron Cloud provides a ready-to-use environment for creating and managing Agents.Free quick access [https://agent.xfyun.cn](https://agent.xfyun.cn).
+
+**Using Guide**：For detailed usage instructions, please refer to [Quick Start Guide](https://www.xfyun.cn/doc/spark/Agent03-%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.html).
 
 ## 📚 Documentation
 
-- [📖 Usage Documentation](docs/USAGE.md)
-- [🚀 Deployment Guide](docs/DEPLOYMENT.md)
-- [📖 API Reference](docs/API.md)
+- [🚀 Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 - [🔧 Configuration](docs/CONFIGURATION.md)
-- [🐛 Troubleshooting](docs/TROUBLESHOOTING.md)
-- [📝 Changelog](CHANGELOG.md)
+- [🚀 Quick Start](https://www.xfyun.cn/doc/spark/Agent02-%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B.html)
+- [📘 Development Guide](https://www.xfyun.cn/doc/spark/Agent03-%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.html#_1-%E6%8C%87%E4%BB%A4%E5%9E%8B%E6%99%BA%E8%83%BD%E4%BD%93%E5%BC%80%E5%8F%91)
+- [💡 Best Practices](https://www.xfyun.cn/doc/spark/AgentNew-%E6%8A%80%E6%9C%AF%E5%AE%9E%E8%B7%B5%E6%A1%88%E4%BE%8B.html)
+- [📱 Use Cases](https://www.xfyun.cn/doc/spark/Agent05-%E5%BA%94%E7%94%A8%E6%A1%88%E4%BE%8B.html)
+- [❓ FAQ](https://www.xfyun.cn/doc/spark/Agent06-FAQ.html)
 
 ## 🤝 Contributing
 
@@ -101,20 +118,13 @@ We welcome contributions of all kinds! Please see our [Contributing Guide](CONTR
 
 - 💬 Community Discussion: [GitHub Discussions](https://github.com/iflytek/astron-agent/discussions)
 - 🐛 Bug Reports: [Issues](https://github.com/iflytek/astron-agent/issues)
-
-## 📄 License
-
-This project is licensed under the [Apache 2.0 License](LICENSE).
-
----
+- 👥 WeChat Work Group:
 
 <div align="center">
-
-**Developed and maintained by iFLYTEK**
-
-[![Follow](https://img.shields.io/github/followers/iflytek?style=social&label=Follow)](https://github.com/iflytek)
-[![Star](https://img.shields.io/github/stars/iflytek/astron-agent?style=social&label=Star)](https://github.com/iflytek/astron-agent)
-[![Fork](https://img.shields.io/github/forks/iflytek/astron-agent?style=social&label=Fork)](https://github.com/iflytek/astron-agent/fork)
-[![Watch](https://img.shields.io/github/watchers/iflytek/astron-agent?style=social&label=Watch)](https://github.com/iflytek/astron-agent/watchers)
-
+  <img src="./docs/imgs/WeCom_Group.png" alt="WeChat Work Group" width="300">
 </div>
+
+## 📄 Open Source License
+
+This project is licensed under the [Apache 2.0 License](LICENSE), allowing free use, modification, distribution, and commercial use without any restrictions.
+

@@ -43,7 +43,7 @@ const IntegerStep: FC<IntegerStepProps> = ({
       <Col span={24}>
         <div className="px-2">
           <Slider
-            className="[&_.ant-slider-track]:border-t-2 [&_.ant-slider-track]:border-t-[#275EFF] [&_.ant-slider-mark-text]:font-pingfang [&_.ant-slider-mark-text]:text-xs [&_.ant-slider-mark-text]:font-normal [&_.ant-slider-mark-text]:leading-4 [&_.ant-slider-mark-text]:text-gray-500"
+            className="[&_.ant-slider-track]:border-t-2 [&_.ant-slider-track]:border-t-[#6356EA] [&_.ant-slider-mark-text]:font-pingfang [&_.ant-slider-mark-text]:text-xs [&_.ant-slider-mark-text]:font-normal [&_.ant-slider-mark-text]:leading-4 [&_.ant-slider-mark-text]:text-gray-500"
             min={0}
             max={max}
             value={innerVal}

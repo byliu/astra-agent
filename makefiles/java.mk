@@ -58,24 +58,6 @@ check-tools-java: ## ✅ Check Java development tools availability
 		echo "  Maven version: $$(mvn --version | head -n 1)"; \
 	fi
 
-fmt-java: ## ✨ Format Java code
-	@if [ -n "$(JAVA_DIRS)" ]; then \
-		echo "$(YELLOW)Formatting Java code in: $(JAVA_DIRS)$(RESET)"; \
-		for dir in $(JAVA_DIRS); do \
-			if [ -d "$$dir" ]; then \
-				echo "$(YELLOW)  Processing $$dir...$(RESET)"; \
-				cd $$dir && $(MVN) spotless:apply $(MAVEN_DEFAULT_OPTS); \
-				cd - > /dev/null; \
-			else \
-				echo "$(RED)    Directory $$dir does not exist$(RESET)"; \
-			fi; \
-		done; \
-		echo "$(GREEN)Java code formatting completed$(RESET)"; \
-	else \
-		echo "$(BLUE)Skipping Java formatting (no Java projects configured)$(RESET)"; \
-	fi
-	@echo "$(GREEN)Console backend code formatting checks passed$(RESET)"
-
 check-java: ## 🔍 Check Java code quality
 	@if [ -n "$(JAVA_DIRS)" ]; then \
 		echo "$(YELLOW)Checking Java code quality in: $(JAVA_DIRS)$(RESET)"; \
@@ -136,6 +118,25 @@ build-java: ## 📦 Build Java projects
 		echo "$(GREEN)Java build completed$(RESET)"; \
 	else \
 		echo "$(BLUE)Skipping Java build (no Java projects configured)$(RESET)"; \
+	fi
+
+fmt-java: ## ✏️ Format Java code with Spotless
+	@if [ -n "$(JAVA_DIRS)" ]; then \
+		echo "$(YELLOW)Formatting Java projects in: $(JAVA_DIRS)$(RESET)"; \
+		for dir in $(JAVA_DIRS); do \
+			if [ -d "$$dir" ]; then \
+				echo "$(YELLOW)  Formatting $$dir...$(RESET)"; \
+				(cd $$dir && \
+				echo "$(YELLOW)    Running Spotless apply...$(RESET)" && \
+				$(MVN) spotless:apply $(MAVEN_DEFAULT_OPTS)) || exit 1; \
+			else \
+				echo "$(RED)    Directory $$dir does not exist$(RESET)"; \
+				exit 1; \
+			fi; \
+		done; \
+		echo "$(GREEN)Java formatting completed$(RESET)"; \
+	else \
+		echo "$(BLUE)Skipping Java formatting (no Java projects configured)$(RESET)"; \
 	fi
 
 clean-java: ## 🧹 Clean Java build artifacts

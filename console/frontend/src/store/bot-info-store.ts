@@ -8,7 +8,7 @@ interface BotInfoStore {
 
 const useBotInfoStore = create<BotInfoStore>(set => ({
   botInfo: {
-    pc_background: '',
+    pcBackground: '',
     botStatus: 0,
     chatId: 0,
     supportUploadConfig: [],
@@ -25,9 +25,11 @@ const useBotInfoStore = create<BotInfoStore>(set => ({
     supportContext: false,
     isFavorite: 0,
     openedTool: '',
+    advancedConfig: '',
+    vcnCn: '',
     config: [],
   },
-  setBotInfo: newBotInfo =>
+  setBotInfo: (newBotInfo: Partial<BotInfoType>): void =>
     set(state => ({ botInfo: { ...state.botInfo, ...newBotInfo } })),
 }));
 

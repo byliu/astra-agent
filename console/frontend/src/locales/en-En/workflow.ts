@@ -35,7 +35,7 @@ const translation = {
       parameters: 'Parameters',
       add: 'Add',
       noRobot: 'No Robot',
-      noRpaTool: 'No Rpa tool',
+      noRpaTool: 'No RPA tool, create one now~',
       noMore: 'No more',
       createRpa: 'Create RPA',
     },
@@ -696,6 +696,8 @@ const translation = {
       regenerate: 'Regenerate',
       tryFlow: 'Try Flow',
       confirmDeleteAllDialogue: 'Confirm to delete and clear all dialogue?',
+      versionNotPublished: 'Version not published',
+      virtualLoading: 'Loading',
     },
     flowModal: {
       createWorkflow: 'Create Workflow',
@@ -780,7 +782,7 @@ const translation = {
     debugNode: 'Debug Node',
     debugPreview: 'Debug Preview',
     nodeInfoChanged:
-      'Due to changes in {nodeNames} node information, all control groups need to reset this node information',
+      'Due to changes in {{nodeNames}} node information, all control groups need to reset this node information',
     addControlGroup: 'Add Control Group ({{count}}/4)',
     clearHistoryRecords: 'Clear History Records',
     benchmarkGroup: 'Benchmark Group',

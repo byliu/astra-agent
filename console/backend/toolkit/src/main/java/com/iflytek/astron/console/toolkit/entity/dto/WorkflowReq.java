@@ -1,7 +1,9 @@
 package com.iflytek.astron.console.toolkit.entity.dto;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.iflytek.astron.console.commons.enums.bot.BotTypeEnum;
 import com.iflytek.astron.console.toolkit.entity.biz.workflow.BizWorkflowData;
+import com.iflytek.astron.console.toolkit.entity.dto.talkagent.TalkAgentConfigDto;
 import lombok.Data;
 
 import java.util.Map;
@@ -31,4 +33,9 @@ public class WorkflowReq {
     Integer category;
     String flowId;
     Long spaceId;
+    Integer flowType = BotTypeEnum.WORKFLOW_BOT.getType();
+    /**
+     * Voice intelligent agent configuration
+     */
+    TalkAgentConfigDto flowConfig;
 }

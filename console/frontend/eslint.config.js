@@ -37,6 +37,7 @@ export default [
         clearInterval: 'readonly',
         IFlyCollector: 'readonly',
         fetch: 'readonly',
+        NodeJS: 'readonly',
       },
     },
     plugins: {
@@ -45,6 +46,8 @@ export default [
     },
     rules: {
       'no-unused-vars': 'off', // 禁用原生规则
+      'no-redeclare': 'off', // 禁用原生规则，使用 TypeScript 版本
+      '@typescript-eslint/no-redeclare': 'error', // 启用 TypeScript 版本，支持函数重载
       // Prettier 集成（覆盖为 error，并显式使用 .prettierrc）
       'prettier/prettier': ['warn', {}, { usePrettierrc: true }],
       // TypeScript基本规则

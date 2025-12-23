@@ -2,7 +2,7 @@ import json
 import os
 from typing import Any
 
-import requests  # type: ignore
+from common.utils.hmac_auth import HMACAuth
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -16,7 +16,6 @@ from workflow.extensions.fastapi.base import (
 )
 from workflow.extensions.middleware.getters import get_cache_service
 from workflow.extensions.otlp.trace.span import Span
-from workflow.utils.hmac_auth import HMACAuth
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -134,6 +133,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if app_id:
             return app_id
         url = f"{url}/{api_key}"
+
+        import requests  # type: ignore
+
         resp = requests.get(url, headers=self._gen_app_auth_header(url))
         span.add_info_event(f"Application management platform response: {resp.text}")
         if resp.status_code != 200:

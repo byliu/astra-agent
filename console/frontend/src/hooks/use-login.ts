@@ -1,8 +1,5 @@
 import { useCallback, useState } from 'react';
 import http from '@/utils/http';
-import { login, logOutAPI, queryCurrentUser } from '@/services/login';
-import type { CheckAccountParams } from '@/services/login';
-import type { User } from '@/store/user-store';
 
 interface LoginState {
   loading: boolean;
@@ -61,9 +58,6 @@ export const tokenStorage: TokenStorage = {
 const useLogin = (): {
   loading: boolean;
   error: string | null;
-  login: (credentials: CheckAccountParams) => Promise<unknown>;
-  logout: () => Promise<void>;
-  getUserInfo: () => Promise<User>;
   refreshToken: () => Promise<boolean>;
   tokenStorage: TokenStorage;
 } => {
@@ -79,65 +73,6 @@ const useLogin = (): {
   const setError = (error: string | null): void => {
     setState(prev => ({ ...prev, error }));
   };
-
-  // 登录
-  const loginUser = useCallback(async (credentials: CheckAccountParams) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await login(credentials);
-
-      if (response.data?.accessToken && response.data?.refreshToken) {
-        tokenStorage.setTokens({
-          accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
-        });
-      }
-
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 登出
-  const logoutUser = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      await logOutAPI();
-      tokenStorage.clearTokens();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 获取用户信息
-  const getUserInfo = useCallback(async (): Promise<User> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      return await queryCurrentUser();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to get user info';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // 刷新 token
   const refreshToken = useCallback(async (): Promise<boolean> => {
@@ -171,9 +106,6 @@ const useLogin = (): {
 
   return {
     ...state,
-    login: loginUser,
-    logout: logoutUser,
-    getUserInfo,
     refreshToken,
     tokenStorage,
   };

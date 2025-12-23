@@ -47,7 +47,7 @@ class PromptServiceTest {
     // --------------------- enhance ---------------------
 
     @Test
-    @DisplayName("enhance: 模板占位符应被替换，并调用 Spark 生成 SSE")
+    @DisplayName("enhance: Template placeholders should be replaced and Spark should be called to generate SSE")
     void enhance_shouldFillTemplate_andCallSpark() {
         ConfigInfo cfg = new ConfigInfo();
         cfg.setValue("Hi {assistant_name} - {assistant_description}");
@@ -66,7 +66,7 @@ class PromptServiceTest {
     // --------------------- nextQuestionAdvice ---------------------
 
     @Test
-    @DisplayName("nextQuestionAdvice: Spark 返回有效 JSON 数组时应直接解析")
+    @DisplayName("nextQuestionAdvice: Should parse directly when Spark returns a valid JSON array")
     void nqa_shouldParseValidJsonArray() throws InterruptedException {
         ConfigInfo cfg = new ConfigInfo();
         cfg.setValue("Q: {q}");
@@ -83,7 +83,7 @@ class PromptServiceTest {
     }
 
     @Test
-    @DisplayName("nextQuestionAdvice: 非 JSON 文本但包含[...] 片段时应截取中间部分解析")
+    @DisplayName("nextQuestionAdvice: Should extract and parse content within brackets when text is not JSON but contains [...] fragment")
     void nqa_shouldExtractBracketContent_whenNotJson() throws InterruptedException {
         ConfigInfo cfg = new ConfigInfo();
         cfg.setValue("MSG:{q}");
@@ -100,7 +100,7 @@ class PromptServiceTest {
     }
 
     @Test
-    @DisplayName("nextQuestionAdvice: 底层异常时返回三个空字符串")
+    @DisplayName("nextQuestionAdvice: Should return three empty strings when underlying exception occurs")
     void nqa_shouldFallbackOnException() throws InterruptedException {
         ConfigInfo cfg = new ConfigInfo();
         cfg.setValue("X:{q}");
@@ -122,7 +122,7 @@ class PromptServiceTest {
     class AiGenerateTests {
 
         @Test
-        @DisplayName("aiGenerate: 配置缺失时应返回 SSE 兜底（不调用 Spark）")
+        @DisplayName("aiGenerate: Should return SSE fallback when configuration is missing (without calling Spark)")
         void aiGenerate_shouldReturnSseFallback_whenConfigMissing() {
             when(configInfoMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
@@ -133,7 +133,7 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiGenerate: 普通 code 直接用模板 value 调用 Spark")
+        @DisplayName("aiGenerate: For normal code, should use template value directly to call Spark")
         void aiGenerate_normalCode_shouldUseTemplateValue() {
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("TEMPLATE_VALUE");
@@ -153,7 +153,7 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiGenerate: prologue+botId 应替换 {name}/{desc}")
+        @DisplayName("aiGenerate: For prologue with botId, should replace {name}/{desc}")
         void aiGenerate_prologue_withBot_shouldReplaceBotFields() {
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("Hi {name}; {desc}");
@@ -180,7 +180,7 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiGenerate: prologue+flowId 应替换 {name}/{desc}")
+        @DisplayName("aiGenerate: For prologue with flowId, should replace {name}/{desc}")
         void aiGenerate_prologue_withFlow_shouldReplaceFlowFields() {
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("Hi {name}; {desc}");
@@ -212,7 +212,7 @@ class PromptServiceTest {
     @Nested
     class AiCodeTests {
         @Test
-        @DisplayName("aiCode: 模板缺失时应返回 SSE 兜底")
+        @DisplayName("aiCode: Should return SSE fallback when template is missing")
         void aiCode_shouldReturnSseFallback_whenPromptMissing() {
             when(configInfoMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
@@ -223,7 +223,7 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiCode: 模板 value 为空时应返回 SSE 兜底")
+        @DisplayName("aiCode: Should return SSE fallback when template value is empty")
         void aiCode_shouldReturnSseFallback_whenPromptEmpty() {
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("   "); // blank
@@ -236,14 +236,14 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiCode: create 分支应替换 {var}/{prompt}，并使用传入 URL/Domain")
+        @DisplayName("aiCode: For create branch, should replace {var}/{prompt} and use provided URL/Domain")
         void aiCode_create_shouldFillVars_andUseExplicitUrlDomain() {
-            // 模板
+            // Template
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("var={var};prompt={prompt}");
             when(configInfoMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(cfg);
 
-            // URL/Domain 配置
+            // URL/Domain configuration
             ConfigInfo url = new ConfigInfo();
             url.setValue("http://code.url");
             ConfigInfo domain = new ConfigInfo();
@@ -261,7 +261,7 @@ class PromptServiceTest {
             AiCode req = new AiCode();
             req.setPrompt("P");
             req.setVar("V");
-            // req.setCode("") 保持空 → action=create
+            // req.setCode("") remains empty action=create
 
             SseEmitter out = service.aiCode(req);
 
@@ -272,14 +272,14 @@ class PromptServiceTest {
         }
 
         @Test
-        @DisplayName("aiCode: fix 分支应抽取第2个 '(' 后到倒数第2位的错误片段，并使用默认 URL/Domain")
+        @DisplayName("aiCode: For fix branch, should extract error fragment from after 2nd '(' to second-to-last character, and use default URL/Domain")
         void aiCode_fix_shouldExtractError_andUseDefaults() {
-            // 模板（fix）
+            // Template fix
             ConfigInfo cfg = new ConfigInfo();
             cfg.setValue("ERR={errMsg}");
             when(configInfoMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(cfg);
 
-            // URL/domain 缺失 → 使用 SparkApiTool 默认常量
+            // URL/domain missing use SparkApiTool default constants
             when(configInfoMapper.getByCategoryAndCode("AI_CODE", "DS_V3_url")).thenReturn(null);
             when(configInfoMapper.getByCategoryAndCode("AI_CODE", "DS_V3_domain")).thenReturn(null);
 
@@ -290,11 +290,11 @@ class PromptServiceTest {
             when(sparkApiTool.onceChatReturnSseByWs(urlCap.capture(), domainCap.capture(), msgCap.capture()))
                     .thenReturn(expected);
 
-            // 构造满足 secLBracketIdx 截取逻辑的错误信息
-            // 第二个 '(' 之后到倒数第2个字符为止：
-            // "prefix (first) (ValueError: bad)X" → 期望截出 "ValueError: bad"
+            // Construct error message that satisfies secLBracketIdx extraction logic
+            // From after the second '(' to the second-to-last character:
+            // "prefix first ValueError: bad)X" expect to extract "ValueError: bad"
             AiCode req = new AiCode();
-            req.setErrMsg("prefix (first) (ValueError: bad)X"); // 末尾留1个多余字符 + 最末再减1 → 去掉 ')'
+            req.setErrMsg("prefix (first) (ValueError: bad)X");
 
             SseEmitter out = service.aiCode(req);
 

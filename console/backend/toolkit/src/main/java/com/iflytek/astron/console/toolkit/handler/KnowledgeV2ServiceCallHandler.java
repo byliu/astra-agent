@@ -49,14 +49,14 @@ public class KnowledgeV2ServiceCallHandler {
      * @return KnowledgeResponse
      */
     public KnowledgeResponse documentUpload(MultipartFile multipartFile,
-            List<Integer> lengthRange, List<String> separator, 
+            List<Integer> lengthRange, List<String> separator,
             String ragType, Integer resourceType) {
         String url = apiUrl.getKnowledgeUrl().concat("/v1/document/upload");
-        
+
         try {
-            log.info("documentUpload fileName: {}, fileSize: {} bytes", 
-                multipartFile.getOriginalFilename(), multipartFile.getSize());
-            
+            log.info("documentUpload fileName: {}, fileSize: {} bytes",
+                    multipartFile.getOriginalFilename(), multipartFile.getSize());
+
             Map<String, Object> params = new HashMap<>();
             params.put("file", multipartFile);
             if (lengthRange != null) {
@@ -69,7 +69,7 @@ public class KnowledgeV2ServiceCallHandler {
             if (resourceType != null) {
                 params.put("resourceType", resourceType.toString());
             }
-            
+
             log.info("documentUpload url = {}, ragType = {}, resourceType = {}", url, ragType, resourceType);
             String post = OkHttpUtil.postMultipart(url, new HashMap<>(), null, params, null);
             log.info("documentUpload response = {}", post);

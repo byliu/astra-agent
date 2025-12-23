@@ -58,46 +58,9 @@ function ModelCardList({
   }, [keyword, models]);
 
   return (
-    <div className={`${showCreate ? '' : 'lg:pl-[1%]'} pr-[7%]`}>
+    <div>
       {/* 卡片网格 */}
       <div className={`grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3`}>
-        {/* 新建模型卡片 */}
-        {showCreate && (
-          <div
-            className={`plugin-card-add-container relative ${
-              isHovered === null
-                ? ''
-                : isHovered
-                  ? 'plugin-no-hover'
-                  : ' plugin-hover'
-            } min-w-[220px]`}
-            onMouseLeave={() => {
-              setIsHovered(true);
-            }}
-            onMouseEnter={() => {
-              setIsHovered(false);
-            }}
-            onClick={() => {
-              setCreateModal(true);
-              setModelId(undefined);
-            }}
-          >
-            <div className="color-mask"></div>
-            <div className="plugin-card-add flex flex-col">
-              <div className="flex justify-between w-full">
-                <span className="model-icon"></span>
-                <span className="add-icon"></span>
-              </div>
-              <div
-                className="mt-3 font-semibold add-name"
-                style={{ fontSize: 22 }}
-              >
-                {t('model.createModel')}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* 普通模型卡片 */}
         {renderList.map(model => (
           <ModelCard

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Input,
   Tooltip,
@@ -19,9 +19,9 @@ import { placeholderText } from '@/components/bot-center/edit-bot/placeholder';
 import { localeConfig } from '@/locales/localeConfig';
 import { useSparkCommonStore } from '@/store/spark-store/spark-common';
 import { useLocaleStore } from '@/store/spark-store/locale-store';
-import SpeakerModal from '@/components/speaker-modal';
-import { vcnCnJson } from '@/components/speaker-modal/vcn';
+import SpeakerModal, { MyVCNItem, VcnItem } from '@/components/speaker-modal';
 import UploadBackgroundModal from '@/components/upload-background';
+import Personality from './personality-component';
 import { RightOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
 import settingFile from '@/assets/imgs/sparkImg/icon_bot_setting_file.png';
@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 
 import styles from './CapabilityDevelopment.module.scss';
 import cls from 'classnames';
+import { CheckboxChangeEvent } from 'antd/es/checkbox';
 
 const { TextArea } = Input;
 
@@ -50,8 +51,6 @@ interface CapabilityDevelopmentProps {
   baseinfo: any;
   detailInfo: any;
   prompt: any;
-  supportSystemFlag: any;
-  setSupportSystemFlag: (v: any) => void;
   prologue: any;
   setPrologue: (v: any) => void;
   inputExample: string[];
@@ -62,49 +61,29 @@ interface CapabilityDevelopmentProps {
   setSelectSource: (v: any[]) => void;
   supportContextFlag: boolean;
   setSupportContextFlag: (v: boolean) => void;
-  currentRobot: any;
   tools: any[];
   setTools: (v: any[]) => void;
-  flows: any[];
-  setFlows: (v: any[]) => void;
-  repoConfig: any;
-  setRepoConfig: (v: any) => void;
   files: any[];
-  setFiles: (v: any[]) => void;
   tree: any[];
   setTree: (v: any[]) => void;
   conversation: boolean;
   setConversation: (v: boolean) => void;
-  conversationStarter: any;
-  setConversationStarter: (v: any) => void;
-  presetQuestion: any;
-  setPresetQuestion: (v: any) => void;
-  resource: any;
-  setResource: (v: any) => void;
-  suggest: any;
-  setSuggest: (v: any) => void;
-  speechToText: any;
-  setSpeechToText: (v: any) => void;
-  feedback: any;
-  setFeedback: (v: any) => void;
-  textToSpeech: any;
-  setTextToSpeech: (v: any) => void;
   multiModelDebugging: boolean;
   growOrShrinkConfig: any;
   setGrowOrShrinkConfig: (v: any) => void;
-  knowledges: any;
-  vcnList: any;
+  personalityData: any;
+  setPersonalityData: (v: any) => void;
+  model: string;
+  vcnList: VcnItem[];
 }
 
-function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
+const CapabilityDevelopment: React.FC<CapabilityDevelopmentProps> = props => {
   const {
     botCreateActiveV,
     setBotCreateActiveV,
     baseinfo,
     detailInfo,
     prompt,
-    supportSystemFlag,
-    setSupportSystemFlag,
     prologue,
     setPrologue,
     inputExample,
@@ -115,37 +94,19 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
     setSelectSource,
     supportContextFlag,
     setSupportContextFlag,
-    currentRobot,
     tools,
     setTools,
-    flows,
-    setFlows,
-    repoConfig,
-    setRepoConfig,
     files,
-    setFiles,
     tree,
     setTree,
     conversation,
     setConversation,
-    conversationStarter,
-    setConversationStarter,
-    presetQuestion,
-    setPresetQuestion,
-    resource,
-    setResource,
-    suggest,
-    setSuggest,
-    speechToText,
-    setSpeechToText,
-    feedback,
-    setFeedback,
-    textToSpeech,
-    setTextToSpeech,
     multiModelDebugging,
     growOrShrinkConfig,
     setGrowOrShrinkConfig,
-    knowledges,
+    personalityData,
+    setPersonalityData,
+    model,
     vcnList,
   } = props;
 
@@ -161,7 +122,6 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
   const [xieyi, setXieyi] = useState(true);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [inputExampFlag, setInputExampFlag] = useState(false);
-  const audioRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [openingRemarksModal, setOpeningRemarksModal] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -190,18 +150,16 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
   );
   const botDesc = 'wode';
   const name = '123';
-
-  const [mySpeaker, setMySpeaker]: any = useState([]); //我的发音人数组
-
+  const [mySpeaker, setMySpeaker] = useState<MyVCNItem[]>([]);
   /**
    * 设置助手发音人
    */
-  const setBotCreateVcn = (vcn: any) => {
+  const setBotCreateVcn = (vcn: { cn: string }) => {
     setBotCreateActiveV({
-      ...vcn,
+      cn: vcn.cn,
     });
   };
-  const onChecked = (e: any) => {
+  const onChecked = (e: CheckboxChangeEvent) => {
     setXieyi(e.target.checked);
   };
 
@@ -209,45 +167,23 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
    * 渲染助手发音人
    */
   const renderBotVcn = () => {
-    let vcnObj = vcnCnJson.find(
-      (item: any) => item.vcn === botCreateActiveV.cn
-    );
-    let isCustomVcn = false;
-    if (!vcnObj) {
-      vcnObj = mySpeaker.find(
-        (item: any) => item.vcnCode === botCreateActiveV.cn
-      );
-      if (vcnObj) {
-        isCustomVcn = true;
-      }
-    }
+    const vcnObj =
+      vcnList.find((item: VcnItem) => item.voiceType === botCreateActiveV.cn) ||
+      mySpeaker.find((item: MyVCNItem) => item.assetId === botCreateActiveV.cn);
 
     return (
       <>
         {vcnObj ? (
           <>
             <img
-              style={{
-                width: '16px',
-                height: '16px',
-                marginRight: '3px',
-                marginTop: '3px',
-              }}
-              className={styles.vcn_icon}
+              className="w-7 h-7 mr-1 rounded-full"
               src={
-                isCustomVcn
-                  ? 'https://1024-cdn.xfyun.cn/2022_1024%2Fcms%2F16906018510400728%2F%E7%BC%96%E7%BB%84%204%402x.png'
-                  : vcnObj?.imgUrl
+                vcnObj?.coverUrl ||
+                'https://1024-cdn.xfyun.cn/2022_1024%2Fcms%2F16906018510400728%2F%E7%BC%96%E7%BB%84%204%402x.png'
               }
               alt=""
             />
-            <span title={vcnObj?.name}>
-              {localeNow === 'en'
-                ? vcnObj?.en_name
-                  ? vcnObj?.en_name
-                  : vcnObj?.name
-                : vcnObj?.name}
-            </span>
+            <span title={vcnObj?.name}>{vcnObj?.name}</span>
             <div
               style={{ marginLeft: '3px' }}
               className={styles.right_outline_wrap}
@@ -368,12 +304,12 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
         return setInputExampFlag(true);
       }
     });
-  }, []);
-
-  useEffect(() => {
     if (prologue) {
       setConversation(true);
     }
+    listRepos().then((res: any) => {
+      setDataSource(res?.pageData);
+    });
   }, []);
 
   useEffect(() => {
@@ -385,18 +321,6 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
     });
     setDisList(arr);
   }, [dataSource]);
-
-  useEffect(() => {
-    listRepos().then((res: any) => {
-      setDataSource(res?.pageData);
-    });
-  }, []);
-  useEffect(() => {
-    if (!textToSpeech?.enabled) {
-      audioRef.current && audioRef.current.pause();
-      setPlaying(false);
-    }
-  }, [textToSpeech?.enabled]);
 
   return (
     <div
@@ -566,14 +490,14 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
               onClick={() => {
                 setVisible(true);
               }}
-              style={{ color: '#275EFF', cursor: 'pointer' }}
+              style={{ color: '#6356EA', cursor: 'pointer' }}
             >
               + {t('configBase.CapabilityDevelopment.addKnowledgeBase')}
             </div>
           </div>
           <Modal
             wrapClassName={styles.datasetModalWrap}
-            visible={visible}
+            open={visible}
             centered
             footer={null}
             closable={false}
@@ -891,7 +815,7 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                 <>
                   <div className="relative">
                     <div
-                      className="absolute bottom-2 right-2.5 inline-flex items-center rounded-lg gap-1 cursor-pointer border border-[#275EFF] py-1 px-2.5 text-[#275EFF] text-sm bg-[#eff1f9] z-20"
+                      className="absolute bottom-2 right-2.5 inline-flex items-center rounded-lg gap-1 cursor-pointer border border-[#6356EA] py-1 px-2.5 text-[#6356EA] text-sm bg-[#eff1f9] z-20"
                       onClick={() => setOpeningRemarksModal(true)}
                     >
                       <img src={aiGenerate} className="w-4 h-4" alt="" />
@@ -1041,6 +965,17 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                 </>
               )}
             </div>
+
+            <Personality
+              enablePersonality={personalityData.enablePersonality}
+              personalityConfig={personalityData.personalityConfig}
+              onPersonalityChange={setPersonalityData}
+              botName={baseinfo.botName}
+              botType={baseinfo.botType}
+              botDesc={baseinfo.botDesc}
+              prompt={prompt}
+            />
+
             <div
               className="flex justify-between items-center border-b border-[#E9EFF6]"
               style={{
@@ -1057,10 +992,9 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                   display: 'flex',
                   borderRadius: '22px',
                   background: '#F2F5FE',
-                  width: '138px',
                   height: '44px',
                   justifyContent: 'center',
-                  paddingTop: '10px',
+                  padding: '10px 16px',
                   cursor: 'pointer',
                 }}
                 className={`${styles.vcn_choose} ${styles.vcn_choose_banned}`}
@@ -1099,9 +1033,13 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                 }}
               >
                 <div className="flex">
-                  <span className="text-sm font-medium">背景图</span>
+                  <span className="text-sm font-medium">
+                    {t('configBase.CapabilityDevelopment.backgroundImage')}
+                  </span>
                   <Tooltip
-                    title="可以在对话后前往app查看实际竖屏效果"
+                    title={t(
+                      'configBase.CapabilityDevelopment.viewActualVerticalScreenEffect'
+                    )}
                     overlayClassName="black-tooltip config-secret"
                   >
                     <QuestionCircleOutlined
@@ -1114,7 +1052,9 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                   type="primary"
                   onClick={() => setUploadBackgroundModalVisible(true)}
                 >
-                  {backgroundImg ? '修改' : '上传'}
+                  {backgroundImg
+                    ? t('configBase.CapabilityDevelopment.modify')
+                    : t('configBase.CapabilityDevelopment.upload')}
                 </Button>
               </div>
               {backgroundImg && (
@@ -1126,7 +1066,11 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                       alt=""
                     />
                     <div className={styles.hengping}>
-                      <div className={styles.hengpingText}>横屏展示</div>
+                      <div className={styles.hengpingText}>
+                        {t(
+                          'configBase.CapabilityDevelopment.horizontalScreenDisplay'
+                        )}
+                      </div>
                       <div className={styles.shang}>
                         <div className={styles.left} />
                         <div className={styles.right} />
@@ -1148,7 +1092,11 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
                       alt=""
                     />
                     <div className={styles.shuping}>
-                      <div className={styles.shupingText}>竖屏展示</div>
+                      <div className={styles.shupingText}>
+                        {t(
+                          'configBase.CapabilityDevelopment.verticalScreenDisplay'
+                        )}
+                      </div>
                       <div className={styles.shang}>
                         <div className={styles.left} />
                       </div>
@@ -1197,17 +1145,17 @@ function CapabilityDevelopment(props: CapabilityDevelopmentProps) {
           </a>
         </Checkbox>
       </div>
-      {showSpeakerModal && (
-        <SpeakerModal
-          changeSpeakerModal={setShowSpeakerModal}
-          botCreateMode={true}
-          botCreateCallback={setBotCreateVcn}
-          setBotCreateActiveV={setBotCreateActiveV}
-          botCreateActiveV={botCreateActiveV}
-        />
-      )}
+      <SpeakerModal
+        vcnList={vcnList}
+        changeSpeakerModal={setShowSpeakerModal}
+        botCreateCallback={setBotCreateVcn}
+        setBotCreateActiveV={setBotCreateActiveV}
+        botCreateActiveV={botCreateActiveV}
+        showSpeakerModal={showSpeakerModal}
+        onMySpeakerChange={setMySpeaker}
+      />
     </div>
   );
-}
+};
 
 export default CapabilityDevelopment;

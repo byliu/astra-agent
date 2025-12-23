@@ -46,7 +46,7 @@ const ConnectionLineComponent = ({
   fromY,
   toX,
   toY,
-  connectionLineStyle = { strokeWidth: 2, stroke: '#275EFF' }, // provide a default value for connectionLineStyle
+  connectionLineStyle = { strokeWidth: 2, stroke: '#6356EA' }, // provide a default value for connectionLineStyle
 }: ConnectionLineProps): React.ReactElement => {
   return (
     <g>
@@ -72,7 +72,7 @@ const ConnectionLineComponent = ({
 
 const useKeyboardHandlers = ({
   lastSelection,
-  startWorkflowKeydownEvent,
+  startIterativeWorkflowKeydownEvent,
 }): void => {
   const position = useRef({ x: 0, y: 0 });
   const takeSnapshot = useIteratorFlowStore(state => state.takeSnapshot);
@@ -87,7 +87,9 @@ const useKeyboardHandlers = ({
   const handleDelete = useMemoizedFn((): void => {
     takeSnapshot();
     lastSelection.nodes = lastSelection?.nodes?.filter(
-      node => node.type !== '开始节点' && node.type !== '结束节点'
+      node =>
+        node.nodeType !== 'iteration-node-start' &&
+        node.nodeType !== 'iteration-node-end'
     );
     const edgeIds = lastSelection?.edges?.map(edge => edge?.id);
     const leftEdges = edges.filter(edge => !edgeIds?.includes(edge?.id));
@@ -120,7 +122,10 @@ const useKeyboardHandlers = ({
           if (node?.data?.parentId) {
             return true;
           }
-          return node.type !== '开始节点' && node.type !== '结束节点';
+          return (
+            node.nodeType !== 'iteration-node-start' &&
+            node.nodeType !== 'iteration-node-end'
+          );
         });
         try {
           await navigator.clipboard.writeText(
@@ -149,16 +154,16 @@ const useKeyboardHandlers = ({
       position.current = { x: event.clientX, y: event.clientY };
     };
 
-    startWorkflowKeydownEvent &&
+    startIterativeWorkflowKeydownEvent &&
       window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousemove', handleMouseMove);
 
     return (): void => {
-      startWorkflowKeydownEvent &&
+      startIterativeWorkflowKeydownEvent &&
         window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [lastSelection, startWorkflowKeydownEvent, edges]);
+  }, [lastSelection, startIterativeWorkflowKeydownEvent, edges]);
 };
 
 const useIterativeAmplification = ({
@@ -356,7 +361,7 @@ function FlowContainer({
   zoom,
   setZoom,
 }: FlowContainerProps): React.ReactElement {
-  const { handleAddNode, startWorkflowKeydownEvent } = useFlowCommon();
+  const { handleAddNode, startIterativeWorkflowKeydownEvent } = useFlowCommon();
   const reactFlowInstance = useIteratorFlowStore(
     state => state.reactFlowInstance
   );
@@ -380,7 +385,7 @@ function FlowContainer({
     useState<OnSelectionChangeParams | null>(null);
   useKeyboardHandlers({
     lastSelection,
-    startWorkflowKeydownEvent,
+    startIterativeWorkflowKeydownEvent,
   });
   const {
     beforeNodes,

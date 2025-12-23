@@ -15,8 +15,9 @@ export const useEnterprise = (navigate?: any) => {
     setJoinedEnterpriseList,
     setSpaceStatistics,
     spaceStatistics,
+    setEnterpriseInfo,
   } = useEnterpriseStore();
-  const { spaceType } = useSpaceStore();
+  const { spaceType, setEnterpriseId, setSpaceType } = useSpaceStore();
 
   const isTeamSpaceEmpty = useMemo(() => {
     return spaceType === 'team' && !spaceStatistics?.joined;
@@ -74,10 +75,37 @@ export const useEnterprise = (navigate?: any) => {
     }
   }, [setSpaceStatistics, spaceType]);
 
+  const handleTeamChoose = async () => {
+    setEnterpriseInfo({
+      id: '',
+      logoUrl: '',
+      avatarUrl: '',
+      name: '',
+      role: 0,
+      roleTypeText: '',
+      officerName: '',
+      orgId: '',
+      serviceType: 1,
+      uid: '',
+      createTime: '',
+      updateTime: '',
+      expireTime: '',
+    });
+    await visitEnterprise('');
+    setEnterpriseId('');
+    setSpaceType('personal');
+    sessionStorage.removeItem('space-storage');
+    window.location.href = '/home';
+  };
+
   const visitEnterprise = useCallback(async (enterpriseId: string) => {
     try {
       const res: any = await visitEnterpriseApi(enterpriseId);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 62002 || err?.code === 67002) {
+        handleTeamChoose();
+        return;
+      }
       console.log(err, 'visitEnterprise err');
     }
   }, []);

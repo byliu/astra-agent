@@ -553,7 +553,7 @@ const useMenuItems = (
     {
       key: '1',
       label: (
-        <span className="hover:text-[#275EFF]">
+        <span className="hover:text-[#6356EA]">
           {t('workflow.nodes.common.manuallyAdd')}
         </span>
       ),
@@ -562,7 +562,7 @@ const useMenuItems = (
     {
       key: '2',
       label: (
-        <span className="hover:text-[#275EFF]">
+        <span className="hover:text-[#6356EA]">
           {t('workflow.nodes.common.jsonExtract')}
         </span>
       ),

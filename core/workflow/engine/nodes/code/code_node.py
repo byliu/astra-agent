@@ -135,7 +135,7 @@ class CodeNode(BaseNode):
             code=runner,
             timeout=int(
                 self.retry_config.timeout
-                if self.retry_config.timeout
+                if self.retry_config.timeout and self.retry_config.should_retry
                 else int(os.getenv("CODE_EXEC_TIMEOUT_SEC", "10"))
             ),
             span=span_context,

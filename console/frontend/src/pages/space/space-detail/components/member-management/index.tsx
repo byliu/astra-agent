@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Select, message, Modal } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useSpaceI18n } from '@/pages/space/hooks/use-space-i18n';
 import SpaceTable, {
   SpaceColumnConfig,
@@ -49,6 +50,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   searchValue: externalSearchValue = '',
   roleFilter: externalRoleFilter = 'all',
 }) => {
+  const { t } = useTranslation();
   const { user } = useUserStore();
   const { roleTextMap, memberRoleOptions } = useSpaceI18n();
   const permissionInfo = usePermissions();
@@ -84,16 +86,16 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handleDeleteMember = (uid: number, username: string) => {
     Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除成员 "${username}" 吗？`,
-      okText: '确定',
-      cancelText: '取消',
+      title: t('space.confirmDelete'),
+      content: t('space.confirmDeleteMember', { username }),
+      okText: t('space.confirm'),
+      cancelText: t('space.cancel'),
       onOk: async () => {
         try {
           // 模拟API调用
           await deleteUser({ uid: uid });
           tableRef.current?.reload();
-          message.success('删除成功');
+          message.success(t('space.deleteSuccess'));
         } catch (error: any) {
           message.error(error?.msg || error?.desc);
         }
@@ -104,7 +106,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   const handleRoleChange = async (uid: number, newRole: string) => {
     try {
       await updateUserRole({ uid: uid, role: Number(newRole) });
-      message.success('角色更新成功');
+      message.success(t('space.roleUpdateSuccess'));
 
       // 判断如果是操作自己，则刷新页面
       if (Number(uid) === Number(user?.uid)) {
@@ -138,7 +140,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     const buttons: ButtonConfig[] = [
       {
         key: 'delete',
-        text: '删除',
+        text: t('space.delete'),
         type: 'link',
         size: 'small',
         // danger: true,
@@ -166,7 +168,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   // 列配置
   const columns: SpaceColumnConfig<Member>[] = [
     {
-      title: '用户名',
+      title: t('space.username'),
       dataIndex: 'nickname',
       key: 'nickname',
       render: (text: string, record: Member) => (
@@ -176,7 +178,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       ),
     },
     {
-      title: '角色',
+      title: t('space.role'),
       dataIndex: 'role',
       key: 'role',
       render: (role: string, record: Member) => {
@@ -208,7 +210,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       },
     },
     {
-      title: '加入时间',
+      title: t('space.joinTime'),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => (
@@ -219,7 +221,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   // 操作列配置
   const actionColumn: ActionColumnConfig<Member> = {
-    title: '操作',
+    title: t('space.operation'),
     width: 200,
     getActionButtons: (record: Member) => getMemberActionButtons(record),
   };

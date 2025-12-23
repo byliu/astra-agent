@@ -10,12 +10,14 @@ from aiohttp import ClientTimeout
 from pydantic import Field
 
 from workflow.consts.engine.chat_status import ChatStatus
+from workflow.consts.runtime_env import RuntimeEnv
 from workflow.domain.models.ai_app import App
 from workflow.engine.callbacks.openai_types_sse import GenerateUsage
 from workflow.engine.entities.history import EnableChatHistoryV2, History
 from workflow.engine.entities.msg_or_end_dep_info import MsgOrEndDepInfo
 from workflow.engine.entities.node_entities import NodeType
 from workflow.engine.entities.output_mode import EndNodeOutputModeEnum
+from workflow.engine.entities.private_config import PrivateConfig
 from workflow.engine.entities.variable_pool import ParamKey, VariablePool
 from workflow.engine.nodes.base_node import BaseNode
 from workflow.engine.nodes.entities.node_run_result import (
@@ -38,48 +40,19 @@ class FlowNode(BaseNode):
     enabling workflow composition and reusability.
     """
 
+    _private_config = PrivateConfig(timeout=5 * 60.0)
+
     # Flow configuration parameters
     flowId: str = Field(..., min_length=1)  # Target flow ID to execute
     appId: str = Field(..., min_length=1)  # Application ID for authentication
-    uid: str = Field(..., min_length=1)  # User ID for the flow execution
 
     # Chat history configuration for conversation context
     enableChatHistoryV2: EnableChatHistoryV2 = Field(
         default_factory=EnableChatHistoryV2
     )
 
-    # Default chat body template for API requests
-    chatBody: dict = {
-        "inputs": {},
-        "appId": "xxxx",
-        "uid": "xxxx",
-        "caller": "workflow",
-        "botId": "xxxxxxxx",
-    }
-
     # Optional version specification for the target flow
     version: Optional[str] = None
-
-    def assemble_chat_body(self, inputs: dict) -> dict:
-        """
-        Assemble the chat body for API requests.
-
-        Creates a deep copy of the default chat body template and updates it
-        with the current node configuration and input parameters.
-
-        :param inputs: Input parameters to include in the chat body
-        :return: Assembled chat body dictionary for API requests
-        """
-        chat_body: dict = copy.deepcopy(self.chatBody)
-        chat_body.update(
-            {
-                "appId": self.appId,
-                "uid": self.uid,
-                "botId": self.flowId,
-            }
-        )
-        chat_body["inputs"].update(inputs)
-        return chat_body
 
     async def async_execute(
         self,
@@ -244,7 +217,8 @@ class FlowNode(BaseNode):
             async with aiohttp.ClientSession(
                 timeout=ClientTimeout(
                     total=30 * 60, sock_connect=30, sock_read=interval_timeout
-                )
+                ),
+                read_bufsize=1024 * 1024,  # 1MB high_water
             ) as session:
                 async with session.post(
                     url=url, headers=headers, json=req_body
@@ -341,6 +315,9 @@ class FlowNode(BaseNode):
         # Initialize request headers
         headers = {"Content-Type": "application/json"}
 
+        chat_id: str = variable_pool.system_params.get(ParamKey.ChatId, default="")
+        uid: str = variable_pool.system_params.get(ParamKey.Uid, default="")
+
         # Process chat history if enabled
         history = []
         if self.enableChatHistoryV2.is_enabled:
@@ -363,9 +340,10 @@ class FlowNode(BaseNode):
         # Construct request body with flow parameters
         req_body = {
             "flow_id": self.flowId,
-            "uid": self.uid,
+            "uid": uid,
             "parameters": origin_inputs,
             "ext": {},
+            "chat_id": chat_id,
             "stream": True,
             "history": history,
         }
@@ -406,13 +384,16 @@ class FlowNode(BaseNode):
             # Construct authorization header
             authorization = f"Bearer {app.api_key}:{app.api_secret}"
 
-        # Set appropriate authentication header based on environment
-        if "127.0.0.1" in url or "dev" in url or "pre" in url or "10.1.87.65" in url:
-            # Use consumer username for local/development environments
-            headers["X-Consumer-Username"] = self.appId
-        else:
+        # Set authentication headers based on runtime environment
+        if not os.getenv("RUNTIME_ENV", RuntimeEnv.Local.value) in [
+            RuntimeEnv.Dev.value,
+            RuntimeEnv.Test.value,
+        ]:
             # Use bearer token for production environments
             headers["Authorization"] = authorization
+        else:
+            # Use consumer username for local environments
+            headers["X-Consumer-Username"] = self.appId
 
         return headers, req_body
 

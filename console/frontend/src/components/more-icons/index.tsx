@@ -77,7 +77,7 @@ function TabNavigation({
       {avatarGenerationMethods.map((item, index) => (
         <div
           key={index}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg cursor-pointer ${[activeTab, hoverTab].includes(item.activeTab) ? 'text-[#275EFF] bg-[#F6F9FF]' : ''}`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg cursor-pointer ${[activeTab, hoverTab].includes(item.activeTab) ? 'text-[#6356EA] bg-[#F6F9FF]' : ''}`}
           onMouseEnter={() => setHoverTab(item.activeTab)}
           onMouseLeave={() => setHoverTab('')}
           onClick={e => {
@@ -293,7 +293,7 @@ function UploadTab({
             <img src={uploadAct} className="w-8 h-8" alt="" />
             <div className="font-medium mt-6">
               {t('common.moreIcons.upload.dragOrSelect')}
-              <span className="text-[#275EFF]">
+              <span className="text-[#6356EA]">
                 {t('common.moreIcons.upload.chooseFiles')}
               </span>
             </div>
@@ -379,7 +379,7 @@ function Image(props: ImageProps): React.JSX.Element {
                   transformOrigin: 'center center',
                 }}
               >
-                <div className="border-4 border-[#275EFF] rounded-xl w-full h-full overflow-hidden">
+                <div className="border-4 border-[#6356EA] rounded-xl w-full h-full overflow-hidden">
                   <div
                     className="icon-image-origin"
                     style={{

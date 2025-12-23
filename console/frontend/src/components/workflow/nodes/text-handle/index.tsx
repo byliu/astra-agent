@@ -133,7 +133,7 @@ const SeparatorSection = ({
                   {textNodeConfigList?.map((item, index) => (
                     <div
                       key={index}
-                      className="w-full flex item-center justify-between group cursor-pointer py-1 px-3 hover:bg-[#E6F4FF] hover:text-[#275EFF]"
+                      className="w-full flex item-center justify-between group cursor-pointer py-1 px-3 hover:bg-[#E6F4FF] hover:text-[#6356EA]"
                       onClick={() => {
                         handleChangeNodeParam('separator', item?.separator);
                         setOpen(false);
@@ -164,7 +164,7 @@ const SeparatorSection = ({
                 </div>
                 {!showSeparatorAddInput && (
                   <div
-                    className="w-full rounded border border-[#275EFF] flex items-center justify-center gap-2 mt-3 text-[#275EFF] cursor-pointer"
+                    className="w-full rounded border border-[#6356EA] flex items-center justify-center gap-2 mt-3 text-[#6356EA] cursor-pointer"
                     onClick={() => setShowSeparatorAddInput(true)}
                   >
                     <img

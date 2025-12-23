@@ -156,7 +156,7 @@ class KnowledgeProNode(BaseNode):
         except asyncio.TimeoutError:
             # Handle timeout errors during API request
             log_err = CustomException(
-                err_code=CodeEnum.KNOWLEDGE_NODE_EXECUTION_ERROR,
+                err_code=CodeEnum.KNOWLEDGE_REQUEST_ERROR,
                 err_msg=f"Knowledge Pro node response timeout ({interval_timeout}s)",
             )
             span.record_exception(log_err)
